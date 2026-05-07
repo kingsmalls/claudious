@@ -374,6 +374,72 @@ function peek(expr) {
               "meter=", peek("player.parryMeter"));
   snapshot("20_counter_special");
 
+  // ---- BACK ATTACK: hold left (against facing=right) + J ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  // Place runner directly behind player, facing right.
+  window.eval(
+    "player.facing = 1;" +
+    "enemies[0].x = player.x - 18;" +
+    "enemies[0].y = player.y;" +
+    "enemies[1].hp = 0; enemies[1].dead = true; enemies[1].deathTimer = 100;"
+  );
+  hold("KeyA");      // hold back direction
+  press("KeyJ");
+  step(8);
+  console.log("back_atk:",
+              "atkName=", peek("player.attackName"),
+              "e0.hp=", peek("enemies[0].hp"));
+  release("KeyA");
+  snapshot("21_back_atk");
+
+  // ---- SPECIAL: Sunset Spin — costs HP, multi-hit AOE ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval(
+    "enemies[0].x = player.x + 18; enemies[0].y = player.y;" +
+    "enemies[0].aiCooldown = 5;" +
+    "enemies[1].x = player.x - 18; enemies[1].y = player.y;" +
+    "enemies[1].aiCooldown = 5;"
+  );
+  const hpBeforeSpec = peek("player.hp");
+  const e0HpBeforeSpec = peek("enemies[0].hp");
+  press("KeyL");
+  step(40);  // startup 5 + active 18 + recovery 14 = 37
+  console.log("sunset spin:",
+              "p.hp=", peek("player.hp"),  // should drop by 10 (hpCost)
+              "p.hpDelta=", hpBeforeSpec - peek("player.hp"),
+              "e0.hp=", peek("enemies[0].hp"),
+              "e0.hpDelta=", e0HpBeforeSpec - peek("enemies[0].hp"),
+              "e0.airborne=", peek("enemies[0].airborne"),
+              "e1.hp=", peek("enemies[1].hp"));
+  snapshot("22_sunset_spin");
+
+  // ---- GRAB + THROW ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval(
+    "enemies[0].x = player.x + 16; enemies[0].y = player.y;" +
+    "enemies[0].aiCooldown = 5;" +
+    "enemies[1].hp = 0; enemies[1].dead = true; enemies[1].deathTimer = 100;"
+  );
+  press("KeyU");  // grab
+  step(2);
+  console.log("grab:",
+              "p.grabbing!=null=", peek("player.grabbing != null"),
+              "e0.grabbedBy!=null=", peek("enemies[0].grabbedBy != null"));
+  snapshot("23_grab");
+  // Throw forward.
+  hold("KeyD");
+  press("KeyJ");
+  step(15);
+  console.log("throw:",
+              "e0.airborne=", peek("enemies[0].airborne"),
+              "e0.knockX=", peek("enemies[0].knockX || 0").toFixed(1),
+              "e0.hp=", peek("enemies[0].hp"));
+  release("KeyD");
+  snapshot("24_throw");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);

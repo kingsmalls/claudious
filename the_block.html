@@ -255,6 +255,34 @@ const ATTACK_DATA = {
     hit: { fwd: 12, hw: 12, hd: 12, lo: 0, hi: 60 },
     airOnly: true,
   },
+  // Back attack — elbow strike behind, fired by light + back-direction held.
+  rio_back_atk: {
+    startup: 3, active: 3, recovery: 8,
+    damage: 6, knockback: 100, hitstop: 5,
+    // Negative fwd = the hitbox sits BEHIND the attacker (relative to facing).
+    hit: { fwd: -14, hw: 11, hd: 12, lo: 0, hi: 36 },
+    backwardHit: true,
+  },
+  // Sunset Spin — Rio's signature special. Multi-hit AOE around her culminating
+  // in a rising double-fist uppercut. Costs HP per spec.
+  rio_special: {
+    startup: 5, active: 18, recovery: 14,
+    damage: 6, knockback: 110, hitstop: 5,
+    hit: { fwd: 0, hw: 22, hd: 16, lo: 0, hi: 56 },
+    multiHit: 5,        // re-hit each target every 5 frames during active
+    hpCost: 10,
+    signature: "sunset_spin",
+    finalLauncher: 200, // last hit (frame >= startup+active-3) launches
+  },
+  // Throw — runs when player completes a grab and presses direction + light.
+  // Damage applies to the grabbed target only (resolveThrow handles it).
+  rio_throw: {
+    startup: 4, active: 1, recovery: 12,
+    damage: 14, knockback: 240, hitstop: 8,
+    hit: { fwd: 16, hw: 14, hd: 14, lo: 0, hi: 50 },
+    launcher: 80,
+    isThrow: true,
+  },
   // Free counter-special when parry meter is full. Same shape across characters
   // so the meter UI is universal; per-character flavor lives in renderers.
   rio_counter: {
@@ -308,10 +336,25 @@ function makePlayer(charKey, x, y) {
     parryChain: 0,        // consecutive successful parries
     parryChainTimer: 0,   // seconds remaining in chain window
     parryMeter: 0,        // 0-100 — at 100, next ATK fires free counter-special
+    grabbing: null,       // enemy currently held in grab
+    grabFrames: 0,        // frames since grab started; 0 = not grabbing
     hurtboxes: [],
     hitboxes: [],
     attackHits: null,     // Set of victims hit by the current attack (no double-hit)
   };
+}
+
+// Closest enemy within grab range (24 px) on the side we're facing.
+function findGrabTarget(p) {
+  let best = null, bestDist = 24;
+  for (const e of enemies) {
+    if (e.dead || e.airborne || e.grabbedBy) continue;
+    const dx = e.x - p.x;
+    if (Math.sign(dx || p.facing) !== p.facing) continue;
+    const d = Math.hypot(dx, e.y - p.y);
+    if (d < bestDist) { bestDist = d; best = e; }
+  }
+  return best;
 }
 
 function startAttack(p, name) {
@@ -350,15 +393,23 @@ function advanceAttack(p) {
         knockback: d.knockback,
         hitstop: d.hitstop,
         launcher: d.launcher || 0,
+        multiHit: d.multiHit || 0,
+        lastHits: d.multiHit ? new Map() : null,
         facing: p.facing,
         owner: p,
         hits: p.attackHits,
+        backwardHit: d.backwardHit || false,
       });
     }
     const hb = p.hitboxes[0];
     hb.cx = p.x + p.facing * h.fwd;
     hb.cy = p.y;
     hb.facing = p.facing;
+    // Final-frames launcher upgrade for moves that pop the victim only on the
+    // last beat of a multi-hit string (Sunset Spin's uppercut).
+    if (d.finalLauncher && p.attackFrame > d.startup + d.active - 3) {
+      hb.launcher = d.finalLauncher;
+    }
     if (d.pushSelf && p.z <= 0) p.x += p.facing * d.pushSelf * STEP;
   } else {
     p.hitboxes.length = 0;
@@ -393,6 +444,10 @@ function updatePlayer(p, dt) {
   }
 
   const grounded = p.z <= 0;
+  // Capture pre-movement facing for back-attack detection. Movement input
+  // can flip facing this same tick (left held while facing right), so the
+  // back-direction check must use the facing BEFORE that flip.
+  const facingBeforeInput = p.facing;
 
   // Combo-window timer ticks down whenever no fresh hit lands this frame.
   if (p.comboTimer > 0) {
@@ -495,11 +550,57 @@ function updatePlayer(p, dt) {
     }
   }
 
+  // Grab — while holding an enemy, the player rides them and can throw.
+  if (p.grabbing) {
+    p.grabFrames++;
+    const e = p.grabbing;
+    // Position the grabbed enemy in front of the player.
+    e.x = p.x + p.facing * 14;
+    e.y = p.y;
+    e.z = 4; // lifted slightly off the ground
+    e.facing = -p.facing;
+    e.hitboxes.length = 0;
+    e.attacking = false;
+    e.attackName = null;
+    // Player can throw with attack inputs. Direction held = direction of throw.
+    let threw = false;
+    if (actionPressed("light") || actionPressed("heavy")) {
+      let throwDir = p.facing;
+      if (actionHeld("left"))  throwDir = -1;
+      if (actionHeld("right")) throwDir = 1;
+      // Up/down add a vertical component handled by resolveThrow.
+      const throwVZ = actionHeld("up") ? 200 : (actionHeld("down") ? 0 : 80);
+      resolveThrow(p, e, throwDir, throwVZ);
+      threw = true;
+    }
+    // Auto-release after 60 frames.
+    if (!threw && p.grabFrames > 60) {
+      e.grabbedBy = null;
+      e.iframes = 8;
+      p.grabbing = null;
+      p.grabFrames = 0;
+    }
+    // Build hurtboxes for both — player vulnerable, enemy not.
+    p.hurtboxes.length = 0;
+    p.hurtboxes.push({ cx: p.x, cy: p.y, hw: 9, hd: 5, lo: 0, hi: 36 });
+    e.hurtboxes.length = 0;
+    if (threw) return;
+    p.animState = "grab";
+    p.animTime += dt;
+    return;
+  }
+
+  // Detect "back direction held" relative to facing AS OF THIS TICK'S START.
+  const backHeld = (facingBeforeInput === 1 && actionHeld("left")) ||
+                   (facingBeforeInput === -1 && actionHeld("right"));
+
   // Attack inputs.
   // - airborne + light  = jump_atk
-  // - grounded + light  = atk1, or chain to next light/heavy attack
+  // - grounded + back+light = back_atk
+  // - grounded + light  = atk1, or chain to next light attack
   // - grounded + heavy  = heavy, or chain finisher from a light
-  // Attack mid-air can chain with light into another aerial — kept simple: one swing.
+  // - grounded + special = sunset spin (Rio); HP-costing AOE
+  // - grounded + grab    = grab if adjacent enemy
   if (actionPressed("light")) {
     if (!grounded && !p.attacking) {
       startAttack(p, "jump_atk");
@@ -509,21 +610,44 @@ function updatePlayer(p, dt) {
         if (cur && cur.chainLight && p.attackFrame >= cur.startup) {
           startAttack(p, cur.chainLight);
         }
+      } else if (backHeld) {
+        // Snap facing back so the elbow hits where the enemy actually was.
+        p.facing = facingBeforeInput;
+        startAttack(p, "back_atk");
       } else {
         startAttack(p, "atk1");
       }
     }
   }
-  if (actionPressed("heavy")) {
-    if (grounded) {
-      if (p.attacking) {
-        const cur = ATTACK_DATA[p.char + "_" + p.attackName];
-        if (cur && cur.chainHeavy && p.attackFrame >= cur.startup) {
-          startAttack(p, cur.chainHeavy);
-        }
-      } else {
-        startAttack(p, "heavy");
+  if (actionPressed("heavy") && grounded) {
+    if (p.attacking) {
+      const cur = ATTACK_DATA[p.char + "_" + p.attackName];
+      if (cur && cur.chainHeavy && p.attackFrame >= cur.startup) {
+        startAttack(p, cur.chainHeavy);
       }
+    } else {
+      startAttack(p, "heavy");
+    }
+  }
+  if (actionPressed("special") && grounded && !p.attacking) {
+    const sp = ATTACK_DATA[p.char + "_special"];
+    if (sp && (p.hp - (sp.hpCost || 0)) > 0) {
+      p.hp -= sp.hpCost || 0;
+      startAttack(p, "special");
+    }
+  }
+  if (actionPressed("grab") && grounded && !p.attacking) {
+    const target = findGrabTarget(p);
+    if (target) {
+      target.grabbedBy = p;
+      target.iframes = 4;
+      target.attacking = false;
+      target.hitstun = 0;
+      target.airborne = false;
+      target.knockdownFrames = 0;
+      p.grabbing = target;
+      p.grabFrames = 0;
+      p.animState = "grab";
     }
   }
 
@@ -616,6 +740,112 @@ function drawBandana(sx, torsoY, f, atkReach, armSwing, k) {
   }
 }
 
+// Sunset Spin renderer — Rio's signature special. The spin shows a sweeping
+// bandana arc with phase-fading ghosts; the finish is a rising double-fist
+// uppercut that plays for the last 3 active frames + recovery.
+function drawSunsetSpin(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const k  = RIO_COLORS;
+  const d  = ATTACK_DATA.rio_special;
+  const fr = p.attackFrame;
+  const inSpin    = fr > d.startup && fr <= d.startup + d.active - 3;
+  const inFinish  = fr >  d.startup + d.active - 3 && fr <= d.startup + d.active;
+  const inWindup  = fr <= d.startup;
+
+  // Drop shadow.
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, p.y, 12, 3.5, 0, 0, Math.PI * 2); X.fill();
+
+  if (inSpin) {
+    const t = (fr - d.startup) / (d.active - 3);
+    const ang0 = t * Math.PI * 4; // two full revolutions across spin window
+    // Bandana swept around in a wide arc — six fading ghosts.
+    for (let i = 0; i < 6; i++) {
+      const ang = ang0 - i * 0.42;
+      const a = (1 - i / 6) * 0.78;
+      const rx = sx + Math.cos(ang) * 18;
+      const ry = sy - 22 + Math.sin(ang) * 9;
+      X.fillStyle = "rgba(255,215,106," + a.toFixed(2) + ")";
+      X.fillRect(Math.round(rx) - 3, Math.round(ry) - 1, 7, 2);
+      X.fillStyle = "rgba(232,192,74," + (a * 0.7).toFixed(2) + ")";
+      X.fillRect(Math.round(rx) - 3, Math.round(ry) + 1, 7, 1);
+    }
+    // Compact body — squashed silhouette mid-spin.
+    X.fillStyle = k.boot;
+    X.fillRect(sx - 6, sy - 4, 12, 4);
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 6, sy - 18, 12, 14);
+    X.fillStyle = k.tank;
+    X.fillRect(sx - 7, sy - 32, 14, 14);
+    X.fillStyle = k.jacket;
+    X.fillRect(sx - 7, sy - 32, 14, 9);
+    X.fillStyle = k.skin;
+    X.fillRect(sx - 6, sy - 44, 12, 12);
+    X.fillStyle = k.hair;
+    X.fillRect(sx - 5, sy - 46, 10, 4);
+    X.fillRect(sx - 4, sy - 47, 8, 1);
+    return;
+  }
+
+  if (inFinish) {
+    // Rising double-fist uppercut. Body lifts 3 px per frame for 3 frames.
+    const rise = (fr - (d.startup + d.active - 3)) * 3;
+    const yB = sy - rise;
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 6, yB - 18, 5, 14);
+    X.fillRect(sx + 1, yB - 18, 5, 14);
+    X.fillStyle = k.boot;
+    X.fillRect(sx - 6, yB - 4, 5, 4);
+    X.fillRect(sx + 1, yB - 4, 5, 4);
+    X.fillStyle = k.tank;
+    X.fillRect(sx - 7, yB - 32, 14, 14);
+    X.fillStyle = k.jacket;
+    X.fillRect(sx - 7, yB - 32, 14, 9);
+    // Both fists straight up.
+    X.fillStyle = k.skin;
+    X.fillRect(sx - 8, yB - 46 - rise, 3, 14 + rise);
+    X.fillRect(sx + 5, yB - 46 - rise, 3, 14 + rise);
+    X.fillStyle = k.wraps;
+    X.fillRect(sx - 8, yB - 49 - rise, 3, 3);
+    X.fillRect(sx + 5, yB - 49 - rise, 3, 3);
+    // Bandana flying off the rising left wrist.
+    X.fillStyle = k.bandanaHi;
+    X.fillRect(sx + 5, yB - 47 - rise, 6, 1);
+    X.fillStyle = k.bandana;
+    X.fillRect(sx + 5, yB - 46 - rise, 6, 2);
+    X.fillStyle = k.bandanaDark;
+    X.fillRect(sx + 5, yB - 44 - rise, 6, 1);
+    // Head.
+    X.fillStyle = k.skin;
+    X.fillRect(sx - 6, yB - 44, 12, 12);
+    X.fillStyle = k.hair;
+    X.fillRect(sx - 5, yB - 46, 10, 4);
+    X.fillStyle = "#fff";
+    X.fillRect(sx + 1, yB - 38, 2, 1);
+    return;
+  }
+
+  // Windup: low stance with bandana drawn back.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 6, sy - 4, 5, 4);
+  X.fillRect(sx + 1, sy - 4, 5, 4);
+  X.fillStyle = k.tank;
+  X.fillRect(sx - 7, sy - 30, 14, 14);
+  X.fillStyle = k.jacket;
+  X.fillRect(sx - 7, sy - 30, 14, 9);
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 42, 12, 12);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 5, sy - 44, 10, 4);
+  // Bandana low.
+  X.fillStyle = k.bandana;
+  X.fillRect(sx + 5, sy - 18, 5, 2);
+}
+
 // Phase-aware envelope: ramps 0→peak through startup, holds peak through
 // active, ramps peak→0 through recovery. Used by attack renderers.
 function attackEnvelope(p, peak) {
@@ -635,6 +865,57 @@ function drawRio(p) {
   const f  = p.facing;
   const t  = p.animTime;
   const k  = RIO_COLORS;
+
+  // ---- Sunset Spin: dedicated render — bandana sweeps in a wide arc, ending in
+  //      a rising double-fist uppercut. Multi-hit AOE, costs HP.
+  if (p.attacking && p.attackName === "special") {
+    drawSunsetSpin(p);
+    return;
+  }
+
+  // ---- Grab: holding the enemy in front of Rio. ----
+  if (p.grabbing) {
+    const sxG = Math.round(p.x);
+    const syG = Math.round(p.y - p.z);
+    const fg  = p.facing;
+    // Drop shadow.
+    X.fillStyle = "rgba(0,0,0,0.4)";
+    X.beginPath(); X.ellipse(sxG, p.y, 11, 3, 0, 0, Math.PI * 2); X.fill();
+    // Body — feet braced, arms reaching forward.
+    X.fillStyle = k.pants;
+    X.fillRect(sxG - 7, syG - 18, 5, 14);
+    X.fillRect(sxG + 2, syG - 18, 5, 14);
+    X.fillStyle = k.boot;
+    X.fillRect(sxG - 7, syG - 4, 5, 4);
+    X.fillRect(sxG + 2, syG - 4, 5, 4);
+    X.fillStyle = k.tank;
+    X.fillRect(sxG - 7, syG - 32, 14, 14);
+    X.fillStyle = k.jacket;
+    X.fillRect(sxG - 7, syG - 32, 14, 9);
+    // Both arms forward.
+    X.fillStyle = k.skin;
+    if (fg > 0) X.fillRect(sxG + 4, syG - 26, 9, 3);
+    else        X.fillRect(sxG - 13, syG - 26, 9, 3);
+    if (fg > 0) X.fillRect(sxG + 4, syG - 22, 9, 3);
+    else        X.fillRect(sxG - 13, syG - 22, 9, 3);
+    X.fillStyle = k.wraps;
+    if (fg > 0) X.fillRect(sxG + 11, syG - 26, 3, 3);
+    else        X.fillRect(sxG - 13, syG - 26, 3, 3);
+    if (fg > 0) X.fillRect(sxG + 11, syG - 22, 3, 3);
+    else        X.fillRect(sxG - 13, syG - 22, 3, 3);
+    // Bandana on near wrist.
+    X.fillStyle = k.bandana;
+    if (fg > 0) X.fillRect(sxG + 9, syG - 21, 5, 2);
+    else        X.fillRect(sxG - 13, syG - 21, 5, 2);
+    // Head.
+    X.fillStyle = k.skin;
+    X.fillRect(sxG - 6, syG - 44, 12, 12);
+    X.fillStyle = k.hair;
+    X.fillRect(sxG - 5, syG - 46, 10, 4);
+    X.fillStyle = "#fff";
+    X.fillRect(sxG + (fg > 0 ? 1 : -3), syG - 38, 2, 1);
+    return;
+  }
 
   // ---- Parry: guard pose with a glow ring on the active window. ----
   if (p.parryFrame >= 1 && p.parryFrame <= PARRY_ACTIVE) {
@@ -732,6 +1013,15 @@ function drawRio(p) {
       else bodyBob = 0.5;
     } else if (name === "jump_atk") {
       atkKick = attackEnvelope(p, 14);
+    } else if (name === "back_atk") {
+      // Backward elbow — rear arm whips behind. Reach is negative-fwd in data.
+      atkReach = attackEnvelope(p, 12);
+      atkArm = "rear-back";
+    } else if (name === "throw" || name === "counter") {
+      // Throw recovery / counter-special: front arm extended hard.
+      atkReach = attackEnvelope(p, 18);
+      atkArm = "front";
+      atkYBias = -1;
     }
   }
 
@@ -775,7 +1065,7 @@ function drawRio(p) {
   const frontArmX = (f > 0) ? sx + 6 : sx - 9;
   const backArmX  = (f > 0) ? sx - 9 : sx + 6;
 
-  // Rear arm — extends forward only on cross (atk2). Otherwise hangs at side.
+  // Rear arm — forward extension on cross (atk2). Backward whip on back_atk.
   if (atkArm === "rear" && atkReach > 0) {
     const ay = torsoY + 4 + atkYBias;
     X.fillStyle = k.skin;
@@ -784,6 +1074,16 @@ function drawRio(p) {
     X.fillStyle = k.wraps;
     if (f > 0) X.fillRect(sx + 4 + atkReach, ay, 3, 3);
     else       X.fillRect(sx - 4 - atkReach - 3, ay, 3, 3);
+  } else if (atkArm === "rear-back" && atkReach > 0) {
+    // Backward elbow — extends opposite to facing.
+    const ay = torsoY + 5;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx - 4 - atkReach - 3, ay, atkReach + 3, 3);
+    else       X.fillRect(sx + 4, ay, atkReach + 3, 3);
+    // Elbow visualised as a small block at the joint.
+    X.fillStyle = k.skinDark;
+    if (f > 0) X.fillRect(sx - 4 - atkReach - 3, ay + 3, 2, 2);
+    else       X.fillRect(sx + 6 + atkReach, ay + 3, 2, 2);
   } else {
     X.fillStyle = k.skin;
     X.fillRect(backArmX, torsoY + 1 + Math.round(armSwing), 3, 11);
@@ -1034,6 +1334,7 @@ function makeRunner(x, y) {
     fleeing: false,
     dead: false,
     deathTimer: 0,
+    grabbedBy: null,
     hitboxes: [],
     hurtboxes: [],
     attackHits: null,
@@ -1050,6 +1351,15 @@ function updateRunner(e, dt) {
     e.hurtboxes.length = 0;
     if (e.x < STAGE_LEFT_PAD) e.x = STAGE_LEFT_PAD;
     if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
+    return;
+  }
+
+  // Held in a grab — position is driven entirely by the player.
+  if (e.grabbedBy) {
+    e.animState = "grabbed";
+    e.animTime += dt;
+    e.hitboxes.length = 0;
+    e.hurtboxes.length = 0;
     return;
   }
 
@@ -1529,6 +1839,36 @@ function applyHit(target, hb, attacker) {
   spawnDmgNumber(sxp, syp - 6, hb.damage);
 }
 
+// Resolve a throw: launch the grabbed enemy in the chosen direction with damage.
+// Caller has already validated p.grabbing and pressed an attack input.
+function resolveThrow(p, e, throwDir, throwVZ) {
+  const d = ATTACK_DATA[p.char + "_throw"] || ATTACK_DATA.rio_throw;
+  e.grabbedBy = null;
+  p.grabbing = null;
+  p.grabFrames = 0;
+  e.hp -= d.damage;
+  e.iframes = 6;
+  e.attacking = false;
+  e.attackName = null;
+  if (e.hitboxes) e.hitboxes.length = 0;
+  e.knockX = throwDir * d.knockback;
+  e.knockY = 0;
+  e.vz = throwVZ;
+  e.airborne = throwVZ > 0;
+  e.hitstun = 0;
+  if (e.hp <= 0) {
+    e.dead = true;
+    e.deathTimer = 0;
+  }
+  if (hitstopFrames < d.hitstop) hitstopFrames = d.hitstop;
+  spawnSparkle(e.x, e.y - 18);
+  spawnDmgNumber(e.x, e.y - 22, d.damage);
+  shakeFrames = Math.max(shakeFrames, 6);
+  shakeMag = Math.max(shakeMag, 3);
+  // Brief throw recovery on the player so they can't immediately grab again.
+  startAttack(p, "throw");
+}
+
 // Resolve a parry: classify by parry frame, deal counter damage on PERFECT,
 // stun the attacker on GOOD, just block on LATE. Updates chain meter and
 // triggers visual feedback.
@@ -1602,14 +1942,27 @@ function resolveHits() {
     for (const hb of player.hitboxes) {
       for (const e of enemies) {
         if (e.dead) continue;
-        if (e.iframes > 0) continue;       // knockdown / getup invulnerability
-        if (hb.hits && hb.hits.has(e)) continue;
+        if (e === player.grabbing) continue;        // can't hit what we're holding
+        if (e.iframes > 0) continue;                // knockdown / getup invulnerability
+        // Multi-hit: re-hit each target every hb.multiHit frames within the active
+        // phase; otherwise default to the one-hit-per-attack rule.
+        if (hb.multiHit) {
+          if (!hb.lastHits) hb.lastHits = new Map();
+          const last = hb.lastHits.get(e);
+          if (last !== undefined && hb.owner.attackFrame - last < hb.multiHit) continue;
+        } else {
+          if (hb.hits && hb.hits.has(e)) continue;
+        }
         let connected = false;
         for (const tb of e.hurtboxes) {
           if (boxOverlap(hb, tb)) { connected = true; break; }
         }
         if (connected) {
-          if (hb.hits) hb.hits.add(e);
+          if (hb.multiHit) {
+            hb.lastHits.set(e, hb.owner.attackFrame);
+          } else if (hb.hits) {
+            hb.hits.add(e);
+          }
           applyHit(e, hb, player);
         }
       }
