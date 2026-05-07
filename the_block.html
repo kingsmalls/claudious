@@ -166,6 +166,149 @@ function consumePress(k) {
   return false;
 }
 
+// ---------- Touch / haptics (mobile) ----------
+// On-screen control overlay. We render the buttons into the canvas itself so
+// scaling stays correct across viewports. A pointer-id → button-id map tracks
+// active touches so multiple fingers can hold buttons concurrently.
+const TOUCH_BUTTONS = [
+  // D-pad — bottom left.
+  { id: "up",    cx: 60,    cy: 240, r: 22, label: "▲" },
+  { id: "down",  cx: 60,    cy: 320, r: 22, label: "▼" },
+  { id: "left",  cx: 24,    cy: 280, r: 22, label: "◀" },
+  { id: "right", cx: 96,    cy: 280, r: 22, label: "▶" },
+  // Action cluster — right side.
+  { id: "jump",    cx: 460, cy: 320, r: 20, label: "JMP", color: "#5a6678" },
+  { id: "light",   cx: 510, cy: 290, r: 22, label: "J",   color: "#7d8d4f" },
+  { id: "heavy",   cx: 565, cy: 280, r: 22, label: "K",   color: "#a83040" },
+  { id: "special", cx: 615, cy: 305, r: 20, label: "L",   color: "#5a6678" },
+  { id: "grab",    cx: 565, cy: 230, r: 18, label: "U",   color: "#3a3a44" },
+  { id: "parry",   cx: 615, cy: 250, r: 22, label: "P",   color: "#e8c04a" },
+];
+const TOUCH_BTN_BY_ID = (() => { const m = {}; for (const b of TOUCH_BUTTONS) m[b.id] = b; return m; })();
+const touchToButton = new Map();
+const heldTouchButtons = new Set();
+
+function hasTouch() {
+  return typeof navigator !== "undefined" &&
+         (("maxTouchPoints" in navigator && navigator.maxTouchPoints > 0) ||
+          (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches));
+}
+const SHOW_TOUCH = hasTouch();
+
+function canvasCoords(clientX, clientY) {
+  const rect = C.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) / rect.width  * W,
+    y: (clientY - rect.top)  / rect.height * H,
+  };
+}
+
+function pickTouchButton(x, y) {
+  for (const b of TOUCH_BUTTONS) {
+    const dx = x - b.cx, dy = y - b.cy;
+    if (dx * dx + dy * dy <= (b.r + 4) * (b.r + 4)) return b;
+  }
+  return null;
+}
+
+function setActionPressed(action, on) {
+  const codes = KEY[action] || [];
+  for (const code of codes) {
+    if (on) {
+      if (!keys[code]) keysPressed[code] = true;
+      keys[code] = true;
+    } else {
+      keys[code] = false;
+    }
+  }
+}
+
+if (typeof window !== "undefined" && SHOW_TOUCH) {
+  const onDown = (e) => {
+    const pts = e.changedTouches ? Array.from(e.changedTouches)
+                                 : [{ identifier: e.pointerId, clientX: e.clientX, clientY: e.clientY }];
+    for (const t of pts) {
+      const c = canvasCoords(t.clientX, t.clientY);
+      const btn = pickTouchButton(c.x, c.y);
+      if (btn) {
+        touchToButton.set(t.identifier, btn.id);
+        heldTouchButtons.add(btn.id);
+        setActionPressed(btn.id, true);
+      }
+    }
+    e.preventDefault();
+  };
+  const onMove = (e) => {
+    const pts = e.changedTouches ? Array.from(e.changedTouches)
+                                 : [{ identifier: e.pointerId, clientX: e.clientX, clientY: e.clientY }];
+    for (const t of pts) {
+      const old = touchToButton.get(t.identifier);
+      const c = canvasCoords(t.clientX, t.clientY);
+      const btn = pickTouchButton(c.x, c.y);
+      if (old && (!btn || btn.id !== old)) {
+        // Slid off the old button — release it.
+        heldTouchButtons.delete(old);
+        let stillHeld = false;
+        for (const id of touchToButton.values()) if (id === old) { stillHeld = true; break; }
+        if (!stillHeld) setActionPressed(old, false);
+      }
+      if (btn && btn.id !== old) {
+        touchToButton.set(t.identifier, btn.id);
+        heldTouchButtons.add(btn.id);
+        setActionPressed(btn.id, true);
+      }
+    }
+  };
+  const onUp = (e) => {
+    const pts = e.changedTouches ? Array.from(e.changedTouches)
+                                 : [{ identifier: e.pointerId, clientX: e.clientX, clientY: e.clientY }];
+    for (const t of pts) {
+      const id = touchToButton.get(t.identifier);
+      if (!id) continue;
+      touchToButton.delete(t.identifier);
+      let stillHeld = false;
+      for (const otherId of touchToButton.values()) if (otherId === id) { stillHeld = true; break; }
+      if (!stillHeld) {
+        heldTouchButtons.delete(id);
+        setActionPressed(id, false);
+      }
+    }
+  };
+  C.addEventListener("touchstart",  onDown, { passive: false });
+  C.addEventListener("touchmove",   onMove, { passive: false });
+  C.addEventListener("touchend",    onUp,   { passive: false });
+  C.addEventListener("touchcancel", onUp,   { passive: false });
+}
+
+// Haptic helper — best-effort vibration on supported browsers.
+function vibrate(pattern) {
+  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch (e) {}
+}
+
+function drawTouchOverlay() {
+  if (!SHOW_TOUCH) return;
+  X.save();
+  for (const b of TOUCH_BUTTONS) {
+    const held = heldTouchButtons.has(b.id);
+    // Plate.
+    X.fillStyle = held ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.45)";
+    X.beginPath(); X.arc(b.cx, b.cy, b.r, 0, Math.PI * 2); X.fill();
+    // Outline.
+    X.strokeStyle = held ? "#fff" : (b.color || "#888");
+    X.lineWidth = held ? 2 : 1;
+    X.beginPath(); X.arc(b.cx, b.cy, b.r, 0, Math.PI * 2); X.stroke();
+    // Label.
+    X.fillStyle = held ? "#fff" : (b.color || "#ddd");
+    X.font = "bold " + (b.id.length === 1 ? 14 : 9) + "px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.textBaseline = "middle";
+    X.fillText(b.label, b.cx, b.cy + 1);
+  }
+  X.lineWidth = 1;
+  X.restore();
+}
+
 // ---------- Action bindings ----------
 // WASD / arrows for movement; right-hand row JKLU for combat; I = parry.
 const KEY = {
@@ -2088,6 +2231,8 @@ function drawHUD() {
   if (player && player.comboHits >= 2) drawComboCounter();
   // Boss HP bar across the bottom when a boss is alive.
   drawBossHpBar();
+  // Mobile touch overlay — only renders when SHOW_TOUCH is true.
+  drawTouchOverlay();
 
   X.fillStyle = tone.rail;
   X.font = "bold 9px ui-monospace, monospace";
@@ -4688,6 +4833,10 @@ function applyHit(target, hb, attacker) {
     target.knockX = dir * (hb.knockback + 30);
     target.hitstun = 0;
     target.airborne = false;
+    // Haptic kick on KO.
+    if (target === player) vibrate(120);
+    else if (target.isBoss) vibrate([30, 30, 60]);
+    else vibrate(20);
   }
   // Scaled hit feel: hitstop and shake grow with damage and combo count, capped
   // at +50%% by 10 hits. Heavy single hits already feel punchier (high base hitstop)
@@ -5538,6 +5687,7 @@ function beginStageClear() {
   const stage = STAGES[currentStage];
   stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
   stageClearTimer = 2.4;
+  vibrate(40);
   if (player) {
     player.stagesClearedThisRun++;
     // Update per-stage best combo.

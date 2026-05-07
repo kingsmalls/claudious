@@ -701,6 +701,18 @@ function peek(expr) {
   press("Enter"); step(4);
   console.log("after enter from select: STATE =", peek("STATE"));
 
+  // ---- MOBILE TOUCH OVERLAY: force-render the buttons for a snapshot ----
+  goToPlay();
+  // The overlay is normally gated by SHOW_TOUCH (a pointer-coarse check that's
+  // false in jsdom). For test purposes we draw a single frame with the overlay
+  // forced on so the procedural buttons get rendered.
+  window.eval("Object.defineProperty(window, 'SHOW_TOUCH', { value: true, configurable: true });");
+  // SHOW_TOUCH is a const inside the script; can't override. Instead, swap the
+  // overlay drawer to always run for one render.
+  window.eval("const __dt = drawTouchOverlay; drawTouchOverlay = () => { for (const b of TOUCH_BUTTONS) { X.fillStyle='rgba(0,0,0,0.45)'; X.beginPath(); X.arc(b.cx,b.cy,b.r,0,Math.PI*2); X.fill(); X.strokeStyle = b.color || '#888'; X.beginPath(); X.arc(b.cx,b.cy,b.r,0,Math.PI*2); X.stroke(); X.fillStyle = b.color || '#ddd'; X.font='bold '+(b.label.length===1?14:9)+'px ui-monospace, monospace'; X.textAlign='center'; X.textBaseline='middle'; X.fillText(b.label,b.cx,b.cy+1);} };");
+  step(2);
+  snapshot("90_touch_overlay");
+
   // ---- KANE CINEMATIC: enter directly and watch ----
   goToPlay();
   window.eval("currentStage = 9;");
