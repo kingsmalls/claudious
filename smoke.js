@@ -663,6 +663,50 @@ function peek(expr) {
   step(8);
   snapshot("50_title_with_save");
 
+  // ---- LATE-GAME STAGES: snapshot backdrops 6-10 ----
+  for (let s = 5; s < 10; s++) {
+    press("Escape"); step(4);
+    press("Enter");  step(6);
+    if (!peek("player")) {
+      // Force enter playing — title machinery may have eaten the Enter.
+      window.eval("enterPlaying();");
+      step(2);
+    }
+    window.eval("currentStage = " + s + "; enemies = []; particles = []; projectiles = []; player.x = 120; player.y = 300;");
+    step(6);
+    console.log("stage " + s + " (" + peek("STAGES[" + s + "].name") + "): STATE=" + peek("STATE"));
+    snapshot("S" + (s + 1) + "_stage");
+  }
+
+  // ---- LATE BOSSES: spawn each, snapshot ----
+  for (const b of ["razor", "volt", "blackwell"]) {
+    press("Escape"); step(2);
+    press("Enter");  step(2);
+    window.eval("enemies = [makeEnemy('" + b + "', 460, 300)];");
+    step(8);
+    console.log(b + ": hp =", peek("enemies[0].hp"),
+                "name =", peek("enemies[0].bossName"));
+    snapshot("6" + b[0] + "_" + b);
+  }
+
+  // ---- KANE CINEMATIC: enter directly and watch ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval("currentStage = 9;");
+  step(2);
+  window.eval("beginKaneCinematic();");
+  step(60); // ~1 second in
+  console.log("cinematic at 1s: state =", peek("STATE"),
+              "t =", peek("cineState && cineState.t").toFixed(2));
+  snapshot("70_kane_cinematic");
+  // Press J at the right moment.
+  step(36); // approach the first prompt at t=1.6
+  press("KeyJ");
+  step(60);
+  console.log("after J #1: prompts.hit =",
+              peek("cineState && cineState.prompts[0].hit"));
+  snapshot("71_kane_strike");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);

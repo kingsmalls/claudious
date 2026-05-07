@@ -2422,6 +2422,272 @@ function drawStageCage() {
   X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
 }
 
+// Stage 6: UPTOWN — wealthy, well-lit. Cream marble buildings, gold accents.
+function drawStageUptown() {
+  // Soft dusk sky.
+  X.fillStyle = "#1c2438";
+  X.fillRect(0, 0, W, 80);
+  X.fillStyle = "#3a3a52";
+  X.fillRect(0, 60, W, 30);
+  X.fillStyle = "#6a5040";
+  X.fillRect(0, 80, W, 12);
+  // Marble building facade.
+  X.fillStyle = "#dcd0b0";
+  X.fillRect(0, 92, W, 138);
+  X.fillStyle = "#c8b890";
+  X.fillRect(0, 92, W, 6);
+  // Tall windows.
+  for (let bx = 24; bx < W - 14; bx += 56) {
+    X.fillStyle = "#1c2438";
+    X.fillRect(bx, 110, 16, 70);
+    X.fillStyle = "#5a7090";
+    X.fillRect(bx + 1, 111, 14, 4);
+    // Warm window light.
+    X.fillStyle = "rgba(255,210,140,0.7)";
+    X.fillRect(bx + 2, 116, 12, 6);
+    X.fillStyle = "#1c2438";
+    X.fillRect(bx + 7, 110, 2, 70);
+  }
+  // Gold trim.
+  X.fillStyle = "#cfa040";
+  X.fillRect(0, 192, W, 2);
+  X.fillRect(0, 200, W, 1);
+  // Streetlamp halos.
+  for (let lx = 80; lx < W; lx += 160) {
+    X.fillStyle = "rgba(255,220,150,0.10)";
+    X.beginPath(); X.ellipse(lx, 220, 70, 30, 0, 0, Math.PI*2); X.fill();
+    X.fillStyle = "#cfa040";
+    X.fillRect(lx - 1, 198, 2, 28);
+    X.fillStyle = "#ffd070";
+    X.fillRect(lx - 4, 196, 8, 4);
+  }
+  // Sidewalk — pale, smooth.
+  X.fillStyle = "#d8c0a0";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#a89070";
+  X.fillRect(0, STAGE_TOP, W, 1);
+  X.fillStyle = "#9a8060";
+  for (let gx = 0; gx < W; gx += 80) X.fillRect(gx, STAGE_TOP, 1, STAGE_BOT - STAGE_TOP);
+  // Curb.
+  X.fillStyle = "#5a4030";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+  // Faint potted topiary in front of the building.
+  X.fillStyle = "#3a4a2a";
+  X.fillRect(40, 200, 14, 22);
+  X.fillRect(560, 200, 14, 22);
+  X.fillStyle = "#5a6b3a";
+  X.fillRect(40, 200, 14, 4);
+  X.fillRect(560, 200, 14, 4);
+}
+
+// Stage 7: THE WORKS — industrial foundry with molten metal at the back.
+const WORKS_MOLTEN_TOP = STAGE_TOP - 8;
+function drawStageWorks() {
+  // Dark smoky background.
+  X.fillStyle = "#0a0608";
+  X.fillRect(0, 0, W, 230);
+  X.fillStyle = "#1a1410";
+  X.fillRect(0, 100, W, 130);
+  // Catwalks across the back.
+  X.fillStyle = "#3a2a18";
+  X.fillRect(0, 134, W, 6);
+  X.fillRect(0, 168, W, 4);
+  X.fillStyle = "#1a0a06";
+  for (let cx = 0; cx < W; cx += 12) X.fillRect(cx, 134, 1, 6);
+  // Smoky pipes.
+  X.fillStyle = "#3a2418";
+  X.fillRect(40,  130, 10, 60);
+  X.fillRect(540, 130, 10, 60);
+  X.fillStyle = "#5a3a20";
+  X.fillRect(40, 130, 10, 2);
+  X.fillRect(540, 130, 10, 2);
+  // Hot molten pool — back band.
+  const pulse = 0.65 + 0.35 * Math.sin(stateTime * 1.6);
+  X.fillStyle = "rgba(255,90,30," + (pulse * 0.18).toFixed(2) + ")";
+  X.fillRect(0, WORKS_MOLTEN_TOP, W, 14);
+  X.fillStyle = "#ff6020";
+  X.fillRect(0, STAGE_TOP - 4, W, 4);
+  X.fillStyle = "#ffa040";
+  for (let mx = 0; mx < W; mx += 14) {
+    if ((Math.floor(stateTime * 8) + mx) & 1) X.fillRect(mx, STAGE_TOP - 4, 8, 1);
+  }
+  // Sparks rising from the molten line.
+  X.fillStyle = "rgba(255,200,90,0.55)";
+  for (let i = 0; i < 5; i++) {
+    const sx = ((stateTime * 80 + i * 130) % W);
+    const sy = STAGE_TOP - 12 - ((stateTime * 60 + i * 23) % 30);
+    X.fillRect(Math.round(sx), Math.round(sy), 1, 1);
+  }
+  // Floor — riveted iron.
+  X.fillStyle = "#2a2018";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#3a2818";
+  for (let rx = 8; rx < W; rx += 18) {
+    for (let ry = STAGE_TOP + 6; ry < STAGE_BOT - 4; ry += 14) {
+      X.fillRect(rx, ry, 2, 2);
+    }
+  }
+  X.fillStyle = "#1a1208";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+}
+
+// Stage 8: THE FREEWAY — overpass at night with passing cars as hazards.
+let freewayCars = [];   // managed by hazard hook
+function drawStageFreeway() {
+  // Night sky and silhouettes.
+  X.fillStyle = "#0c0a18";
+  X.fillRect(0, 0, W, 110);
+  X.fillStyle = "#1a1828";
+  X.fillRect(0, 90, W, 50);
+  // Skyline.
+  X.fillStyle = "#080610";
+  for (let bx = 0; bx < W; bx += 32) X.fillRect(bx, 100 + ((bx * 13) & 14), 24, 40);
+  // Car-light haloes streaking horizontally on a guardrail band.
+  X.fillStyle = "#241a30";
+  X.fillRect(0, 150, W, 70);
+  X.fillStyle = "#3a2848";
+  X.fillRect(0, 150, W, 1);
+  X.fillRect(0, 220, W, 1);
+  // Lane markings far back.
+  X.fillStyle = "rgba(220,220,180,0.55)";
+  for (let lx = 0; lx < W; lx += 30) X.fillRect(lx, 200, 14, 1);
+  // Highway road on the play strip.
+  X.fillStyle = "#1a1a22";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  // Lane stripe.
+  X.fillStyle = "#dcd6c4";
+  for (let lx = 0; lx < W; lx += 28) X.fillRect(lx, (STAGE_TOP + STAGE_BOT) / 2 - 1, 14, 2);
+  // Side rails.
+  X.fillStyle = "#3a3a44";
+  X.fillRect(0, STAGE_TOP, W, 2);
+  X.fillRect(0, STAGE_BOT - 2, W, 2);
+  // Render the live cars (their state is updated in updateFreewayHazard).
+  for (const c of freewayCars) {
+    const cx = c.x | 0;
+    const cy = c.y | 0;
+    // Body.
+    X.fillStyle = c.color;
+    X.fillRect(cx, cy, 56, 14);
+    X.fillStyle = "rgba(0,0,0,0.4)";
+    X.fillRect(cx, cy + 13, 56, 1);
+    // Windows.
+    X.fillStyle = "#141420";
+    X.fillRect(cx + 14, cy + 2, 28, 5);
+    // Headlights / tail lights.
+    if (c.dir > 0) {
+      X.fillStyle = "rgba(255,240,180,0.95)";
+      X.fillRect(cx + 52, cy + 4, 4, 2);
+      X.fillStyle = "rgba(255,80,40,0.95)";
+      X.fillRect(cx, cy + 4, 2, 2);
+      // Light beam ahead.
+      X.fillStyle = "rgba(255,240,180,0.18)";
+      X.fillRect(cx + 56, cy + 3, 22, 4);
+    } else {
+      X.fillStyle = "rgba(255,240,180,0.95)";
+      X.fillRect(cx, cy + 4, 4, 2);
+      X.fillStyle = "rgba(255,80,40,0.95)";
+      X.fillRect(cx + 54, cy + 4, 2, 2);
+      X.fillStyle = "rgba(255,240,180,0.18)";
+      X.fillRect(cx - 22, cy + 3, 22, 4);
+    }
+  }
+}
+
+// Stage 9: THE TOWER — Kane's lobby. Marble + steel + the elevator at the back.
+function drawStageTower() {
+  // Dark interior.
+  X.fillStyle = "#0e0e16";
+  X.fillRect(0, 0, W, 230);
+  // Marble back wall.
+  X.fillStyle = "#22202c";
+  X.fillRect(0, 60, W, 170);
+  // Vein lines.
+  X.fillStyle = "#3a384a";
+  for (let mx = 0; mx < W; mx += 16) {
+    const off = ((mx * 13) ^ 0x33) & 7;
+    X.fillRect(mx, 80 + off, 2, 1);
+    X.fillRect(mx + 4, 120 + off, 1, 1);
+  }
+  // Recessed ceiling lights.
+  for (let cx = 60; cx < W; cx += 100) {
+    X.fillStyle = "rgba(220,200,160,0.18)";
+    X.beginPath(); X.ellipse(cx, 70, 32, 14, 0, 0, Math.PI*2); X.fill();
+    X.fillStyle = "rgba(255,235,180,0.8)";
+    X.fillRect(cx - 4, 60, 8, 2);
+  }
+  // Reception desk silhouette.
+  X.fillStyle = "#1a1620";
+  X.fillRect(80, 180, 200, 40);
+  X.fillStyle = "#2a2434";
+  X.fillRect(80, 180, 200, 2);
+  // Elevator at far back.
+  X.fillStyle = "#0a0a12";
+  X.fillRect(W / 2 - 30, 80, 60, 120);
+  X.fillStyle = "#5a4030";
+  X.fillRect(W / 2 - 30, 78, 60, 3);
+  X.fillStyle = "#cfa040";
+  X.fillRect(W / 2 - 1, 80, 2, 120); // door seam
+  X.fillStyle = "rgba(255,210,140,0.85)";
+  X.fillRect(W / 2 - 14, 70, 28, 4);
+  // Polished marble floor.
+  X.fillStyle = "#161620";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#22202c";
+  for (let gx = 0; gx < W; gx += 70) X.fillRect(gx, STAGE_TOP, 1, STAGE_BOT - STAGE_TOP);
+  X.fillRect(0, STAGE_TOP + 50, W, 1);
+  // Reflection sheen.
+  X.fillStyle = "rgba(255,255,255,0.04)";
+  X.fillRect(0, STAGE_TOP, W, 1);
+  X.fillStyle = "#0a0a12";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+}
+
+// Stage 10: THE TOP — penthouse rooftop, skyline panorama.
+function drawStageTop() {
+  // Deep night sky to a dawn band.
+  X.fillStyle = "#100618";
+  X.fillRect(0, 0, W, 60);
+  X.fillStyle = "#2a1830";
+  X.fillRect(0, 60, W, 40);
+  X.fillStyle = "#5a3030";
+  X.fillRect(0, 100, W, 20);
+  // Far skyline.
+  X.fillStyle = "#1a0a14";
+  for (let bx = 0; bx < W; bx += 22) {
+    const h = 16 + ((bx * 11) & 24);
+    X.fillRect(bx, 130 - h, 18, h);
+  }
+  // Window dots in the skyline.
+  X.fillStyle = "rgba(255,210,140,0.7)";
+  for (let bx = 4; bx < W; bx += 22) {
+    for (let by = 130 - 30; by < 130; by += 6) {
+      if (((bx * 7 + by * 13) & 7) === 0) X.fillRect(bx + 2, by, 2, 2);
+    }
+  }
+  // Helipad-style circle on the rooftop.
+  X.fillStyle = "#22221c";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#1a1a14";
+  X.fillRect(0, STAGE_TOP, W, 1);
+  // Big white H painted on the roof.
+  X.fillStyle = "rgba(255,255,255,0.18)";
+  X.fillRect(W / 2 - 28, STAGE_TOP + 12, 8, 70);
+  X.fillRect(W / 2 + 20, STAGE_TOP + 12, 8, 70);
+  X.fillRect(W / 2 - 28, STAGE_TOP + 42, 56, 8);
+  // Edge railing.
+  X.fillStyle = "#3a3a44";
+  X.fillRect(0, STAGE_BOT - 2, W, 2);
+  X.fillStyle = "#0a0a0e";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+  // Wind-blown bandana fragments (atmospheric).
+  X.fillStyle = "rgba(232,192,74,0.25)";
+  for (let i = 0; i < 4; i++) {
+    const fx = ((stateTime * 50 + i * 180) % (W + 60)) - 30;
+    const fy = 200 + Math.sin(stateTime * 2 + i) * 6;
+    X.fillRect(fx | 0, fy | 0, 4, 1);
+  }
+}
+
 // Dispatch to the correct stage backdrop. Defaults to Stage 1 if out of bounds.
 function drawCurrentStage() {
   const s = STAGES[currentStage];
@@ -2446,6 +2712,9 @@ const ENEMY_STATS = {
   dojo:      { walkSpeed: 54, runSpeed:  92, hp:  34, range: 24, hurtHw: 8,  hurtHd: 5, hurtHi: 34 },
   rig:       { walkSpeed: 60, runSpeed: 110, hp:  70, range: 26, hurtHw: 10, hurtHd: 6, hurtHi: 38, staggerN: 2 },
   baron:     { walkSpeed: 48, runSpeed:  78, hp: 220, range: 28, hurtHw: 12, hurtHd: 7, hurtHi: 48, staggerN: 3, isBoss: true, bossName: "BARON" },
+  razor:     { walkSpeed: 70, runSpeed: 140, hp: 200, range: 26, hurtHw:  9, hurtHd: 5, hurtHi: 38, staggerN: 2, isBoss: true, bossName: "RAZOR" },
+  volt:      { walkSpeed: 56, runSpeed: 110, hp: 280, range: 28, hurtHw: 12, hurtHd: 7, hurtHi: 46, staggerN: 3, isBoss: true, bossName: "VOLT" },
+  blackwell: { walkSpeed: 50, runSpeed:  86, hp: 360, range: 30, hurtHw: 13, hurtHd: 7, hurtHi: 50, staggerN: 4, isBoss: true, bossName: "BLACKWELL" },
 };
 
 // Per-type attack frame data. All in 60Hz frames.
@@ -2506,7 +2775,60 @@ const ENEMY_ATK = {
     startup: 16, active: 5, recovery: 28,
     damage: 28, knockback: 250, hitstop: 9,
     hit: { fwd: 24, hw: 15, hd: 15, lo: 0, hi: 44 },
-    superArmor: true,   // not interruptible during startup
+    superArmor: true,
+  },
+  // RAZOR — fast assassin, dual-knife flurry, telegraphed dash slash.
+  razor_slash: {
+    startup: 4, active: 3, recovery: 10,
+    damage: 10, knockback: 100, hitstop: 4,
+    hit: { fwd: 18, hw: 11, hd: 12, lo: 0, hi: 36 },
+  },
+  razor_dash: {
+    startup: 8, active: 6, recovery: 18,
+    damage: 16, knockback: 160, hitstop: 6,
+    hit: { fwd: 22, hw: 16, hd: 14, lo: 0, hi: 40 },
+    pushSelf: 240,
+  },
+  razor_throw: {
+    startup: 6, active: 1, recovery: 16,
+    damage: 0,
+    spawnsProjectile: "knife",
+  },
+  // VOLT — heavy cybernetic punches and a shock-wave projectile.
+  volt_strike: {
+    startup: 8, active: 4, recovery: 16,
+    damage: 14, knockback: 130, hitstop: 6,
+    hit: { fwd: 20, hw: 13, hd: 13, lo: 0, hi: 44 },
+  },
+  volt_uppercut: {
+    startup: 12, active: 4, recovery: 22,
+    damage: 22, knockback: 80, hitstop: 8,
+    hit: { fwd: 14, hw: 12, hd: 13, lo: 0, hi: 56 },
+    launcher: 220,
+  },
+  volt_shock: {
+    startup: 10, active: 1, recovery: 24,
+    damage: 0,
+    spawnsProjectile: "shock",
+  },
+  // BLACKWELL — Kane's enforcer. Heavy hands, charge attack, super-armor.
+  blackwell_punch: {
+    startup: 8, active: 4, recovery: 16,
+    damage: 16, knockback: 140, hitstop: 7,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 44 },
+  },
+  blackwell_charge: {
+    startup: 14, active: 8, recovery: 24,
+    damage: 24, knockback: 220, hitstop: 9,
+    hit: { fwd: 22, hw: 18, hd: 16, lo: 0, hi: 48 },
+    pushSelf: 240,
+    superArmor: true,
+  },
+  blackwell_overhead: {
+    startup: 18, active: 5, recovery: 28,
+    damage: 32, knockback: 260, hitstop: 11,
+    hit: { fwd: 18, hw: 14, hd: 16, lo: 0, hi: 56 },
+    superArmor: true,
   },
 };
 
@@ -2515,6 +2837,7 @@ const ENEMY_DEFAULT_ATTACK = {
   runner: "swipe", tank: "slam", lamplight: "shot",
   slice: "lunge", chains: "swing", shade: "strike",
   dojo: "counter", rig: "strike", baron: "jab",
+  razor: "slash", volt: "strike", blackwell: "punch",
 };
 
 function makeEnemy(type, x, y) {
@@ -2754,7 +3077,10 @@ function runEnemyAI(e, dt) {
     case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
     case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
     case "chains": approachOrAttack(e, dx, dy, dist, dt); break;
-    case "baron":  runBaronAI(e, dx, dy, dist, dt); break;
+    case "baron":     runBaronAI(e, dx, dy, dist, dt); break;
+    case "razor":     runRazorAI(e, dx, dy, dist, dt); break;
+    case "volt":      runVoltAI(e, dx, dy, dist, dt); break;
+    case "blackwell": runBlackwellAI(e, dx, dy, dist, dt); break;
     case "lamplight": {
       // Stay at long range. If too close, back off; if in range, shoot.
       const idealMin = 70, idealMax = 110;
@@ -2834,6 +3160,80 @@ function updateDojoGuard(e, dt) {
 
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
+// RAZOR: fast slasher. Strings 1-2 quick slashes, occasionally dashes through.
+// Phase 2 (<40%% HP) starts throwing knives.
+function runRazorAI(e, dx, dy, dist, dt) {
+  if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+  const phase2 = e.hp < e.hpMax * 0.4;
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.runSpeed;
+    e.vy = (dy / dist) * e.runSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+  } else if (e.aiCooldown <= 0) {
+    const pattern = phase2
+      ? ["slash", "throw", "dash", "slash", "slash", "throw"]
+      : ["slash", "slash", "dash", "slash"];
+    const atk = pattern[e.bossPatternStep % pattern.length];
+    e.bossPatternStep++;
+    startEnemyAttack(e, atk);
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+  }
+}
+
+// VOLT: heavy cyber striker. Mixes melee, an uppercut launcher, and a shock-wave.
+function runVoltAI(e, dx, dy, dist, dt) {
+  if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+  const phase2 = e.hp < e.hpMax * 0.5;
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    // Sometimes shock-wave at long range.
+    if (dist > 90 && e.aiCooldown <= 0 && Math.random() < 0.6) {
+      startEnemyAttack(e, "shock");
+    }
+  } else if (e.aiCooldown <= 0) {
+    const pattern = phase2
+      ? ["strike", "uppercut", "strike", "shock", "uppercut"]
+      : ["strike", "strike", "uppercut", "shock"];
+    const atk = pattern[e.bossPatternStep % pattern.length];
+    e.bossPatternStep++;
+    startEnemyAttack(e, atk);
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+  }
+}
+
+// BLACKWELL: Kane's enforcer. Heavy super-armored attacks with a charge.
+function runBlackwellAI(e, dx, dy, dist, dt) {
+  if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+  const phase2 = e.hp < e.hpMax * 0.5;
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    if (dist > 70 && e.aiCooldown <= 0 && Math.random() < 0.4) {
+      startEnemyAttack(e, "charge");
+    }
+  } else if (e.aiCooldown <= 0) {
+    const pattern = phase2
+      ? ["punch", "punch", "overhead", "charge", "overhead", "punch"]
+      : ["punch", "punch", "charge", "punch", "overhead"];
+    const atk = pattern[e.bossPatternStep % pattern.length];
+    e.bossPatternStep++;
+    startEnemyAttack(e, atk);
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+  }
+}
+
 // BARON: methodical pattern jab → jab → cross → haymaker → jab → cross.
 // Phase 2 (HP < 50%) compresses the pattern and shortens cooldowns.
 function runBaronAI(e, dx, dy, dist, dt) {
@@ -2886,9 +3286,11 @@ function deflectHit(d, hb, attacker) {
 // ---------- Projectiles (LAMPLIGHT bullets, bottle throws, etc.) ----------
 function spawnProjectile(kind, x, y, dir, owner) {
   const def =
-    kind === "bullet" ? { speed: 280, damage: 9, knockback: 60, hitstop: 4, w: 5, h: 2, color: "#ffd76a" } :
-    kind === "bottle" ? { speed: 180, damage: 6, knockback: 40, hitstop: 3, w: 4, h: 5, color: "#7fa8a4", arc: -160 } :
-                        { speed: 200, damage: 5, knockback: 40, hitstop: 3, w: 4, h: 4, color: "#fff" };
+    kind === "bullet" ? { speed: 280, damage: 9,  knockback: 60,  hitstop: 4, w: 5, h: 2, color: "#ffd76a" } :
+    kind === "bottle" ? { speed: 180, damage: 6,  knockback: 40,  hitstop: 3, w: 4, h: 5, color: "#7fa8a4", arc: -160 } :
+    kind === "knife"  ? { speed: 240, damage: 12, knockback: 80,  hitstop: 5, w: 8, h: 3, color: "#cfd0d6" } :
+    kind === "shock"  ? { speed: 200, damage: 14, knockback: 120, hitstop: 6, w: 14, h: 10, color: "#a8d4ff" } :
+                        { speed: 200, damage: 5,  knockback: 40,  hitstop: 3, w: 4, h: 4, color: "#fff" };
   projectiles.push({
     kind, x, y, vx: dir * def.speed, vy: 0, vz: def.arc || 0, z: 0,
     life: 0, maxLife: 1.6,
@@ -2948,6 +3350,27 @@ function drawProjectiles() {
       X.fillRect(sx - 2, sy - 3, 4, 5);
       X.fillStyle = "#a8d4d0";
       X.fillRect(sx - 1, sy - 4, 2, 1);
+    } else if (p.kind === "knife") {
+      // Spinning blade — drawn as cross-shape rotated by life.
+      const ang = p.life * 18 * (p.facing > 0 ? 1 : -1);
+      const cs = Math.cos(ang), sn = Math.sin(ang);
+      X.fillStyle = "#cfd0d6";
+      for (let i = -3; i <= 3; i++) {
+        X.fillRect(Math.round(sx + cs * i), Math.round(sy + sn * i), 2, 2);
+      }
+      X.fillStyle = "#ffffff";
+      X.fillRect(sx, sy, 2, 1);
+    } else if (p.kind === "shock") {
+      // Pulsing electric ball with arcs.
+      const pulse = 0.6 + 0.4 * Math.sin(p.life * 24);
+      X.fillStyle = "rgba(168,212,255," + pulse.toFixed(2) + ")";
+      X.fillRect(sx - 7, sy - 5, 14, 10);
+      X.fillStyle = "rgba(255,255,255,0.9)";
+      X.fillRect(sx - 2, sy - 1, 4, 2);
+      // Side arcs.
+      X.fillStyle = "rgba(168,212,255,0.7)";
+      X.fillRect(sx - 11, sy - 1, 4, 1);
+      X.fillRect(sx + 7,  sy - 1, 4, 1);
     } else {
       X.fillStyle = p.color;
       X.fillRect(sx - p.w / 2, sy - p.h / 2, p.w, p.h);
@@ -3759,6 +4182,246 @@ function drawBaron(e) {
   if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 12, headY - 2, 24, 50); }
 }
 
+// ---- RAZOR: tall lean assassin in all-black with twin curved knives. ----
+const RAZOR_COLORS = {
+  black: "#0a0a12", blackHi: "#1a1a26",
+  scarf: "#7a1018", scarfHi: "#a83040",
+  skin:  "#caa07c", skinDk: "#7a5a3c",
+  blade: "#cfd0d6", bladeHi: "#ffffff",
+  eye:   "#ff5040",
+};
+function drawRazor(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = RAZOR_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.45)";
+  X.beginPath(); X.ellipse(sx, e.y, 9, 3, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.black; X.fillRect(sx - 14, sy - 6, 28, 6);
+    X.fillStyle = k.scarf; X.fillRect(sx - 6, sy - 3, 12, 1);
+    return;
+  }
+  // Tall narrow body.
+  X.fillStyle = k.black;
+  X.fillRect(sx - 5, sy - 38, 10, 38);
+  X.fillStyle = k.blackHi;
+  X.fillRect(sx - 5, sy - 38, 10, 1);
+  // Boots.
+  X.fillStyle = "#000";
+  X.fillRect(sx - 5, sy - 4, 4, 4);
+  X.fillRect(sx + 1, sy - 4, 4, 4);
+  // Crimson sash across the chest.
+  X.fillStyle = k.scarf;
+  X.fillRect(sx - 6, sy - 28, 12, 3);
+  X.fillStyle = k.scarfHi;
+  X.fillRect(sx - 6, sy - 28, 12, 1);
+  // Per-attack envelope.
+  let armReach = 0;
+  if (e.attacking) {
+    const d = ENEMY_ATK["razor_" + e.attackName];
+    if (d && d.hit) {
+      if (e.attackFrame <= d.startup)        armReach = (e.attackFrame / d.startup) * 16;
+      else if (e.attackFrame <= d.startup + d.active) armReach = 16;
+      else                                   armReach = Math.max(0, 16 - (e.attackFrame - d.startup - d.active));
+    }
+  }
+  // Front-arm knife.
+  X.fillStyle = k.black;
+  if (f > 0) X.fillRect(sx + 5,                    sy - 24, 3 + armReach, 3);
+  else        X.fillRect(sx - 8 - armReach,         sy - 24, 3 + armReach, 3);
+  if (armReach > 0) {
+    X.fillStyle = k.blade;
+    if (f > 0) X.fillRect(sx + 5 + armReach + 3, sy - 24, 8, 2);
+    else        X.fillRect(sx - 8 - armReach - 8, sy - 24, 8, 2);
+    X.fillStyle = k.bladeHi;
+    if (f > 0) X.fillRect(sx + 5 + armReach + 9, sy - 24, 2, 1);
+    else        X.fillRect(sx - 8 - armReach - 8, sy - 24, 2, 1);
+  } else {
+    // Resting blade hangs in the off-hand.
+    X.fillStyle = k.blade;
+    if (f > 0) X.fillRect(sx + 6, sy - 18, 5, 1);
+    else        X.fillRect(sx - 11, sy - 18, 5, 1);
+  }
+  // Head — bound in black with the red eye glow.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 4, sy - 44, 8, 7);
+  X.fillStyle = k.black;
+  X.fillRect(sx - 5, sy - 46, 10, 8);
+  // Sash-end fluttering by the head.
+  X.fillStyle = k.scarf;
+  X.fillRect(sx + (f > 0 ? 5 : -7), sy - 42, 2, 6);
+  X.fillStyle = k.eye;
+  if (f > 0) X.fillRect(sx + 1, sy - 41, 2, 1);
+  else       X.fillRect(sx - 3, sy - 41, 2, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 6, sy - 50, 12, 52); }
+}
+
+// ---- VOLT: bulky cybernetic enforcer with electric arcs. ----
+const VOLT_COLORS = {
+  plate: "#1a2030", plateHi: "#3a4458", plateDk: "#0a0e18",
+  trim:  "#5a8cc0",
+  arc:   "#a8d4ff", arcHi: "#ffffff",
+  metal: "#7a8aa0",
+  eye:   "#a8d4ff",
+};
+function drawVolt(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = VOLT_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.5)";
+  X.beginPath(); X.ellipse(sx, e.y, 13, 4, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.plate; X.fillRect(sx - 16, sy - 8, 32, 8);
+    return;
+  }
+  // Arcing electric particles around the body.
+  for (let i = 0; i < 4; i++) {
+    const ang = e.animTime * 6 + i * 1.6;
+    const ax = sx + Math.cos(ang) * 18;
+    const ay = sy - 30 + Math.sin(ang) * 12;
+    X.fillStyle = "rgba(168,212,255,0.7)";
+    X.fillRect(Math.round(ax), Math.round(ay), 2, 1);
+  }
+  // Heavy chassis.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 11, sy - 40, 22, 40);
+  X.fillStyle = k.plateHi;
+  X.fillRect(sx - 11, sy - 40, 22, 1);
+  X.fillStyle = k.plateDk;
+  X.fillRect(sx - 11, sy - 1, 22, 1);
+  // Trim.
+  X.fillStyle = k.trim;
+  X.fillRect(sx - 11, sy - 24, 22, 1);
+  X.fillRect(sx - 11, sy - 14, 22, 1);
+  // Glowing chest core.
+  const pulse = 0.65 + 0.35 * Math.sin(e.animTime * 8);
+  X.fillStyle = "rgba(168,212,255," + pulse.toFixed(2) + ")";
+  X.fillRect(sx - 4, sy - 30, 8, 8);
+  X.fillStyle = "rgba(255,255,255,0.9)";
+  X.fillRect(sx - 1, sy - 27, 2, 2);
+  // Reinforced legs.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 7, sy - 16, 6, 16);
+  X.fillRect(sx + 1, sy - 16, 6, 16);
+  X.fillStyle = "#000";
+  X.fillRect(sx - 8, sy - 4, 7, 5);
+  X.fillRect(sx + 1, sy - 4, 7, 5);
+  // Arms.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 14, sy - 36, 5, 18);
+  X.fillRect(sx + 9,  sy - 36, 5, 18);
+  // Strike pose.
+  if (e.attacking) {
+    const d = ENEMY_ATK["volt_" + e.attackName];
+    if (d && d.hit && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      X.fillStyle = k.plate;
+      if (f > 0) X.fillRect(sx + 10, sy - 30, 16, 5);
+      else        X.fillRect(sx - 26, sy - 30, 16, 5);
+      X.fillStyle = "rgba(168,212,255,0.85)";
+      if (f > 0) X.fillRect(sx + 26, sy - 32, 2, 9);
+      else        X.fillRect(sx - 26, sy - 32, 2, 9);
+    }
+  }
+  // Head — visor.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 7, sy - 50, 14, 12);
+  X.fillStyle = k.metal;
+  X.fillRect(sx - 7, sy - 50, 14, 1);
+  X.fillStyle = "rgba(168,212,255," + pulse.toFixed(2) + ")";
+  X.fillRect(sx - 5, sy - 44, 10, 2);
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 2, sy - 44, 1, 1);
+  else       X.fillRect(sx - 2, sy - 44, 1, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 14, sy - 54, 28, 58); }
+}
+
+// ---- BLACKWELL: Kane's enforcer. Massive build, dark tactical gear. ----
+const BLACKWELL_COLORS = {
+  body:   "#1a1820", bodyHi: "#3a3848", bodyDk: "#0a0810",
+  vest:   "#2a2018", vestHi: "#4a3828",
+  trim:   "#cfa040",
+  skin:   "#9a7048", skinDk: "#5a3e22",
+  hair:   "#1a1410",
+  eye:    "#ff5040",
+  glove:  "#2a1818",
+};
+function drawBlackwell(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = BLACKWELL_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.beginPath(); X.ellipse(sx, e.y, 15, 4, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.body;  X.fillRect(sx - 18, sy - 9, 36, 9);
+    X.fillStyle = k.trim;  X.fillRect(sx - 4, sy - 6, 8, 2);
+    return;
+  }
+  let tilt = 0;
+  if (e.attacking && e.attackName === "charge") tilt = 4;
+  // Wide torso plate.
+  X.fillStyle = k.body;
+  X.fillRect(sx - 13, sy - 44 - tilt, 26, 22);
+  X.fillStyle = k.bodyHi;
+  X.fillRect(sx - 13, sy - 44 - tilt, 26, 1);
+  X.fillStyle = k.bodyDk;
+  X.fillRect(sx - 13, sy - 23 - tilt, 26, 1);
+  // Vest panels.
+  X.fillStyle = k.vest;
+  X.fillRect(sx - 10, sy - 42 - tilt, 20, 16);
+  X.fillStyle = k.vestHi;
+  X.fillRect(sx - 10, sy - 42 - tilt, 20, 1);
+  // Gold trim across the chest.
+  X.fillStyle = k.trim;
+  X.fillRect(sx - 10, sy - 32 - tilt, 20, 1);
+  // Head — bald with a heavy brow.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 8, sy - 56 - tilt, 16, 14);
+  X.fillStyle = k.skinDk;
+  X.fillRect(sx - 8, sy - 50 - tilt, 16, 1);
+  // Heavy brow shadow.
+  X.fillStyle = k.bodyDk;
+  X.fillRect(sx - 8, sy - 48 - tilt, 16, 2);
+  X.fillStyle = k.eye;
+  if (f > 0) X.fillRect(sx + 1, sy - 47 - tilt, 2, 1);
+  else       X.fillRect(sx - 3, sy - 47 - tilt, 2, 1);
+  // Heavy legs + boots.
+  X.fillStyle = k.body;
+  X.fillRect(sx - 9, sy - 22, 7, 18);
+  X.fillRect(sx + 2, sy - 22, 7, 18);
+  X.fillStyle = "#000";
+  X.fillRect(sx - 10, sy - 4, 8, 5);
+  X.fillRect(sx + 2,  sy - 4, 8, 5);
+  // Arms — gloved.
+  X.fillStyle = k.body;
+  X.fillRect(sx - 16, sy - 42 - tilt, 5, 18);
+  X.fillRect(sx + 11, sy - 42 - tilt, 5, 18);
+  X.fillStyle = k.glove;
+  X.fillRect(sx - 16, sy - 24 - tilt, 5, 4);
+  X.fillRect(sx + 11, sy - 24 - tilt, 5, 4);
+  // Strike — punch / charge / overhead.
+  if (e.attacking) {
+    const name = e.attackName;
+    const d = ENEMY_ATK["blackwell_" + name];
+    if (d && d.hit && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      X.fillStyle = k.glove;
+      if (name === "overhead") {
+        // Both fists overhead slamming down.
+        if (f > 0) X.fillRect(sx + 4, sy - 60 - tilt, 6, 14);
+        else        X.fillRect(sx - 10, sy - 60 - tilt, 6, 14);
+      } else {
+        if (f > 0) X.fillRect(sx + 12, sy - 32 - tilt, 18, 6);
+        else        X.fillRect(sx - 30, sy - 32 - tilt, 18, 6);
+        // Charge speedlines.
+        if (name === "charge") {
+          X.fillStyle = "rgba(255,255,255,0.45)";
+          for (let i = 0; i < 4; i++) {
+            if (f > 0) X.fillRect(sx - 14 - i * 4, sy - 36 - i * 4, 6, 1);
+            else        X.fillRect(sx + 8  + i * 4, sy - 36 - i * 4, 6, 1);
+          }
+        }
+      }
+    }
+  }
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 18, sy - 60, 36, 64); }
+}
+
 // Dispatcher.
 function drawEnemy(e) {
   switch (e.type) {
@@ -3770,6 +4433,9 @@ function drawEnemy(e) {
     case "dojo":      return drawDojo(e);
     case "rig":       return drawRig(e);
     case "baron":     return drawBaron(e);
+    case "razor":     return drawRazor(e);
+    case "volt":      return drawVolt(e);
+    case "blackwell": return drawBlackwell(e);
     default:          return drawRunner(e);
   }
 }
@@ -4231,8 +4897,166 @@ function update(dt) {
   stateTime += dt;
   if (STATE === "title") updateTitle(dt);
   else if (STATE === "playing") updatePlaying(dt);
+  else if (STATE === "cinematic") updateCinematic(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
+}
+
+// ---------- Kane QTE cinematic (Stage 10 finale) ----------
+let cineState = null;
+
+function beginKaneCinematic() {
+  cineState = {
+    t: 0,
+    prompts: [
+      { at: 1.6, key: "KeyJ", label: "J", hit: false, fired: false },
+      { at: 3.0, key: "KeyK", label: "K", hit: false, fired: false },
+      { at: 4.4, key: "KeyJ", label: "J", hit: false, fired: false },
+      { at: 5.8, key: "KeyK", label: "K", hit: false, fired: false },
+    ],
+    duration: 7.6,
+  };
+  enemies = [];
+  projectiles = [];
+  particles = [];
+  setState("cinematic");
+}
+
+function updateCinematic(dt) {
+  if (!cineState) { setState("victory"); return; }
+  cineState.t += dt;
+  for (const p of cineState.prompts) {
+    if (p.fired) continue;
+    if (cineState.t > p.at + 0.55) {
+      p.fired = true;
+      spawnParryWord(W / 2, H / 2 - 30, "MISS", "#666");
+    } else if (cineState.t > p.at - 0.55) {
+      if (consumePress(p.key)) {
+        p.fired = true;
+        p.hit = true;
+        flashFrames = 5;
+        shakeFrames = 10;
+        shakeMag    = 4;
+        spawnParryWord(W / 2, H / 2 - 30, "STRIKE!", "#ffd76a");
+      }
+    }
+  }
+  if (consumePress("Escape")) {
+    finalizeRun(true);
+    setState("victory");
+    cineState = null;
+    return;
+  }
+  if (cineState.t >= cineState.duration) {
+    finalizeRun(true);
+    cineState = null;
+    setState("victory");
+  }
+}
+
+function renderCinematic() {
+  drawCurrentStage();
+  // Heavy vignette to focus attention on the duel.
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.fillRect(0, 0, W, H);
+
+  // Kane silhouette on the right; chosen character on the left.
+  drawKaneSilhouette(W - 120, STAGE_BOT - 64);
+  if (player) {
+    const savedX = player.x, savedY = player.y;
+    player.x = 200; player.y = STAGE_BOT - 4;
+    drawCharacter(player);
+    player.x = savedX; player.y = savedY;
+  }
+
+  // Caption.
+  X.fillStyle = "rgba(0,0,0,0.7)";
+  X.fillRect(0, 36, W, 24);
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 14px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("VICTOR KANE", W / 2, 50);
+
+  // Active prompt button.
+  const now = cineState.t;
+  for (const p of cineState.prompts) {
+    if (Math.abs(now - p.at) > 0.55 && !(p.fired && p.hit)) continue;
+    const inWin = Math.abs(now - p.at) < 0.55;
+    const closeness = inWin ? Math.max(0, 1 - Math.abs(now - p.at) / 0.55) : 0;
+    const sz = Math.round(20 + closeness * 18);
+    const cx = W / 2, cy = H / 2 + 30;
+    // Plate.
+    X.fillStyle = "rgba(0,0,0,0.55)";
+    X.fillRect(cx - 26, cy - 22, 52, 44);
+    // Ring shrinks toward the perfect time.
+    if (inWin) {
+      const r = 28 - closeness * 18;
+      X.strokeStyle = "rgba(232,192,74," + closeness.toFixed(2) + ")";
+      X.lineWidth = 2;
+      X.beginPath(); X.arc(cx, cy, r, 0, Math.PI * 2); X.stroke();
+      X.lineWidth = 1;
+    }
+    X.fillStyle = p.hit ? "#7d8d4f" : (p.fired ? "#666" : "#e8c04a");
+    X.font = "bold " + sz + "px ui-monospace, monospace";
+    X.fillText(p.label, cx, cy + 2);
+    break;
+  }
+
+  // Progress timeline at the bottom.
+  const tlX = 60, tlY = H - 28, tlW = W - 120, tlH = 4;
+  X.fillStyle = "rgba(0,0,0,0.6)";
+  X.fillRect(tlX - 2, tlY - 2, tlW + 4, tlH + 4);
+  X.fillStyle = "#222";
+  X.fillRect(tlX, tlY, tlW, tlH);
+  X.fillStyle = "#e8c04a";
+  X.fillRect(tlX, tlY, Math.round(tlW * (cineState.t / cineState.duration)), tlH);
+  for (const p of cineState.prompts) {
+    const px = tlX + Math.round(tlW * (p.at / cineState.duration));
+    X.fillStyle = p.hit ? "#7d8d4f" : (p.fired ? "#666" : "#fff");
+    X.fillRect(px - 1, tlY - 3, 2, tlH + 6);
+  }
+}
+
+function drawKaneSilhouette(sx, sy) {
+  // Late-50s real-estate developer in expensive suits. Tall, slightly stooped,
+  // grey hair slicked back. Always rendered as a silhouette — never throws a
+  // punch onscreen.
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.beginPath(); X.ellipse(sx, sy + 4, 14, 4, 0, 0, Math.PI*2); X.fill();
+  // Trousers.
+  X.fillStyle = "#1a1820";
+  X.fillRect(sx - 7, sy - 20, 6, 24);
+  X.fillRect(sx + 1, sy - 20, 6, 24);
+  // Suit jacket — wider than the body to suggest expensive cut.
+  X.fillStyle = "#22202c";
+  X.fillRect(sx - 11, sy - 44, 22, 26);
+  X.fillStyle = "#3a3848";
+  X.fillRect(sx - 11, sy - 44, 22, 1);
+  // Shirt + tie.
+  X.fillStyle = "#dcd6c4";
+  X.fillRect(sx - 3, sy - 44, 6, 12);
+  X.fillStyle = "#5a1018";
+  X.fillRect(sx - 1, sy - 42, 2, 12);
+  // Pocket square.
+  X.fillStyle = "#cfa040";
+  X.fillRect(sx + 5, sy - 36, 3, 2);
+  // Head.
+  X.fillStyle = "#b88c64";
+  X.fillRect(sx - 6, sy - 60, 12, 14);
+  // Hair.
+  X.fillStyle = "#6a6a64";
+  X.fillRect(sx - 6, sy - 60, 12, 4);
+  X.fillStyle = "#4a4a44";
+  X.fillRect(sx - 6, sy - 56, 12, 1);
+  // Calm, narrow eyes.
+  X.fillStyle = "#1a1410";
+  X.fillRect(sx - 3, sy - 53, 2, 1);
+  X.fillRect(sx + 1, sy - 53, 2, 1);
+  // Shoes.
+  X.fillStyle = "#0a0a0e";
+  X.fillRect(sx - 8, sy + 4, 7, 3);
+  X.fillRect(sx + 1, sy + 4, 7, 3);
 }
 
 function updateVictory(dt) {
@@ -4320,6 +5144,58 @@ const STAGES = [
       [["rig", 480, 300], ["dojo", 580, 320]],
     ],
     boss: null,
+  },
+  { // 6
+    name: "UPTOWN",
+    drawBg: function() { drawStageUptown(); },
+    waves: [
+      [["lamplight", 560, 300], ["dojo", 460, 320]],
+      [["dojo", 480, 290], ["dojo", 580, 320]],
+      [["lamplight", 600, 285], ["chains", 460, 320]],
+    ],
+    boss: "razor",
+  },
+  { // 7
+    name: "THE WORKS",
+    drawBg: function() { drawStageWorks(); },
+    hazard: "molten",
+    waves: [
+      [["tank", 480, 300], ["rig", 580, 320]],
+      [["rig", 480, 290], ["tank", 580, 320]],
+      [["rig", 460, 295], ["rig", 580, 318]],
+    ],
+    boss: null,
+  },
+  { // 8
+    name: "THE FREEWAY",
+    drawBg: function() { drawStageFreeway(); },
+    hazard: "cars",
+    waves: [
+      [["chains", 480, 300], ["slice", 580, 320]],
+      [["lamplight", 600, 290], ["slice", 460, 320]],
+      [["chains", 460, 295], ["chains", 580, 320]],
+    ],
+    boss: null,
+  },
+  { // 9
+    name: "THE TOWER",
+    drawBg: function() { drawStageTower(); },
+    waves: [
+      [["dojo", 480, 295], ["lamplight", 580, 320]],
+      [["rig", 460, 290], ["dojo", 580, 320]],
+      [["rig", 460, 295], ["rig", 580, 320]],
+    ],
+    boss: "volt",
+  },
+  { // 10
+    name: "THE TOP",
+    drawBg: function() { drawStageTop(); },
+    waves: [
+      [["dojo", 480, 295], ["dojo", 580, 320]],
+      [["rig", 460, 290], ["rig", 580, 320]],
+    ],
+    boss: "blackwell",
+    finalQte: true, // after the boss is felled, fire the Kane cinematic
   },
 ];
 
@@ -4418,6 +5294,8 @@ function updatePlaying(dt) {
         enemies = enemies.concat([boss]);
         flashFrames = Math.max(flashFrames, 6);
         spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
+      } else if (stage && stage.finalQte) {
+        beginKaneCinematic();
       } else {
         beginStageClear();
       }
@@ -4500,8 +5378,68 @@ function applyStageHazards(dt) {
         hw: 6, hd: 6, damage: 4, knockback: 40, hitstop: 2,
         hits: new Set(),
       }, null);
-      // Splash particle.
       spawnSparkle(player.x, RIVER_WATER_TOP);
+    }
+  } else if (stage.hazard === "molten") {
+    // Stepping past STAGE_TOP into the back lane near the molten line burns.
+    if (player.y <= STAGE_TOP + 6 && player.iframes <= 0 && !player.dodging) {
+      player.y = STAGE_TOP + 8;
+      applyHit(player, {
+        cx: player.x, cy: player.y,
+        hw: 6, hd: 6, damage: 5, knockback: 60, hitstop: 2,
+        hits: new Set(),
+      }, null);
+      // Ember particles.
+      for (let i = 0; i < 3; i++) {
+        const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
+        particles.push({
+          kind: "petal", x: player.x, y: STAGE_TOP - 2,
+          vx: Math.cos(ang) * 40, vy: Math.sin(ang) * 60,
+          life: 0, max: 0.4,
+          core: "rgba(255,200,90,1)", edge: "rgba(255,80,30,0.9)",
+        });
+      }
+    }
+  } else if (stage.hazard === "cars") {
+    updateFreewayHazard(dt);
+  }
+}
+
+// FREEWAY hazard: cars pulse across the play strip. Spawns from off-screen at
+// random intervals; collides with the player as a heavy hit; despawns past
+// the far edge.
+let freewayCarSpawnTimer = 0;
+function updateFreewayHazard(dt) {
+  freewayCarSpawnTimer -= dt;
+  if (freewayCarSpawnTimer <= 0) {
+    freewayCarSpawnTimer = 1.6 + Math.random() * 1.6;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const lane = STAGE_TOP + 6 + Math.floor(Math.random() * 3) * 26;
+    const colors = ["#a83040", "#3a4060", "#7a3030", "#cfa040", "#3a6b66"];
+    freewayCars.push({
+      x: dir > 0 ? -64 : W + 8,
+      y: lane,
+      vx: dir * (180 + Math.random() * 60),
+      dir,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  for (let i = freewayCars.length - 1; i >= 0; i--) {
+    const c = freewayCars[i];
+    c.x += c.vx * dt;
+    if (c.x < -120 || c.x > W + 120) { freewayCars.splice(i, 1); continue; }
+    // Collision with player.
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+      if (player.x > c.x - 4 && player.x < c.x + 60 &&
+          Math.abs(player.y - (c.y + 7)) < 14) {
+        applyHit(player, {
+          cx: c.x + 28, cy: c.y + 7,
+          hw: 28, hd: 7, damage: 18, knockback: 200, hitstop: 7,
+          hits: new Set(),
+        }, null);
+        shakeFrames = Math.max(shakeFrames, 12);
+        shakeMag    = Math.max(shakeMag, 5);
+      }
     }
   }
 }
@@ -4512,6 +5450,7 @@ function render() {
   X.fillRect(0, 0, W, H);
   if (STATE === "title") renderTitle();
   else if (STATE === "playing") renderPlaying();
+  else if (STATE === "cinematic") renderCinematic();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
