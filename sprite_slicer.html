@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sprite Slicer — THE BLOCK</title>
+<style>
+  :root {
+    --bg: #0e0e16;
+    --bg-2: #181824;
+    --fg: #ddd;
+    --muted: #888;
+    --accent: #e8c04a;
+    --accent-dim: #b89426;
+    --olive: #7d8d4f;
+    --red: #a83040;
+    --blue: #5a6678;
+    --grid: rgba(232, 192, 74, 0.5);
+    --grid-hot: rgba(232, 192, 74, 1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-monospace, "Menlo", "Consolas", monospace;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 280px;
+  }
+  header {
+    grid-column: 1 / 3;
+    background: var(--bg-2);
+    border-bottom: 1px solid #2a2a36;
+    padding: 8px 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    margin-right: 12px;
+  }
+  header label { font-size: 11px; color: var(--muted); }
+  header input[type="number"], header input[type="text"] {
+    background: #0a0a12;
+    border: 1px solid #2a2a36;
+    color: var(--fg);
+    padding: 3px 6px;
+    width: 56px;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  header input[type="text"] { width: 90px; }
+  header button {
+    background: var(--accent);
+    color: #1a1410;
+    border: 0;
+    padding: 5px 10px;
+    font: bold 11px ui-monospace, monospace;
+    cursor: pointer;
+  }
+  header button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+  }
+  header button:hover { filter: brightness(1.1); }
+  #canvas-wrap {
+    background: #050508;
+    overflow: auto;
+    position: relative;
+  }
+  #canvas-wrap canvas {
+    image-rendering: pixelated;
+    display: block;
+    margin: 16px;
+  }
+  aside {
+    background: var(--bg-2);
+    border-left: 1px solid #2a2a36;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  aside h2 {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    margin: 0 0 6px;
+  }
+  .anim-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .anim-row:hover { background: #2a2a36; }
+  .anim-row.active { background: rgba(232,192,74,0.16); color: var(--accent); }
+  .anim-row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .anim-row .count { color: var(--muted); }
+  .anim-row .x { color: var(--red); cursor: pointer; padding: 0 4px; }
+  .anim-row .x:hover { color: #fff; }
+  #frames {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 32px);
+    gap: 4px;
+    margin-top: 6px;
+  }
+  #frames .frame {
+    width: 32px; height: 32px;
+    background: #0a0a12;
+    border: 1px solid #2a2a36;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: var(--muted);
+  }
+  #frames .frame.in-anim {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  footer {
+    grid-column: 1 / 3;
+    background: var(--bg-2);
+    border-top: 1px solid #2a2a36;
+    padding: 8px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  footer .spacer { flex: 1; }
+  textarea {
+    width: 100%;
+    background: #0a0a12;
+    color: var(--fg);
+    border: 1px solid #2a2a36;
+    font-family: inherit;
+    font-size: 10px;
+    height: 80px;
+    margin-top: 4px;
+  }
+  .hint {
+    background: #1a1a26;
+    color: var(--accent);
+    padding: 4px 8px;
+    border-left: 3px solid var(--accent);
+    font-size: 10px;
+    margin: 4px 0;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>SPRITE SLICER</h1>
+    <input type="file" id="file" accept="image/png,image/jpeg" />
+    <label>frame W <input type="number" id="fw" value="32" min="1" /></label>
+    <label>frame H <input type="number" id="fh" value="48" min="1" /></label>
+    <label>fps <input type="number" id="fps" value="8" min="1" /></label>
+    <label>zoom <input type="number" id="zoom" value="2" min="1" max="8" /></label>
+    <button id="export">EXPORT ATLAS JSON</button>
+    <button id="copy" class="ghost">COPY JSON</button>
+    <button id="load_json" class="ghost">LOAD JSON</button>
+    <input type="file" id="loadfile" accept="application/json" style="display:none">
+  </header>
+
+  <section id="canvas-wrap">
+    <canvas id="c"></canvas>
+  </section>
+
+  <aside>
+    <h2>ANIMATIONS</h2>
+    <div style="display:flex; gap:4px; margin-bottom:6px;">
+      <input type="text" id="newanim" placeholder="anim name" style="flex:1; padding:3px 6px; background:#0a0a12; color:var(--fg); border:1px solid #2a2a36; font:11px ui-monospace, monospace;">
+      <button id="addanim" class="ghost" style="font-size:10px;">ADD</button>
+    </div>
+    <div id="anim-list"></div>
+    <h2 style="margin-top:14px;">CURRENT FRAMES</h2>
+    <div id="current-frames"></div>
+    <h2 style="margin-top:14px;">PREVIEW</h2>
+    <canvas id="preview" width="64" height="96" style="background:#0a0a12; border:1px solid #2a2a36; image-rendering:pixelated; width:96px; height:144px;"></canvas>
+    <div class="hint">Click a frame on the sheet to add it to the active animation. Right-click a frame to remove the last instance.</div>
+  </aside>
+
+  <footer>
+    <span id="status">load a sprite sheet to begin.</span>
+    <span class="spacer"></span>
+    <span id="counts"></span>
+  </footer>
+
+<script>
+"use strict";
+
+const STD_ANIMS = [
+  "idle","walk","run","jump",
+  "atk1","atk2","atk3","heavy","jump_atk","back_atk",
+  "special","throw","counter","hurt","dodge",
+];
+
+let img = null;
+let imgName = "spritesheet";
+let fw = 32, fh = 48, fps = 8, zoom = 2;
+let anims = {};       // { animName: ["frame_00_00", ...] }
+let activeAnim = null;
+const C = document.getElementById("c");
+const X = C.getContext("2d");
+const PV = document.getElementById("preview");
+const PVX = PV.getContext("2d");
+let previewIdx = 0;
+let previewTime = 0;
+
+function readDims() {
+  fw   = parseInt(document.getElementById("fw").value)   || 32;
+  fh   = parseInt(document.getElementById("fh").value)   || 48;
+  fps  = parseInt(document.getElementById("fps").value)  || 8;
+  zoom = Math.max(1, parseInt(document.getElementById("zoom").value) || 2);
+}
+
+function frameAt(col, row) {
+  return "frame_" + String(row).padStart(2, "0") + "_" + String(col).padStart(2, "0");
+}
+
+function ensureAnim(name) {
+  if (!anims[name]) anims[name] = [];
+  if (!activeAnim) activeAnim = name;
+  renderUI();
+}
+
+function setActive(name) {
+  activeAnim = name;
+  renderUI();
+}
+
+function deleteAnim(name) {
+  delete anims[name];
+  if (activeAnim === name) activeAnim = Object.keys(anims)[0] || null;
+  renderUI();
+}
+
+function addFrameToActive(frameName) {
+  if (!activeAnim) {
+    activeAnim = "idle";
+    if (!anims[activeAnim]) anims[activeAnim] = [];
+  }
+  anims[activeAnim].push(frameName);
+  renderUI();
+}
+
+function popFrameFromActive() {
+  if (!activeAnim || !anims[activeAnim]) return;
+  anims[activeAnim].pop();
+  renderUI();
+}
+
+function buildAtlas() {
+  if (!img) return null;
+  const cols = Math.floor(img.naturalWidth  / fw);
+  const rows = Math.floor(img.naturalHeight / fh);
+  const frames = {};
+  // Only include frames that are actually referenced by some animation.
+  const used = new Set();
+  for (const list of Object.values(anims)) for (const fr of list) used.add(fr);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const name = frameAt(c, r);
+      if (used.has(name)) {
+        frames[name] = { x: c * fw, y: r * fh, w: fw, h: fh };
+      }
+    }
+  }
+  return {
+    fps,
+    frames,
+    anims: JSON.parse(JSON.stringify(anims)),
+    anchor: { x: 0.5, y: 1.0 },
+  };
+}
+
+function exportJSON() {
+  const atlas = buildAtlas();
+  if (!atlas) { alert("Load a sprite sheet first."); return; }
+  const blob = new Blob([JSON.stringify(atlas, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = imgName.replace(/\.[^.]+$/, "") + "_atlas.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  status("exported atlas (" + Object.keys(atlas.frames).length + " frames)");
+}
+
+function copyJSON() {
+  const atlas = buildAtlas();
+  if (!atlas) { alert("Load a sprite sheet first."); return; }
+  const txt = JSON.stringify(atlas, null, 2);
+  navigator.clipboard.writeText(txt).then(
+    () => status("copied " + txt.length + " chars to clipboard"),
+    () => status("clipboard copy failed; use EXPORT instead"),
+  );
+}
+
+function status(s) { document.getElementById("status").textContent = s; }
+
+function renderUI() {
+  // Anim list
+  const list = document.getElementById("anim-list");
+  list.innerHTML = "";
+  const names = Object.keys(anims);
+  // Sort with required anims first.
+  names.sort((a, b) => {
+    const ia = STD_ANIMS.indexOf(a), ib = STD_ANIMS.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a < b ? -1 : 1;
+  });
+  for (const n of names) {
+    const row = document.createElement("div");
+    row.className = "anim-row" + (n === activeAnim ? " active" : "");
+    row.innerHTML = '<span class="name"></span><span class="count"></span><span class="x">×</span>';
+    row.querySelector(".name").textContent = n;
+    row.querySelector(".count").textContent = anims[n].length + "f";
+    row.onclick = (e) => {
+      if (e.target.classList.contains("x")) deleteAnim(n);
+      else setActive(n);
+    };
+    list.appendChild(row);
+  }
+  // Current frames in active anim.
+  const cf = document.getElementById("current-frames");
+  cf.innerHTML = "";
+  if (activeAnim && anims[activeAnim]) {
+    for (let i = 0; i < anims[activeAnim].length; i++) {
+      const fr = anims[activeAnim][i];
+      const div = document.createElement("div");
+      div.style.cssText = "display:flex; align-items:center; gap:6px; font-size:10px; padding:2px 0;";
+      div.innerHTML = '<span class="idx" style="color:var(--muted); width:18px;">' + i + '</span>' +
+                      '<span class="fname" style="flex:1; color:var(--fg);"></span>' +
+                      '<span class="del" style="color:var(--red); cursor:pointer;">×</span>';
+      div.querySelector(".fname").textContent = fr;
+      div.querySelector(".del").onclick = () => {
+        anims[activeAnim].splice(i, 1);
+        renderUI();
+      };
+      cf.appendChild(div);
+    }
+  }
+  document.getElementById("counts").textContent =
+    Object.keys(anims).length + " anims · " +
+    Object.values(anims).reduce((a, b) => a + b.length, 0) + " frame slots";
+  drawCanvas();
+}
+
+function drawCanvas() {
+  if (!img) {
+    C.width = 320; C.height = 200;
+    X.fillStyle = "#1a1a26"; X.fillRect(0, 0, C.width, C.height);
+    X.fillStyle = "#666";
+    X.font = "11px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.fillText("drop or pick a PNG sprite sheet", C.width / 2, C.height / 2);
+    return;
+  }
+  readDims();
+  C.width  = img.naturalWidth  * zoom;
+  C.height = img.naturalHeight * zoom;
+  X.imageSmoothingEnabled = false;
+  X.drawImage(img, 0, 0, C.width, C.height);
+  // Grid.
+  const cols = Math.floor(img.naturalWidth  / fw);
+  const rows = Math.floor(img.naturalHeight / fh);
+  X.strokeStyle = "rgba(232,192,74,0.45)";
+  X.lineWidth = 1;
+  for (let i = 0; i <= cols; i++) {
+    X.beginPath();
+    X.moveTo(i * fw * zoom + 0.5, 0);
+    X.lineTo(i * fw * zoom + 0.5, rows * fh * zoom);
+    X.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    X.beginPath();
+    X.moveTo(0, j * fh * zoom + 0.5);
+    X.lineTo(cols * fw * zoom, j * fh * zoom + 0.5);
+    X.stroke();
+  }
+  // Highlight frames in active anim.
+  if (activeAnim && anims[activeAnim]) {
+    X.strokeStyle = "rgba(232,192,74,1)";
+    X.lineWidth = 2;
+    for (const frameName of anims[activeAnim]) {
+      const m = frameName.match(/frame_(\d+)_(\d+)/);
+      if (!m) continue;
+      const r = +m[1], c = +m[2];
+      X.strokeRect(c * fw * zoom + 1, r * fh * zoom + 1, fw * zoom - 2, fh * zoom - 2);
+    }
+  }
+  // Frame indices in any anim.
+  X.fillStyle = "rgba(0,0,0,0.6)";
+  X.strokeStyle = "rgba(232,192,74,0.5)";
+  X.lineWidth = 1;
+  const used = new Set();
+  for (const list of Object.values(anims)) for (const fr of list) used.add(fr);
+  for (const fr of used) {
+    const m = fr.match(/frame_(\d+)_(\d+)/);
+    if (!m) continue;
+    const r = +m[1], c = +m[2];
+    X.strokeRect(c * fw * zoom + 0.5, r * fh * zoom + 0.5, fw * zoom - 1, fh * zoom - 1);
+  }
+}
+
+function clickAt(e) {
+  if (!img) return;
+  const rect = C.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) / zoom;
+  const cy = (e.clientY - rect.top)  / zoom;
+  const c = Math.floor(cx / fw);
+  const r = Math.floor(cy / fh);
+  if (c < 0 || r < 0) return;
+  const cols = Math.floor(img.naturalWidth  / fw);
+  const rows = Math.floor(img.naturalHeight / fh);
+  if (c >= cols || r >= rows) return;
+  const name = frameAt(c, r);
+  if (e.button === 2) {
+    if (activeAnim && anims[activeAnim]) {
+      const last = anims[activeAnim].lastIndexOf(name);
+      if (last !== -1) anims[activeAnim].splice(last, 1);
+    }
+  } else {
+    addFrameToActive(name);
+  }
+  renderUI();
+}
+
+C.addEventListener("click", clickAt);
+C.addEventListener("contextmenu", (e) => { e.preventDefault(); clickAt(e); });
+
+// Drag & drop / file input.
+document.getElementById("file").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (f) loadImageFile(f);
+});
+document.body.addEventListener("dragover", (e) => { e.preventDefault(); });
+document.body.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith("image/")) loadImageFile(f);
+});
+
+function loadImageFile(f) {
+  imgName = f.name;
+  const url = URL.createObjectURL(f);
+  const i = new Image();
+  i.onload = () => {
+    img = i;
+    URL.revokeObjectURL(url);
+    status("loaded " + f.name + " (" + i.naturalWidth + "×" + i.naturalHeight + ")");
+    // If no anims yet, pre-create the standard slots.
+    if (Object.keys(anims).length === 0) {
+      for (const n of STD_ANIMS) anims[n] = [];
+      activeAnim = "idle";
+    }
+    renderUI();
+  };
+  i.src = url;
+}
+
+// JSON load (resume editing an existing atlas).
+document.getElementById("load_json").addEventListener("click", () => {
+  document.getElementById("loadfile").click();
+});
+document.getElementById("loadfile").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  f.text().then((t) => {
+    try {
+      const data = JSON.parse(t);
+      anims = data.anims || {};
+      if (data.fps) document.getElementById("fps").value = data.fps;
+      activeAnim = Object.keys(anims)[0] || null;
+      renderUI();
+      status("loaded " + Object.keys(anims).length + " anims from " + f.name);
+    } catch (err) { status("invalid JSON: " + err.message); }
+  });
+});
+
+// Add new anim.
+document.getElementById("addanim").addEventListener("click", () => {
+  const v = document.getElementById("newanim").value.trim();
+  if (!v) return;
+  ensureAnim(v);
+  document.getElementById("newanim").value = "";
+});
+document.getElementById("newanim").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("addanim").click();
+});
+
+document.getElementById("export").addEventListener("click", exportJSON);
+document.getElementById("copy").addEventListener("click", copyJSON);
+
+// Live re-render on dimension changes.
+for (const id of ["fw","fh","fps","zoom"]) {
+  document.getElementById(id).addEventListener("input", () => { readDims(); renderUI(); });
+}
+
+// Preview animation playback.
+function tickPreview() {
+  PVX.fillStyle = "#0a0a12";
+  PVX.fillRect(0, 0, PV.width, PV.height);
+  if (img && activeAnim && anims[activeAnim] && anims[activeAnim].length > 0) {
+    previewTime += 1 / 60;
+    const idx = Math.floor(previewTime * fps) % anims[activeAnim].length;
+    previewIdx = idx;
+    const fr = anims[activeAnim][idx];
+    const m = fr.match(/frame_(\d+)_(\d+)/);
+    if (m) {
+      const r = +m[1], c = +m[2];
+      PVX.imageSmoothingEnabled = false;
+      PVX.drawImage(img,
+        c * fw, r * fh, fw, fh,
+        (PV.width - fw) / 2,
+        (PV.height - fh) / 2,
+        fw, fh);
+    }
+  }
+  requestAnimationFrame(tickPreview);
+}
+requestAnimationFrame(tickPreview);
+
+renderUI();
+</script>
+</body>
+</html>
