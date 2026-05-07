@@ -363,9 +363,51 @@ const RIO_COLORS = {
   pantsDark:  "#0e0e15",
   boot:       "#0a0a10",
   wraps:      "#dcd6c4",
+  bandanaHi:  "#ffd76a",
   bandana:    "#e8c04a",
   bandanaDark:"#b89426",
 };
+
+// Bandana renderer: 7w x 3h block (hi / mid / shadow rows). Camera-side wrist anchor.
+// During the punch arc, trails two fading ghosts behind the wrist for motion.
+function drawBandana(sx, torsoY, f, atkReach, armSwing, k) {
+  // Anchor wrist x in screen space, on the camera-side wrist.
+  let wx, wy;
+  if (atkReach > 0) {
+    // Punching: ride the front-arm fist forward.
+    wy = torsoY + 6;
+    wx = (f > 0) ? sx + 4 + atkReach - 1 : sx - 3 - atkReach - 6;
+    // Trailing ghosts (only when arm is meaningfully extended).
+    if (atkReach > 4) {
+      const trailDir = -f;
+      X.fillStyle = "rgba(232,192,74,0.55)";
+      X.fillRect(wx + trailDir * 4, wy + 1, 6, 2);
+      X.fillStyle = "rgba(232,192,74,0.28)";
+      X.fillRect(wx + trailDir * 8, wy + 1, 5, 2);
+    }
+  } else {
+    // Idle/walk: bandana hangs at hip-line on the front-arm wrist.
+    wy = torsoY + 11 - Math.round(armSwing);
+    wx = (f > 0) ? sx + 5 : sx - 11;
+  }
+  // Body — 7 wide, 3 tall.
+  X.fillStyle = k.bandanaHi;
+  X.fillRect(wx, wy, 7, 1);
+  X.fillStyle = k.bandana;
+  X.fillRect(wx, wy + 1, 7, 1);
+  X.fillStyle = k.bandanaDark;
+  X.fillRect(wx, wy + 2, 7, 1);
+  // Two-pixel knot tail dangling on the camera-out side.
+  X.fillStyle = k.bandana;
+  if (atkReach > 0) {
+    // Pointing forward during punch.
+    if (f > 0) X.fillRect(wx + 7, wy + 1, 2, 1);
+    else       X.fillRect(wx - 2, wy + 1, 2, 1);
+  } else {
+    if (f > 0) X.fillRect(wx + 7, wy + 2, 2, 1);
+    else       X.fillRect(wx - 2, wy + 2, 2, 1);
+  }
+}
 
 function drawRio(p) {
   const sx = Math.round(p.x);
@@ -473,31 +515,11 @@ function drawRio(p) {
     X.fillRect(frontWristX, torsoY + 12 - Math.round(armSwing), 3, 3);
   }
 
-  // Yellow bandana — Rio's left wrist. Always visible regardless of facing.
-  // "Her left" = our right when she faces us (faces left, f=-1); our left when she faces right.
-  // We render it on whichever screen-side corresponds to her left wrist.
-  // To keep it always visible, draw it on the FRONT wrist side (camera side).
-  X.fillStyle = k.bandana;
-  if (atkReach > 0 && ((f > 0))) {
-    // Bandana flies forward with extending front arm if Rio is throwing the punch with that hand.
-    X.fillRect(sx + 4 + atkReach - 1, torsoY + 7, 5, 2);
-    X.fillStyle = k.bandanaDark;
-    X.fillRect(sx + 4 + atkReach - 1, torsoY + 9, 5, 1);
-  } else if (atkReach > 0 && f < 0) {
-    X.fillRect(sx - 3 - atkReach - 2, torsoY + 7, 5, 2);
-    X.fillStyle = k.bandanaDark;
-    X.fillRect(sx - 3 - atkReach - 2, torsoY + 9, 5, 1);
-  } else {
-    if (f > 0) {
-      X.fillRect(sx + 5, torsoY + 11 - Math.round(armSwing), 5, 2);
-      X.fillStyle = k.bandanaDark;
-      X.fillRect(sx + 5, torsoY + 13 - Math.round(armSwing), 5, 1);
-    } else {
-      X.fillRect(sx - 10, torsoY + 11 - Math.round(armSwing), 5, 2);
-      X.fillStyle = k.bandanaDark;
-      X.fillRect(sx - 10, torsoY + 13 - Math.round(armSwing), 5, 1);
-    }
-  }
+  // Yellow bandana — Rio's left wrist signature. Spec: must always be visible.
+  // Drawn on the camera-side (front) wrist regardless of facing, so it never hides
+  // behind the body. During the punch arc it rides the extending fist with a 2-step
+  // trailing ghost so the eye tracks it.
+  drawBandana(sx, torsoY, f, atkReach, armSwing, k);
 
   // Head.
   X.fillStyle = k.skin;
