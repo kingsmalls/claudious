@@ -431,6 +431,16 @@ const PARRY_HEAL_HP  = 3;         // perfect-parry heal at chain >= 2
 const PARRY_PERFECT_BONUS = 1.75; // counter damage multiplier
 const PARRY_PERFECT_HITSTOP = 14; // extended hitstop reads as slow-mo
 
+// Combo milestones — celebratory words above the player as the chain crosses
+// each threshold. Calibrated to feel earned, not constant.
+const COMBO_MILESTONES = [
+  { n: 5,  text: "NICE!"     },
+  { n: 10, text: "AWESOME!"  },
+  { n: 15, text: "BRUTAL!"   },
+  { n: 20, text: "INSANE!"   },
+  { n: 30, text: "RUTHLESS!" },
+];
+
 // ---------- Player ----------
 let player = null;
 
@@ -2024,19 +2034,49 @@ function drawParryHUD() {
   }
 }
 
-// Compact combo counter under the HP bar — fades quickly when comboTimer expires.
+// Combo counter + draining meter under the HP bar. Pulses red when about to drop.
 function drawComboCounter() {
   const p = player;
-  const fade = Math.min(1, p.comboTimer / 0.4);
   const cx = W / 2;
   const cy = 30;
-  X.font = "bold 18px ui-monospace, monospace";
+  const fade = Math.min(1, p.comboTimer / 0.4);
+  const sizeBase = 18;
+  // Larger and bolder for higher combo counts.
+  const sz = sizeBase + Math.min(10, Math.floor(p.comboHits / 5) * 2);
+  X.font = "bold " + sz + "px ui-monospace, monospace";
   X.textAlign = "center";
   X.textBaseline = "alphabetic";
-  X.fillStyle = "rgba(0,0,0," + (0.7 * fade).toFixed(2) + ")";
+  X.fillStyle = "rgba(0,0,0," + (0.75 * fade).toFixed(2) + ")";
   X.fillText(p.comboHits + " HIT", cx + 1, cy + 1);
-  X.fillStyle = "rgba(232,192,74," + fade.toFixed(2) + ")";
+  // Color shifts as combo grows: olive → bandana yellow → white-hot red on close.
+  const grade =
+    p.comboHits >= 20 ? "#ff6248" :
+    p.comboHits >= 10 ? "#ffd76a" :
+    p.comboHits >= 5  ? "#e8c04a" :
+                        "#aaa";
+  X.fillStyle = grade;
+  X.globalAlpha = fade;
   X.fillText(p.comboHits + " HIT", cx, cy);
+  X.globalAlpha = 1;
+
+  // Combo timer meter — drains over 1.4 s. Red pulse when under 0.4 s.
+  const maxT = 1.4;
+  const tPct = Math.max(0, p.comboTimer / maxT);
+  const mw = 60, mh = 3;
+  const mx = cx - mw / 2, my = cy + 6;
+  X.fillStyle = "rgba(0,0,0,0.5)";
+  X.fillRect(mx - 1, my - 1, mw + 2, mh + 2);
+  // Background under the bar.
+  X.fillStyle = "#241010";
+  X.fillRect(mx, my, mw, mh);
+  // Fill — pulses red when window closing.
+  if (p.comboTimer < 0.4) {
+    const pulse = 0.5 + 0.5 * Math.sin(stateTime * Math.PI * 12);
+    X.fillStyle = "rgba(255," + Math.round(80 + 40 * pulse) + ",80,1)";
+  } else {
+    X.fillStyle = grade;
+  }
+  X.fillRect(mx, my, Math.round(mw * tPct), mh);
 }
 
 // ---------- DEV: hitbox / hurtbox visualizer ----------
@@ -2616,17 +2656,56 @@ function applyHit(target, hb, attacker) {
     target.hitstun = 0;
     target.airborne = false;
   }
-  if (hitstopFrames < (hb.hitstop || 3)) hitstopFrames = hb.hitstop || 3;
+  // Scaled hit feel: hitstop and shake grow with damage and combo count, capped
+  // at +50%% by 10 hits. Heavy single hits already feel punchier (high base hitstop)
+  // and 10+ hit combos add noticeable rumble.
+  const combo = (player && attacker === player) ? player.comboHits : 0;
+  const comboMul = 1 + Math.min(0.5, combo * 0.05);
+  const baseHs = hb.hitstop || 3;
+  const scaledHs = Math.round(baseHs * comboMul);
+  if (hitstopFrames < scaledHs) hitstopFrames = scaledHs;
+
+  // Screen shake — tier by damage. Big hits rumble; combo extends duration.
+  const shakeBase = Math.min(7, Math.max(2, Math.round(hb.damage / 4)));
+  const shakeBoost = Math.min(3, Math.floor(combo / 5));
+  if (shakeFrames < shakeBase + shakeBoost * 2) shakeFrames = shakeBase + shakeBoost * 2;
+  if (shakeMag    < shakeBase * 0.6 + shakeBoost) shakeMag    = shakeBase * 0.6 + shakeBoost;
+
   // Combo accounting — only when the player is the attacker.
   if (player && attacker === player) {
+    const before = player.comboHits;
     player.comboHits++;
     player.comboTimer = 1.4;
+    // Milestone celebrations as the combo grows.
+    const milestones = COMBO_MILESTONES;
+    for (let i = 0; i < milestones.length; i++) {
+      const m = milestones[i];
+      if (before < m.n && player.comboHits >= m.n) {
+        spawnMilestone(player.x, player.y - 56, m.text);
+        if (shakeFrames < 12) shakeFrames = 12;
+        if (shakeMag    < 4)  shakeMag    = 4;
+        flashFrames = Math.max(flashFrames, 2);
+        break;
+      }
+    }
   }
   // Visuals.
   const sxp = (target.x + hb.cx) / 2;
   const syp = target.y - 18;
   spawnSparkle(sxp, syp);
   spawnDmgNumber(sxp, syp - 6, hb.damage);
+  // Bigger hits get extra spark petals.
+  if (hb.damage >= 12) {
+    for (let i = 0; i < 3; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      particles.push({
+        kind: "petal", x: sxp + Math.cos(ang) * 6, y: syp + Math.sin(ang) * 6,
+        vx: Math.cos(ang) * 30, vy: Math.sin(ang) * 30,
+        life: 0, max: 0.28,
+        core: "rgba(255,240,180,1)", edge: "rgba(255,160,60,0.9)",
+      });
+    }
+  }
 }
 
 // Resolve a throw: launch the grabbed enemy in the chosen direction with damage.

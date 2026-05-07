@@ -489,6 +489,30 @@ function peek(expr) {
               "e0.airborne=", peek("enemies[0] && enemies[0].airborne"));
   snapshot("28_atlas_special");
 
+  // ---- MILESTONE WORD: NICE! at hit #5 ----
+  press("Escape"); step(2);
+  press("Digit1"); step(2);
+  press("Enter");  step(2);
+  window.eval(
+    "enemies[0].x = player.x + 22; enemies[0].y = player.y;" +
+    "enemies[0].aiCooldown = 5; enemies[0].hp = 9999;" +
+    "enemies[1].dead = true; enemies[1].deathTimer = 100;" +
+    "player.comboHits = 4; player.comboTimer = 1.4;"
+  );
+  press("KeyJ"); step(7);
+  console.log("milestone NICE: comboHits =", peek("player.comboHits"));
+  snapshot("29_milestone_nice");
+
+  // ---- MILESTONE WORD: AWESOME! at hit #10 ----
+  window.eval(
+    "enemies[0].iframes = 0; enemies[0].hitstun = 0;" +
+    "player.comboHits = 9; player.comboTimer = 1.4;"
+  );
+  step(20);
+  press("KeyJ"); step(7);
+  console.log("milestone AWESOME: comboHits =", peek("player.comboHits"));
+  snapshot("30_milestone_awesome");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
