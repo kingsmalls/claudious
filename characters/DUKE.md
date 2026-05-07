@@ -56,104 +56,144 @@ eye whites          #f0f0f0
 - **Half-grin on heavy hits.** A pinched expression on the Rolling Thunder haymaker — like he's enjoying it despite himself.
 - **The cigarette never moves.** Even during KO. It's the joke.
 
-## Animations (per slot)
+## Animations (per slot — pose + key pose details)
 
-### `idle` (4 frames, 6 fps)
-- F1, 3: weight on left leg (the good one), right leg slightly bent and forward.
-- F2, 4: weight subtly shifts. Shoulders rise/fall with breath.
-- Hands at lower-belly height, loosely fisted.
-- Cigarette behind camera-side ear.
+### `idle` (4 frames, loops, 6 fps)
+- F1: weight settled on the left leg (the good one), right leg bent 10° and slightly forward — bad knee never fully loaded. Hands at lower-belly height, loosely fisted (not raised — he guards with elbows).
+- F2: subtle weight shift, shoulders rise 1–2 px on inhale.
+- F3: weight back on left, mirror of F1.
+- F4: shoulders settle 1 px down on exhale, head dips 1 px.
+- **Cigarette** behind camera-side ear, never moves across the cycle.
+- **Wayward forehead strand** falls across the camera-side eye.
+- Mouth slightly parted, eyes half-lidded — the tired look is part of idle.
 
 ### `walk` (6 frames, 7 fps)
-- Slightly limping gait (right knee). Left leg strides normally, right leg follows with a half-second delay.
-- Arms swing economically, not exaggerated.
-- Body leans slightly forward.
+- 6-frame limping cycle. **Left leg strides cleanly; right leg drags 1 frame behind** — the limp.
+- F1: left foot strikes forward, right foot still planted.
+- F2: weight transfers, right foot lifts late.
+- F3: right foot mid-swing (shorter stride than left's).
+- F4: right foot strikes (shorter reach), left foot still planted.
+- F5: weight transfers, left foot lifts.
+- F6: left foot mid-swing (longer stride).
+- Arms swing economically — front arm moves opposite to leg, but the swing is small (no exaggerated ROM).
+- Body leans 5° forward, head bobbing 1 px on each strike.
+- **Cigarette stays put.** Hair strand hangs forward, sways 1 px on each strike.
 
 ### `run` (6 frames, 11 fps)
-- The limp is mostly absorbed at this speed but right leg's stride is slightly shorter than left's.
-- Arms pump, jacket flares open behind him.
-- Hair flops on the back-swing.
-- Frames 3 and 6 have speedlines.
+- Body forward 10°, longer strides than walk but the right-leg stride is still 1–2 px shorter than the left's.
+- F1, 4: foot strikes (alternating); F2–3, 5–6: in-air phases.
+- Arms pump harder than walk but still elbow-led, not full-shoulder.
+- Jacket flares open at the shoulders behind him — the cut-off frayed edges flap visibly.
+- Hair flops on each back-swing — wayward strand whips up off the forehead briefly.
+- **Frames 3 and 6:** 3-px horizontal speedlines behind each heel.
+- **Cigarette stays put** even at this speed — it's the running gag.
 
-### `jump` (3 frames)
-- F1: deep crouch with right leg loaded weaker.
-- F2: airborne, body slightly tucked, left leg leads.
-- F3: landing — favors the left leg on touch-down.
+### `jump` (3 frames, 8 fps — non-looping)
+- F1: deep crouch, right (bad) knee bent shallower than left — he loads with the left leg primarily. Both fists drop to hip level.
+- F2: airborne — body slightly tucked, **left leg leads**, right leg trails. Jacket flares open showing the t-shirt underneath.
+- F3: landing — touches down on the left leg first, right foot follows half a frame later. Body absorbs into a half-crouch.
+- **Cigarette stays put.** Hair strand whips upward at the apex.
 
 ### `atk1` — BOXING JAB (4 frames, 12 fps)
-- Standard boxer's jab. Front (left) hand, body twist minimal.
-- F1: load — front shoulder back 2px.
-- F2: extend — fist drives forward 14 px.
-- F3: peak — fist fully extended, knuckles vertical.
-- F4: snap-back — fist returns sharply (this is the boxing detail — the snap-back).
+- Classic boxer's lead jab — front (left) hand, minimal body twist, snap-quick.
+- F1: load — front shoulder pulls back 2 px, fist near the chin level. Eyes lock forward.
+- F2: extend — left fist drives forward ~14 px, body twist minimal (5°), back foot stays planted.
+- F3: peak — fist fully extended, knuckles vertical (boxing form), shoulder rolled forward to protect the chin.
+- F4: snap-back — fist retracts 80% of the way back sharply (the boxer detail; not a slow draw-back). Body returns to stance.
+- **Cigarette stays put** even on the snap-back.
 
-### `atk2` — CROSS (5 frames, 10 fps)
-- Right cross with full hip rotation.
-- F1: hip cocks back, weight shifts to back foot.
-- F2: hip drives, rear shoulder begins rotation.
-- F3: rear fist crosses center line.
-- F4: peak — fist 18 px forward, body fully rotated, weight on front foot.
-- F5: snap-back, returning to stance.
+### `atk2` — CROSS (5 frames, 11 fps)
+- Right cross with full hip rotation — Duke's weight transfer move.
+- F1: hip cocks back, weight shifts to back foot, right (rear) fist near jaw.
+- F2: hip drives forward, rear shoulder rotates — torque visibly winding.
+- F3: extend — rear fist crosses the center line, reaching ~18 px forward. Front (left) hand stays up at chin height for guard.
+- F4: peak — fist fully extended, body rotated 45°, weight on front foot. Mouth tightens 1 px (the rare focus expression).
+- F5: snap-back, body unwinds back to neutral stance. Hair strand settles back across the forehead.
 
-### `atk3` — HOOK + STOMP (6 frames, 10 fps)
-- Combo finisher. Front hand hooks while right foot stomps.
-- F1: load — body coils, front foot lifts slightly.
-- F2: stomp begins — foot drives down.
-- F3: hook arc — front fist swings horizontally inward.
-- F4: contact + stomp landing — small dust puff at the right foot (1–2 px brown specks).
-- F5: peak with body tilted forward.
-- F6: recovery.
+### `atk3` — HOOK + STOMP (6 frames, 11 fps) — combo finisher
+- Front hand hooks horizontally while the right foot stomps for power transfer.
+- F1: load — body coils, front foot lifts 2 px off the ground, left (front) fist at hip height.
+- F2: stomp wind-up — right foot drives downward.
+- F3: hook arc — left fist swings inward in a horizontal arc as the right foot lands.
+- F4: contact + stomp landing — fist at impact point, **dust puff at right foot** (1–2 px brown specks).
+- F5: follow-through — body tilted 10° forward, fist past the impact line, the half-grin appears for one frame.
+- F6: recovery — body unwinds back toward stance, hair strand falls back across forehead.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 9 fps)
-- F1: deep crouch, both fists at hip.
-- F2–3: front fist loads near belly.
-- F4: explosive rise — fist drives up.
-- F5: peak — body fully extended, fist overhead, **half-grin visible** (this is the moment).
-- F6: hold.
-- F7: recovery.
+- The launcher. Slow load, explosive rise — Duke putting his whole worn-out body into one shot.
+- F1: deep crouch — both knees bend, both fists at hip. The **bad right knee is visibly strained** (1 px tilt).
+- F2: load — front fist near belly, body coiled like a spring.
+- F3: rise begins — knees start straightening, fist starts climbing.
+- F4: drive — explosive vertical rise, front fist 16 px above the head height.
+- F5: peak — body fully extended skyward, fist directly above body line, **half-grin visible** (this is the moment — he's enjoying it despite himself).
+- F6: hold — pose held one extra frame for the launcher feel.
+- F7: recovery — body lowers back to stance, knees absorbing.
+- **Cigarette stays put** through the full extension.
 
-### `jump_atk` — DROP ELBOW (4 frames, 11 fps)
-- F1: airborne, elbow cocked overhead.
-- F2: descent — body angles down, elbow leading.
-- F3: peak — elbow at chest-of-imagined-target height, body angled 45° forward.
-- F4: recovery.
+### `jump_atk` — DROP ELBOW (4 frames, 10 fps)
+- Aerial elbow drop — uses gravity, not a kick.
+- F1: airborne, right elbow cocked overhead, body still rising.
+- F2: descent begins — body angles 30° forward, elbow leading the drop.
+- F3: peak impact — elbow at chest-of-imagined-target height, body 45° forward. Hair strand whips upward.
+- F4: recovery — body resets, elbow lowering toward landing.
+- **Cigarette stays put** even at the apex.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
-- Same beats as Rio but heavier; body rotates more.
+- Heavier rear-elbow strike than Rio's — Duke pivots more on the bad knee, so the move loads slow but lands hard.
+- F1: wind-up — body turns 30° toward the rear, right elbow lifts to shoulder height. Weight shifts to the left (good) leg.
+- F2: drive — elbow drives backward, right hip rotating with it.
+- F3: peak — elbow fully extended *behind* him, body twisted 60°, the half-grin briefly appears (1 frame).
+- F4: recovery — body unwinds back to stance, weight redistributing.
+- **Cigarette stays put** through the rotation.
 
 ### `special` — ROLLING THUNDER (12 frames, 11 fps)
-Three rapid forward elbows finishing with a haymaker.
-- F1: stance, body coils.
-- F2–F3: **first elbow** — left elbow drives forward 8 px with a short speedline (3 px streak behind the elbow).
-- F4–F5: **second elbow** — right elbow drives forward 10 px, body rotated. Speedline.
-- F6–F7: **third elbow** — left elbow again, deeper drive 12 px, body lower.
-- F8: load haymaker — body torques back, right fist way behind.
+The signature. Three rapid forward elbows finishing with a haymaker that ends fights.
+- F1: stance — body coils, hands at chin, weight loading on the left leg.
+- F2: **first elbow (left)** — left elbow drives forward 8 px, body rotates 15°. 3-px speedline streak behind the elbow.
+- F3: first elbow continues into the next windup, right arm drawing back.
+- F4: **second elbow (right)** — right elbow drives forward 10 px, body rotated 30° the other way. 4-px speedline.
+- F5: second elbow follow-through, body resetting toward forward.
+- F6: **third elbow (left)** — left elbow again, deeper drive 12 px, body lower (knees bend more), 5-px speedline. Hair strand whipping with each elbow.
+- F7: third elbow follow-through, body torquing far back to load the haymaker.
+- F8: haymaker load — body torques fully back, right fist drawn way behind the body. Mouth tightens.
 - F9: drive — body weight drops forward, right fist arcs in a downward overhand path.
-- F10: contact — fist at impact point, **dust puff at his feet** (2–3 brown pixels), face shows the half-grin.
-- F11: hold (one frame of pose).
-- F12: recovery — body straightens slightly.
+- F10: contact — right fist at impact point, body weight forward, **dust puff at his feet** (2–3 brown pixels), the **half-grin is at full visibility** (the one frame Duke looks alive).
+- F11: hold — pose locked one extra frame for the kill-shot feel.
+- F12: recovery — body straightens slightly, fist lowering. Hair strand falls back into place.
+- **Cigarette stays put** through all 12 frames.
 
 ### `throw` (5 frames, 10 fps)
-- F1: grab — both hands forward, fistfuls of imagined collar.
-- F2: lift — heave upward, body in a row stance.
-- F3: spin — rotates the enemy.
-- F4: slam — drives them downward.
-- F5: recovery, hands dropping.
+- Heave-and-slam — Duke grabs the collar, heaves the enemy off the ground, slams them down.
+- F1: grab — both hands forward at chest height, fistfuls of imagined collar.
+- F2: lift — body straightens, enemy hoisted off the ground, Duke's weight on his back foot for leverage.
+- F3: spin — body rotates 90°, enemy pivoting overhead.
+- F4: slam — body drives the enemy downward, Duke leaning forward.
+- F5: recovery — hands drop, body straightens back to stance.
+- **Cigarette stays put** through the whole throw.
 
 ### `counter` — counter-special (6 frames, 11 fps)
-- A bigger Rolling Thunder finishing strike. Body wider, fist heavier. Dust puff is bigger (5–6 specks).
+- The free counter-special at full parry meter. A bigger, meaner version of the Rolling Thunder haymaker — body wider, fist heavier.
+- F1: load — body torques back further than the special's haymaker, weight on the left leg, right fist drawn behind.
+- F2: drive begins — body weight drops forward, right fist arcs downward.
+- F3: arc — fist mid-arc, body fully forward, hair strand whipping.
+- F4: contact — right fist at impact, **bigger dust puff at his feet** (5–6 brown specks in a half-circle), half-grin at full visibility.
+- F5: follow-through — body past impact, fist still extended.
+- F6: recovery — body straightens, fist lowering. Cigarette has not moved.
 
-### `hurt` (3 frames)
-- F1: impact, head whips back.
-- F2: recoil, torso folded.
-- F3: recovery.
-- **Cigarette stays in place.** This is the joke.
+### `hurt` (3 frames, 12 fps)
+- F1: impact — head whips back 8°, torso folds at the waist, both hands fly outward briefly.
+- F2: recoil — torso bent forward, body absorbing the hit, knees bending.
+- F3: recovery — body straightening back toward stance.
+- **Cigarette stays in place. This is the joke.** Even on KO frames he's planning to draw later, the cigarette stays.
 
 ### `dodge` — BACKWARD STEP (5 frames, 12 fps)
-- Duke doesn't roll — knee won't allow it. He **steps back fast** with a hand raised.
-- F1: weight shifts to back foot.
-- F2–F3: pushes back hard, body slides backward.
-- F4–F5: settles into stance, hand still raised in a "stop" gesture.
+- Duke doesn't roll — the bad knee won't allow it. He **steps backward fast** with one hand raised.
+- F1: weight shifts hard onto the left leg, right foot lifts.
+- F2: push-off — left leg drives backward, body slides 4 px back, right hand raises to chin level.
+- F3: airborne briefly — both feet off ground for one frame, body sliding back.
+- F4: landing — right foot plants behind him (slightly bent for the bad knee), body absorbs.
+- F5: settled — back into stance, **right hand still raised in a "stop" gesture** (the read: he's daring you to come at him again).
+- **Cigarette stays put** through the dodge.
 
 ## DO NOT include for Duke
 

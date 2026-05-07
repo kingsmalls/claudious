@@ -5,7 +5,6 @@ The exhaustive visual brief. Hand this to the artist (or the AI generator) along
 For each character: physical specs, costume layers, identity items, palette, per-animation poses, per-special-move beat sheet, and a "do NOT include" list to keep generators on-spec.
 
 ---
-
 # RIO
 
 ## Physical
@@ -230,6 +229,7 @@ When this sheet lands:
 4. `python3 pipeline.py validate-atlas rio_atlas.json`.
 5. Reload `the_block.html`. The atlas loader picks it up automatically — Rio switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
 
+
 ---
 
 # DUKE
@@ -290,104 +290,144 @@ eye whites          #f0f0f0
 - **Half-grin on heavy hits.** A pinched expression on the Rolling Thunder haymaker — like he's enjoying it despite himself.
 - **The cigarette never moves.** Even during KO. It's the joke.
 
-## Animations (per slot)
+## Animations (per slot — pose + key pose details)
 
-### `idle` (4 frames, 6 fps)
-- F1, 3: weight on left leg (the good one), right leg slightly bent and forward.
-- F2, 4: weight subtly shifts. Shoulders rise/fall with breath.
-- Hands at lower-belly height, loosely fisted.
-- Cigarette behind camera-side ear.
+### `idle` (4 frames, loops, 6 fps)
+- F1: weight settled on the left leg (the good one), right leg bent 10° and slightly forward — bad knee never fully loaded. Hands at lower-belly height, loosely fisted (not raised — he guards with elbows).
+- F2: subtle weight shift, shoulders rise 1–2 px on inhale.
+- F3: weight back on left, mirror of F1.
+- F4: shoulders settle 1 px down on exhale, head dips 1 px.
+- **Cigarette** behind camera-side ear, never moves across the cycle.
+- **Wayward forehead strand** falls across the camera-side eye.
+- Mouth slightly parted, eyes half-lidded — the tired look is part of idle.
 
 ### `walk` (6 frames, 7 fps)
-- Slightly limping gait (right knee). Left leg strides normally, right leg follows with a half-second delay.
-- Arms swing economically, not exaggerated.
-- Body leans slightly forward.
+- 6-frame limping cycle. **Left leg strides cleanly; right leg drags 1 frame behind** — the limp.
+- F1: left foot strikes forward, right foot still planted.
+- F2: weight transfers, right foot lifts late.
+- F3: right foot mid-swing (shorter stride than left's).
+- F4: right foot strikes (shorter reach), left foot still planted.
+- F5: weight transfers, left foot lifts.
+- F6: left foot mid-swing (longer stride).
+- Arms swing economically — front arm moves opposite to leg, but the swing is small (no exaggerated ROM).
+- Body leans 5° forward, head bobbing 1 px on each strike.
+- **Cigarette stays put.** Hair strand hangs forward, sways 1 px on each strike.
 
 ### `run` (6 frames, 11 fps)
-- The limp is mostly absorbed at this speed but right leg's stride is slightly shorter than left's.
-- Arms pump, jacket flares open behind him.
-- Hair flops on the back-swing.
-- Frames 3 and 6 have speedlines.
+- Body forward 10°, longer strides than walk but the right-leg stride is still 1–2 px shorter than the left's.
+- F1, 4: foot strikes (alternating); F2–3, 5–6: in-air phases.
+- Arms pump harder than walk but still elbow-led, not full-shoulder.
+- Jacket flares open at the shoulders behind him — the cut-off frayed edges flap visibly.
+- Hair flops on each back-swing — wayward strand whips up off the forehead briefly.
+- **Frames 3 and 6:** 3-px horizontal speedlines behind each heel.
+- **Cigarette stays put** even at this speed — it's the running gag.
 
-### `jump` (3 frames)
-- F1: deep crouch with right leg loaded weaker.
-- F2: airborne, body slightly tucked, left leg leads.
-- F3: landing — favors the left leg on touch-down.
+### `jump` (3 frames, 8 fps — non-looping)
+- F1: deep crouch, right (bad) knee bent shallower than left — he loads with the left leg primarily. Both fists drop to hip level.
+- F2: airborne — body slightly tucked, **left leg leads**, right leg trails. Jacket flares open showing the t-shirt underneath.
+- F3: landing — touches down on the left leg first, right foot follows half a frame later. Body absorbs into a half-crouch.
+- **Cigarette stays put.** Hair strand whips upward at the apex.
 
 ### `atk1` — BOXING JAB (4 frames, 12 fps)
-- Standard boxer's jab. Front (left) hand, body twist minimal.
-- F1: load — front shoulder back 2px.
-- F2: extend — fist drives forward 14 px.
-- F3: peak — fist fully extended, knuckles vertical.
-- F4: snap-back — fist returns sharply (this is the boxing detail — the snap-back).
+- Classic boxer's lead jab — front (left) hand, minimal body twist, snap-quick.
+- F1: load — front shoulder pulls back 2 px, fist near the chin level. Eyes lock forward.
+- F2: extend — left fist drives forward ~14 px, body twist minimal (5°), back foot stays planted.
+- F3: peak — fist fully extended, knuckles vertical (boxing form), shoulder rolled forward to protect the chin.
+- F4: snap-back — fist retracts 80% of the way back sharply (the boxer detail; not a slow draw-back). Body returns to stance.
+- **Cigarette stays put** even on the snap-back.
 
-### `atk2` — CROSS (5 frames, 10 fps)
-- Right cross with full hip rotation.
-- F1: hip cocks back, weight shifts to back foot.
-- F2: hip drives, rear shoulder begins rotation.
-- F3: rear fist crosses center line.
-- F4: peak — fist 18 px forward, body fully rotated, weight on front foot.
-- F5: snap-back, returning to stance.
+### `atk2` — CROSS (5 frames, 11 fps)
+- Right cross with full hip rotation — Duke's weight transfer move.
+- F1: hip cocks back, weight shifts to back foot, right (rear) fist near jaw.
+- F2: hip drives forward, rear shoulder rotates — torque visibly winding.
+- F3: extend — rear fist crosses the center line, reaching ~18 px forward. Front (left) hand stays up at chin height for guard.
+- F4: peak — fist fully extended, body rotated 45°, weight on front foot. Mouth tightens 1 px (the rare focus expression).
+- F5: snap-back, body unwinds back to neutral stance. Hair strand settles back across the forehead.
 
-### `atk3` — HOOK + STOMP (6 frames, 10 fps)
-- Combo finisher. Front hand hooks while right foot stomps.
-- F1: load — body coils, front foot lifts slightly.
-- F2: stomp begins — foot drives down.
-- F3: hook arc — front fist swings horizontally inward.
-- F4: contact + stomp landing — small dust puff at the right foot (1–2 px brown specks).
-- F5: peak with body tilted forward.
-- F6: recovery.
+### `atk3` — HOOK + STOMP (6 frames, 11 fps) — combo finisher
+- Front hand hooks horizontally while the right foot stomps for power transfer.
+- F1: load — body coils, front foot lifts 2 px off the ground, left (front) fist at hip height.
+- F2: stomp wind-up — right foot drives downward.
+- F3: hook arc — left fist swings inward in a horizontal arc as the right foot lands.
+- F4: contact + stomp landing — fist at impact point, **dust puff at right foot** (1–2 px brown specks).
+- F5: follow-through — body tilted 10° forward, fist past the impact line, the half-grin appears for one frame.
+- F6: recovery — body unwinds back toward stance, hair strand falls back across forehead.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 9 fps)
-- F1: deep crouch, both fists at hip.
-- F2–3: front fist loads near belly.
-- F4: explosive rise — fist drives up.
-- F5: peak — body fully extended, fist overhead, **half-grin visible** (this is the moment).
-- F6: hold.
-- F7: recovery.
+- The launcher. Slow load, explosive rise — Duke putting his whole worn-out body into one shot.
+- F1: deep crouch — both knees bend, both fists at hip. The **bad right knee is visibly strained** (1 px tilt).
+- F2: load — front fist near belly, body coiled like a spring.
+- F3: rise begins — knees start straightening, fist starts climbing.
+- F4: drive — explosive vertical rise, front fist 16 px above the head height.
+- F5: peak — body fully extended skyward, fist directly above body line, **half-grin visible** (this is the moment — he's enjoying it despite himself).
+- F6: hold — pose held one extra frame for the launcher feel.
+- F7: recovery — body lowers back to stance, knees absorbing.
+- **Cigarette stays put** through the full extension.
 
-### `jump_atk` — DROP ELBOW (4 frames, 11 fps)
-- F1: airborne, elbow cocked overhead.
-- F2: descent — body angles down, elbow leading.
-- F3: peak — elbow at chest-of-imagined-target height, body angled 45° forward.
-- F4: recovery.
+### `jump_atk` — DROP ELBOW (4 frames, 10 fps)
+- Aerial elbow drop — uses gravity, not a kick.
+- F1: airborne, right elbow cocked overhead, body still rising.
+- F2: descent begins — body angles 30° forward, elbow leading the drop.
+- F3: peak impact — elbow at chest-of-imagined-target height, body 45° forward. Hair strand whips upward.
+- F4: recovery — body resets, elbow lowering toward landing.
+- **Cigarette stays put** even at the apex.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
-- Same beats as Rio but heavier; body rotates more.
+- Heavier rear-elbow strike than Rio's — Duke pivots more on the bad knee, so the move loads slow but lands hard.
+- F1: wind-up — body turns 30° toward the rear, right elbow lifts to shoulder height. Weight shifts to the left (good) leg.
+- F2: drive — elbow drives backward, right hip rotating with it.
+- F3: peak — elbow fully extended *behind* him, body twisted 60°, the half-grin briefly appears (1 frame).
+- F4: recovery — body unwinds back to stance, weight redistributing.
+- **Cigarette stays put** through the rotation.
 
 ### `special` — ROLLING THUNDER (12 frames, 11 fps)
-Three rapid forward elbows finishing with a haymaker.
-- F1: stance, body coils.
-- F2–F3: **first elbow** — left elbow drives forward 8 px with a short speedline (3 px streak behind the elbow).
-- F4–F5: **second elbow** — right elbow drives forward 10 px, body rotated. Speedline.
-- F6–F7: **third elbow** — left elbow again, deeper drive 12 px, body lower.
-- F8: load haymaker — body torques back, right fist way behind.
+The signature. Three rapid forward elbows finishing with a haymaker that ends fights.
+- F1: stance — body coils, hands at chin, weight loading on the left leg.
+- F2: **first elbow (left)** — left elbow drives forward 8 px, body rotates 15°. 3-px speedline streak behind the elbow.
+- F3: first elbow continues into the next windup, right arm drawing back.
+- F4: **second elbow (right)** — right elbow drives forward 10 px, body rotated 30° the other way. 4-px speedline.
+- F5: second elbow follow-through, body resetting toward forward.
+- F6: **third elbow (left)** — left elbow again, deeper drive 12 px, body lower (knees bend more), 5-px speedline. Hair strand whipping with each elbow.
+- F7: third elbow follow-through, body torquing far back to load the haymaker.
+- F8: haymaker load — body torques fully back, right fist drawn way behind the body. Mouth tightens.
 - F9: drive — body weight drops forward, right fist arcs in a downward overhand path.
-- F10: contact — fist at impact point, **dust puff at his feet** (2–3 brown pixels), face shows the half-grin.
-- F11: hold (one frame of pose).
-- F12: recovery — body straightens slightly.
+- F10: contact — right fist at impact point, body weight forward, **dust puff at his feet** (2–3 brown pixels), the **half-grin is at full visibility** (the one frame Duke looks alive).
+- F11: hold — pose locked one extra frame for the kill-shot feel.
+- F12: recovery — body straightens slightly, fist lowering. Hair strand falls back into place.
+- **Cigarette stays put** through all 12 frames.
 
 ### `throw` (5 frames, 10 fps)
-- F1: grab — both hands forward, fistfuls of imagined collar.
-- F2: lift — heave upward, body in a row stance.
-- F3: spin — rotates the enemy.
-- F4: slam — drives them downward.
-- F5: recovery, hands dropping.
+- Heave-and-slam — Duke grabs the collar, heaves the enemy off the ground, slams them down.
+- F1: grab — both hands forward at chest height, fistfuls of imagined collar.
+- F2: lift — body straightens, enemy hoisted off the ground, Duke's weight on his back foot for leverage.
+- F3: spin — body rotates 90°, enemy pivoting overhead.
+- F4: slam — body drives the enemy downward, Duke leaning forward.
+- F5: recovery — hands drop, body straightens back to stance.
+- **Cigarette stays put** through the whole throw.
 
 ### `counter` — counter-special (6 frames, 11 fps)
-- A bigger Rolling Thunder finishing strike. Body wider, fist heavier. Dust puff is bigger (5–6 specks).
+- The free counter-special at full parry meter. A bigger, meaner version of the Rolling Thunder haymaker — body wider, fist heavier.
+- F1: load — body torques back further than the special's haymaker, weight on the left leg, right fist drawn behind.
+- F2: drive begins — body weight drops forward, right fist arcs downward.
+- F3: arc — fist mid-arc, body fully forward, hair strand whipping.
+- F4: contact — right fist at impact, **bigger dust puff at his feet** (5–6 brown specks in a half-circle), half-grin at full visibility.
+- F5: follow-through — body past impact, fist still extended.
+- F6: recovery — body straightens, fist lowering. Cigarette has not moved.
 
-### `hurt` (3 frames)
-- F1: impact, head whips back.
-- F2: recoil, torso folded.
-- F3: recovery.
-- **Cigarette stays in place.** This is the joke.
+### `hurt` (3 frames, 12 fps)
+- F1: impact — head whips back 8°, torso folds at the waist, both hands fly outward briefly.
+- F2: recoil — torso bent forward, body absorbing the hit, knees bending.
+- F3: recovery — body straightening back toward stance.
+- **Cigarette stays in place. This is the joke.** Even on KO frames he's planning to draw later, the cigarette stays.
 
 ### `dodge` — BACKWARD STEP (5 frames, 12 fps)
-- Duke doesn't roll — knee won't allow it. He **steps back fast** with a hand raised.
-- F1: weight shifts to back foot.
-- F2–F3: pushes back hard, body slides backward.
-- F4–F5: settles into stance, hand still raised in a "stop" gesture.
+- Duke doesn't roll — the bad knee won't allow it. He **steps backward fast** with one hand raised.
+- F1: weight shifts hard onto the left leg, right foot lifts.
+- F2: push-off — left leg drives backward, body slides 4 px back, right hand raises to chin level.
+- F3: airborne briefly — both feet off ground for one frame, body sliding back.
+- F4: landing — right foot plants behind him (slightly bent for the bad knee), body absorbs.
+- F5: settled — back into stance, **right hand still raised in a "stop" gesture** (the read: he's daring you to come at him again).
+- **Cigarette stays put** through the dodge.
 
 ## DO NOT include for Duke
 
@@ -452,6 +492,7 @@ When this sheet lands:
 4. `python3 pipeline.py validate-atlas duke_atlas.json`.
 5. Reload `the_block.html`. The atlas loader picks it up automatically — Duke switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
 
+
 ---
 
 # ATLAS
@@ -515,112 +556,147 @@ eye whites          #f0f0f0
 - **The smile is gentle.** When it appears (atk3 finisher, after Foundation Stone), it's a small parental smile.
 - **The wedding band is a tell.** When he gets serious — when the haymaker is coming — the band catches a brief 1-pixel glint highlight.
 
-## Animations (per slot)
+## Animations (per slot — pose + key pose details)
 
-### `idle` (4 frames, 5 fps — slower than the others)
-- Heavy chest rise/fall. Shoulders move 2–3 px on the breath cycle.
-- Hands at hip level, loosely closed.
-- Wedding band visible through the V; chain slightly catching breath rhythm.
-- Beard moves with breath subtly.
+### `idle` (4 frames, loops, 5 fps — slowest in the cast)
+- F1: chest at full inhale — shoulders raised 2 px, ribcage visibly out, beard tilts up 1 px. Hands at hip height, loosely closed (not fisted hard).
+- F2: hold — barely-perceptible pause at full inhale, **wedding band catches a 1-px highlight** as it sits on the chest.
+- F3: chest at full exhale — shoulders settle 3 px, beard relaxes downward. Chain dips 1 px lower against the chest.
+- F4: hold at exhale, eyes scanning the camera-side direction (he's watching the block).
+- **Wedding band on chain visible through the open V** the entire cycle.
+- **Tribal forearm tattoos** visible on both forearms.
+- Mouth set in a thoughtful, neutral expression — not angry.
 
-### `walk` (6 frames, 6 fps)
-- **Heavy stomp gait.** Boots land flat-footed. Each step has impact.
-- Frames 1 and 4: foot strike — slight 1-px dust puff at the heel.
-- Body sways laterally (he's wide).
-- Chain swings 1–2 px with each step.
+### `walk` (6 frames, 6 fps — slowest walk in the cast)
+- **Heavy stomp gait.** Both boots land flat-footed; each step has weight.
+- F1: left foot strikes forward, right foot still planted. **1-px dust puff at the left heel.**
+- F2: weight transfer — body sways 1 px to the left, right foot lifts.
+- F3: right foot mid-swing.
+- F4: right foot strikes forward, left planted. **1-px dust puff at the right heel.**
+- F5: weight transfer — body sways 1 px to the right.
+- F6: left foot mid-swing, beginning the cycle again.
+- Body wide stance throughout — minimum shoulder-width even at full stride.
+- **Chain swings 1–2 px laterally with each weight shift.** Wedding band visible.
+- Beard moves 1 px with each impact.
 
 ### `run` (6 frames, 10 fps)
-- He runs but it's not graceful. Long strides, body forward 5°.
-- Chain bounces visibly.
-- Frames 3 and 6 have **dust kicks** at the boots (3–4 px brown specks).
+- Running for Atlas isn't graceful — he covers ground but the body doesn't bounce, it surges. Body angled 5° forward.
+- F1: left foot strike — bigger dust puff than walk (3–4 brown specks). Body forward.
+- F2: airborne briefly, both feet off, arms swinging.
+- F3: right foot strike — dust puff. Body still forward.
+- F4: airborne, the second push.
+- F5: same as F1 cycle continues.
+- F6: same as F3.
+- **Frames 1 and 4 (foot strikes):** dust kicks at the boots, 3–4 px brown specks each.
+- **Chain bounces visibly** — 2–3 px vertical movement per stride. Wedding band trails behind the chain by 1 frame.
+- Flannel hem flares slightly behind him — body so wide it doesn't flap dramatically, but the bottom edge lifts 2 px on each stride.
 
-### `jump` (3 frames)
-- F1: crouch — heavy load, both knees bent deep.
-- F2: peak — body extended but arms not fully raised. He gets a foot off the ground; not a high jump.
-- F3: landing — heavy compression, dust burst at both boots.
+### `jump` (3 frames, 8 fps — non-looping)
+- F1: deep crouch — both knees bend hard, body coils, weight on both feet equally. Hands drop to knee level.
+- F2: peak — body extended but arms NOT raised overhead (he doesn't reach skyward; that's not his style). He gets maybe 6–8 px off the ground; not a high jump. Chain lifts off the chest 2 px.
+- F3: landing — heavy compression, both knees absorb. **Dust burst at both boots** (4–5 brown pixels).
+- **Wedding band stays visible** at all three frames.
 
 ### `atk1` — OPEN-PALM SHOVE (4 frames, 11 fps)
-- Front arm extends as a palm-strike, not a fist. Body weight slightly forward.
-- F1: load — palm at chest level.
-- F2: extend — palm drives forward 16 px.
-- F3: peak — fingers slightly splayed.
-- F4: retract.
+- Front arm extends as a palm-strike, fingers splayed — Atlas doesn't waste energy throwing fists for jabs. The shove sets up combos by knocking enemies back.
+- F1: load — front (left) palm at chest level, fingers loose. Body weight forward 5°.
+- F2: drive — palm extends forward, body weight transfers to front foot.
+- F3: peak — palm fully extended ~16 px forward, **fingers visibly splayed** (open hand, not a fist), body angled 10° forward.
+- F4: retract — palm pulls back 70%, body returns to neutral. **Tribal tattoos** visible on the forward forearm during the extension.
+- Wedding band catches a small movement against the chest.
 
 ### `atk2` — REAR HEAVY SLAP (5 frames, 10 fps)
-- Rear arm comes across in a heavy backhand slap, not a closed fist.
-- F1: arm wound up across the body.
-- F2: hip rotates.
-- F3: arm sweeps across, palm leading.
-- F4: peak — palm fully across body, beard moves with the strike.
-- F5: recovery.
+- Rear arm sweeps across in a heavy backhand slap, palm leading — heavier than a hook because the whole body torques.
+- F1: load — right arm wound up across the body to the left side, body torqued back.
+- F2: hip rotates forward, right shoulder begins arcing across.
+- F3: sweep — right arm crosses the center line, palm leading at face-of-imagined-target height.
+- F4: peak — palm fully across the body, body rotated 60°, **beard moves 2 px with the strike** (the head whips slightly with the rotation).
+- F5: recovery — body unwinds back to stance, chain swinging back to neutral.
+- **Tribal tattoos** prominent on the bare striking forearm.
 
-### `atk3` — OVERHEAD CHOPPING SMASH (6 frames, 10 fps)
-- Combo finisher. Both hands clasp above head, then drive downward like a hammer-fist.
-- F1: hands rise — both fists clasped together drive upward overhead.
-- F2: peak — hands above head, body extended skyward.
-- F3: load — slight pause at peak.
-- F4: descent — body folds forward, hands drive down.
-- F5: impact — hands at chest-of-imagined-target height, **dust puff at his feet**.
-- F6: hold + the small parental smile.
+### `atk3` — OVERHEAD CHOPPING SMASH (6 frames, 10 fps) — combo finisher
+- Both hands clasp together overhead, then drive downward like a hammer-fist — Atlas's signature combo finisher, ends with the gentle parental smile.
+- F1: load — both fists rise overhead, clasped together, body coiling.
+- F2: rise complete — both hands above head, body extended skyward, ribs visibly out.
+- F3: pause — slight 1-frame hold at the peak (the load before the drop).
+- F4: descent — body folds forward at the waist, both hands drive downward together.
+- F5: impact — hands at chest-of-imagined-target height, **big dust puff at his feet** (4–5 brown specks). Beard tilts forward with the body.
+- F6: follow-through + recovery — body straightens, **the small parental smile is visible** for one frame (the gentle moment).
+- **Wedding band on chain visible** throughout, swinging with the body.
 
-### `heavy` — UPPERCUT LAUNCHER (7 frames, 8 fps — slowest of the cast)
+### `heavy` — UPPERCUT LAUNCHER (7 frames, 8 fps — slowest in the cast)
 - Massive uppercut. Both legs braced, fist rises slowly but with terrifying weight.
-- F1: deep crouch, fist drops below the knee.
-- F2: load — body coiled, fist near hip.
-- F3: rise begins — body slowly straightens.
-- F4: drive — fist drives upward, **wedding band glint** visible (1 frame highlight).
-- F5: peak — fist directly overhead, body fully extended, both feet planted.
-- F6: hold — pose held one extra frame for emphasis.
-- F7: recovery.
+- F1: deep crouch — both knees bend, right (rear) fist drops below the knee, body coils. Beard tucks down.
+- F2: load — body fully coiled, fist near hip, weight evenly on both feet.
+- F3: rise begins — body slowly straightens, fist starts climbing.
+- F4: drive — fist drives upward, **WEDDING BAND CATCHES A 1-PX HIGHLIGHT GLINT** (this is the tell — when the band glints, the haymaker is coming).
+- F5: peak — fist directly overhead, body fully extended, both feet planted firmly. Mouth set hard.
+- F6: hold — pose held one extra frame for the launcher feel — Atlas pauses at the top, terrifying.
+- F7: recovery — body lowers back to stance, fist coming down slowly.
+- **Tribal tattoos** prominent on the rising arm at F4–F5.
 
 ### `jump_atk` — BODY SLAM (4 frames, 9 fps)
-- He doesn't kick — he uses his weight. Drops elbow-first.
-- F1: airborne, body angled forward.
-- F2: descent — elbow lifted overhead, weight forward.
-- F3: peak — elbow drive at impact zone, body horizontal-ish.
-- F4: recovery — body resets to landing.
+- He doesn't kick — he uses his weight. Drops elbow-first, all 280 pounds of him.
+- F1: airborne, body angled forward 20°, right elbow lifted overhead.
+- F2: descent begins — body angles down further (45°), elbow leading the drop, weight visibly forward.
+- F3: peak impact — elbow at impact zone, body nearly horizontal, **chain has flown forward off his chest** (visible in front of the flannel, 3 px out from the body).
+- F4: recovery — body resets toward landing, chain settling back against the chest.
+- **Wedding band visible** at all four frames.
 
 ### `back_atk` — REAR ELBOW (4 frames, 11 fps)
-- Heavier than the others. Elbow drives back with hip rotation.
+- Heavier rear-elbow than Rio's — Atlas's whole body has to rotate, so the move is slow but devastating.
+- F1: wind-up — body turns 35° toward the rear, right elbow lifts to shoulder height, weight loads on the left foot.
+- F2: drive — right elbow drives backward, hip rotating with it, body torquing.
+- F3: peak — elbow fully extended *behind* him, body twisted 70°, **chain swings sideways across the chest** (visible swinging arc, 3 px lateral travel). Mouth tightens.
+- F4: recovery — body unwinds back to stance, chain settling back, weight redistributing.
+- **Tribal tattoos** visible on the striking forearm at F3.
 
 ### `special` — FOUNDATION STONE (12 frames, 10 fps)
-The signature. Running shoulder charge, picks up the enemy, two-handed slam.
-- F1: stance with shoulder lowered (charge prep).
-- F2: forward step — leading leg plants 6 px ahead.
-- F3: charge — body angled 20° forward, shoulder leading. **Three speedlines** behind him.
-- F4–F5: charge continues, body lower, more speedlines.
-- F6: contact — body crashes into imagined enemy, both arms reach forward.
-- F7: lift — both hands grab the enemy, hoisting them upward.
-- F8: peak — enemy lifted overhead (2–3 px above Atlas's head), Atlas's arms fully extended.
-- F9: descent begins — Atlas body rotates forward, slamming the enemy down.
-- F10: SLAM IMPACT — enemy at ground level, **DUST BURST AROUND BOTH BOOTS** (5–6 brown pixels in a half-circle pattern).
-- F11: hold — pose held, both fists at hip, body upright.
-- F12: recovery — body returns to stance.
+The signature. Running shoulder charge, picks the enemy off the ground, two-handed overhead slam — Atlas asserting that this block is his.
+- F1: stance — shoulder lowered (charge prep), body coiled, weight loading on the back leg.
+- F2: forward step — leading (left) leg plants 6 px ahead, body angled 15° forward.
+- F3: charge — body angled 20° forward, **shoulder leading** the run. **Three 4-px speedlines** behind him at body height.
+- F4: charge continues — body lower, knees deeper, **four speedlines** now (more density).
+- F5: charge peak speed — body lowest, **five speedlines**, chain visibly trailing behind the running body by 2 px.
+- F6: contact — body crashes into imagined enemy, both arms reach forward to grab. Body straightens slightly from the charge.
+- F7: lift — both hands grab the enemy at chest height, hoisting them upward. Body straightens, knees beginning to drive up. **Tribal tattoos** prominent on both forearms.
+- F8: peak — enemy lifted **OVERHEAD** (2–3 px above Atlas's head), Atlas's arms fully extended skyward, body stretched tall. **Wedding band visible** against the now-tightened flannel V.
+- F9: descent begins — Atlas's body rotates forward, slamming the enemy down. Arms drive downward in a controlled arc.
+- F10: **SLAM IMPACT** — enemy at ground level, **DUST BURST AROUND BOTH BOOTS** in a wide half-circle pattern (5–6 brown pixels). Atlas's body folded forward 30°, hands at his shins. Beard tilts forward.
+- F11: hold — pose locked, body upright, both fists at hip, **the small parental smile visible** for one frame (the sentimental beat — he doesn't enjoy violence, but he just protected someone).
+- F12: recovery — body returns to stance, chain settling back against the chest.
 
 ### `throw` (5 frames, 9 fps)
-- Lifting suplex. Slower and heavier than Rio's or Duke's throw.
-- F1: grab — both hands on enemy.
-- F2: lift — body straightens, enemy leaves ground.
-- F3: arch back — Atlas's body bends backward, enemy goes overhead.
-- F4: slam — both fall together, enemy underneath.
-- F5: recovery — Atlas planting feet, standing back up.
+- Lifting suplex — slower and heavier than Rio's or Duke's throw. Atlas wraps the enemy around his back and falls with them.
+- F1: grab — both hands on enemy at chest height, body coiling.
+- F2: lift — body straightens, enemy leaves the ground, Atlas's knees beginning to drive up.
+- F3: arch back — Atlas's body bends backward 30°, enemy goes overhead, **chain visible against the chin** as the chest tilts up.
+- F4: slam — both fall together, Atlas on top, enemy underneath. **Dust burst around both bodies** at impact (4–5 brown specks).
+- F5: recovery — Atlas planting his hands, pushing back up to standing. Body upright again, chain back against the chest.
+- **Tribal tattoos** visible on both forearms throughout the lift.
 
 ### `counter` — counter-special (6 frames, 10 fps)
-- A bigger atk3 (overhead smash) with even bigger dust burst on impact (8 brown pixels).
+- The free counter-special at full parry meter. A bigger, meaner atk3 (the overhead chopping smash) with double the dust burst — the counter that ends fights.
+- F1: load — both fists clasped overhead, body coiled deeper than atk3 (knees bending more), weight loading.
+- F2: rise to peak — both hands above head, body extended fully skyward, **wedding band glint visible** (the tell).
+- F3: pause — 1-frame hold at peak, the kill-shot windup.
+- F4: descent — body folds forward at the waist, both hands drive downward together with maximum force.
+- F5: impact — hands at chest-of-imagined-target height, **MASSIVE DUST BURST at his feet** (8–10 brown specks in a wide half-circle, twice the size of atk3's). The parental smile is at full visibility.
+- F6: recovery — body straightens, hands lowering. Chain settling.
 
-### `hurt` (3 frames)
-- F1: impact — body absorbs, doesn't fold much (he's heavy).
-- F2: head turns slightly with the strike.
-- F3: recovery.
-- **Wedding band stays visible.**
+### `hurt` (3 frames, 12 fps)
+- F1: impact — body absorbs, doesn't fold much (he's heavy and built for it). Head turns 5° with the strike, beard tilts.
+- F2: recoil — body bends 10° at the waist, knees bending slightly. Chain swings 2 px sideways.
+- F3: recovery — body straightening back to stance, chain settling.
+- **Wedding band stays visible** through all three frames — it's part of him.
 
 ### `dodge` — SIDESTEP (5 frames, 11 fps)
-- Atlas doesn't roll. He **takes a side step** with a forearm raised across the body.
-- F1: weight shift to one foot.
-- F2: side step — the back foot crosses over.
-- F3: planted — body sideways briefly, forearm guard up.
-- F4: foot returns.
-- F5: stance.
+- Atlas doesn't roll. The body doesn't allow it. He **takes a planted side step** with a forearm raised across the body in a guard.
+- F1: weight shifts onto one foot (the foot opposite the dodge direction), body coils.
+- F2: side step — back foot crosses over in front, body sliding 4 px laterally. Right forearm rises across the body to chest height (guard position).
+- F3: planted — body sideways briefly, **right forearm fully across the body** (tribal tattoos prominent on the guard arm), feet wide.
+- F4: foot returns — back foot uncrosses, weight redistributing.
+- F5: stance — settled back into idle stance, forearm lowering. Chain settling back against the chest.
 
 ## DO NOT include for Atlas
 
@@ -685,7 +761,3 @@ When this sheet lands:
 3. Export `atlas_atlas.json` next to the PNG.
 4. `python3 pipeline.py validate-atlas atlas_atlas.json`.
 5. Reload `the_block.html`. The atlas loader picks it up automatically — Atlas switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
-
----
-
-Each character section above is **self-contained for copy-paste**: physical, costume, identity items, palette, animation poses, special-move beat sheet, "do NOT include" list, and full sheet specs. Hand any single section to your generator/artist and they have everything they need for that character.
