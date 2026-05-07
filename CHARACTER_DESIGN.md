@@ -176,6 +176,60 @@ The signature. Spinning leg sweep into rising double-fist uppercut.
 - Long hair flowing — locs are short and structured
 - Open jacket flapping wildly — it's cropped and tight
 
+## Sheet specs (same for all three characters)
+
+### Color discipline
+- Each body part stays within its 3-color palette (mid, shadow, highlight). Don't blend pixels between palettes.
+- Identity-item colors are reserved — bandana yellow, wedding-band silver, cigarette cream are unique to that character. Don't reuse them on other parts.
+
+### Outline
+- 1-pixel hard outline at the silhouette boundary, in the deepest shadow color of that body part (not pure black).
+- No anti-aliasing along the outline.
+
+### Lighting direction
+- Light comes from the upper-front-right of the character (the camera-side, slightly above).
+- Highlights along the upper-front edges, shadows along the lower-back edges.
+
+### Reference quality target
+- Streets of Rage 4 character pixel quality (not the SoR4 final art — they're 2D-vector — but the same readability and silhouette discipline).
+- Fight'N Rage character density and hand-poses.
+- Castle Crashers tier of expressive poses (a bit more cartoon-readable than realistic).
+
+### Frame counts (Rio total: 80)
+
+| Slot | Frames |
+|---|---:|
+| idle | 4 |
+| walk | 6 |
+| run | 6 |
+| jump | 3 |
+| atk1 | 4 |
+| atk2 | 5 |
+| atk3 | 6 |
+| heavy | 7 |
+| jump_atk | 4 |
+| back_atk | 4 |
+| special | 12 |
+| throw | 5 |
+| counter | 6 |
+| hurt | 3 |
+| dodge | 5 |
+
+### Sheet layout
+- Uniform grid, **8 columns × 10 rows = 80 cells**.
+- Each cell: **64 wide × 96 tall**.
+- Background: solid magenta `#ff00ff` for keying, OR transparent PNG.
+- Anchor each frame's character at **bottom-center** of the cell.
+
+### Final integration step
+
+When this sheet lands:
+1. Save to project root as `rio.png`.
+2. Open `sprite_slicer.html`, load the PNG, click through to label all 15 anim slots.
+3. Export `rio_atlas.json` next to the PNG.
+4. `python3 pipeline.py validate-atlas rio_atlas.json`.
+5. Reload `the_block.html`. The atlas loader picks it up automatically — Rio switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
+
 ---
 
 # DUKE
@@ -343,6 +397,60 @@ Three rapid forward elbows finishing with a haymaker.
 - Athletic / spring-loaded movement — he's tired and worn
 - A full beard — it's stubble (3–4 days)
 - The cigarette LIT or removed — never lit, never moves
+
+## Sheet specs (same for all three characters)
+
+### Color discipline
+- Each body part stays within its 3-color palette (mid, shadow, highlight). Don't blend pixels between palettes.
+- Identity-item colors are reserved — bandana yellow, wedding-band silver, cigarette cream are unique to that character. Don't reuse them on other parts.
+
+### Outline
+- 1-pixel hard outline at the silhouette boundary, in the deepest shadow color of that body part (not pure black).
+- No anti-aliasing along the outline.
+
+### Lighting direction
+- Light comes from the upper-front-right of the character (the camera-side, slightly above).
+- Highlights along the upper-front edges, shadows along the lower-back edges.
+
+### Reference quality target
+- Streets of Rage 4 character pixel quality (not the SoR4 final art — they're 2D-vector — but the same readability and silhouette discipline).
+- Fight'N Rage character density and hand-poses.
+- Castle Crashers tier of expressive poses (a bit more cartoon-readable than realistic).
+
+### Frame counts (Duke total: 80)
+
+| Slot | Frames |
+|---|---:|
+| idle | 4 |
+| walk | 6 |
+| run | 6 |
+| jump | 3 |
+| atk1 | 4 |
+| atk2 | 5 |
+| atk3 | 6 |
+| heavy | 7 |
+| jump_atk | 4 |
+| back_atk | 4 |
+| special | 12 |
+| throw | 5 |
+| counter | 6 |
+| hurt | 3 |
+| dodge | 5 |
+
+### Sheet layout
+- Uniform grid, **8 columns × 10 rows = 80 cells**.
+- Each cell: **64 wide × 96 tall**.
+- Background: solid magenta `#ff00ff` for keying, OR transparent PNG.
+- Anchor each frame's character at **bottom-center** of the cell.
+
+### Final integration step
+
+When this sheet lands:
+1. Save to project root as `duke.png`.
+2. Open `sprite_slicer.html`, load the PNG, click through to label all 15 anim slots.
+3. Export `duke_atlas.json` next to the PNG.
+4. `python3 pipeline.py validate-atlas duke_atlas.json`.
+5. Reload `the_block.html`. The atlas loader picks it up automatically — Duke switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
 
 ---
 
@@ -524,32 +632,26 @@ The signature. Running shoulder charge, picks up the enemy, two-handed slam.
 - Boots without steel toe — they have a visible silver/grey toe cap
 - Athletic shorts / gym wear — he's in heavy work pants
 
----
+## Sheet specs (same for all three characters)
 
-# Universal rules (apply to all three)
-
-## Color discipline
-
-- Each character's body part stays within its 3-color palette (mid, shadow, highlight). Don't blend pixels between palettes.
+### Color discipline
+- Each body part stays within its 3-color palette (mid, shadow, highlight). Don't blend pixels between palettes.
 - Identity-item colors are reserved — bandana yellow, wedding-band silver, cigarette cream are unique to that character. Don't reuse them on other parts.
 
-## Outline
-
+### Outline
 - 1-pixel hard outline at the silhouette boundary, in the deepest shadow color of that body part (not pure black).
 - No anti-aliasing along the outline.
 
-## Lighting direction
-
+### Lighting direction
 - Light comes from the upper-front-right of the character (the camera-side, slightly above).
 - Highlights along the upper-front edges, shadows along the lower-back edges.
 
-## Reference quality target
-
+### Reference quality target
 - Streets of Rage 4 character pixel quality (not the SoR4 final art — they're 2D-vector — but the same readability and silhouette discipline).
 - Fight'N Rage character density and hand-poses.
 - Castle Crashers tier of expressive poses (a bit more cartoon-readable than realistic).
 
-## Frame counts (recap)
+### Frame counts (Atlas total: 80)
 
 | Slot | Frames |
 |---|---:|
@@ -569,20 +671,21 @@ The signature. Running shoulder charge, picks up the enemy, two-handed slam.
 | hurt | 3 |
 | dodge | 5 |
 
-**Per character total: 80 frames.**
-
-## Sheet layout
-
-- Uniform grid, 8 columns × 10 rows = 80 cells.
-- Each cell: 64 wide × 96 tall (or 80 × 112 for Atlas if he doesn't fit).
+### Sheet layout
+- Uniform grid, **8 columns × 10 rows = 80 cells**.
+- Each cell: **80 wide × 112 tall** for Atlas (he's bigger than Rio/Duke). If sticking to a 64×96 cell to match the other two sheets, allow his body to fill the whole cell with his head touching the top edge.
 - Background: solid magenta `#ff00ff` for keying, OR transparent PNG.
 - Anchor each frame's character at **bottom-center** of the cell.
 
-## Final integration step
+### Final integration step
 
-When the three sheets land:
-1. Save to project root as `rio.png`, `duke.png`, `atlas.png`.
-2. Open `sprite_slicer.html`, load each PNG, click through to label all 15 anim slots.
-3. Export `<char>_atlas.json` next to the PNG.
-4. `python3 pipeline.py validate-atlas rio_atlas.json` (and duke / atlas).
-5. Reload `the_block.html`. The atlas loader picks them up automatically — that character switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
+When this sheet lands:
+1. Save to project root as `atlas.png`.
+2. Open `sprite_slicer.html`, load the PNG, click through to label all 15 anim slots.
+3. Export `atlas_atlas.json` next to the PNG.
+4. `python3 pipeline.py validate-atlas atlas_atlas.json`.
+5. Reload `the_block.html`. The atlas loader picks it up automatically — Atlas switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
+
+---
+
+Each character section above is **self-contained for copy-paste**: physical, costume, identity items, palette, animation poses, special-move beat sheet, "do NOT include" list, and full sheet specs. Hand any single section to your generator/artist and they have everything they need for that character.
