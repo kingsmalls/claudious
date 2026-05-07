@@ -634,6 +634,35 @@ function peek(expr) {
               "hitstun =", peek("enemies[0].hitstun"));
   snapshot("49_baron_armor");
 
+  // ---- SAVE / LOAD: Atlas unlock after clearing 3 stages ----
+  console.log("before unlock: atlas =", peek("save.unlocks.atlas"));
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  // Simulate clearing three stages.
+  window.eval(
+    "player.stagesClearedThisRun = 0;" +
+    "for (let s = 0; s < 3; s++) { currentStage = s; player.maxCombo = 12 + s; beginStageClear(); }"
+  );
+  console.log("after 3 clears: atlas unlocked =", peek("save.unlocks.atlas"),
+              "bestCombo =", peek("save.bestCombo"));
+
+  // Verify finalizeRun records score.
+  window.eval(
+    "player.damageDealt = 320; player.maxCombo = 22; player.parryPerfectCount = 4;" +
+    "player.parryGoodCount = 6; player.stagesClearedThisRun = 5;" +
+    "finalizeRun(true);"
+  );
+  console.log("score =", peek("player.score"),
+              "highScore[rio] =", peek("save.highScores.rio"));
+  // localStorage round-trip.
+  const fromLs = peek("typeof localStorage !== 'undefined' ? localStorage.getItem('the_block.save.v1') : null");
+  console.log("localStorage save bytes =", (fromLs || "").length);
+
+  // Title screen with unlocks visible + hi-score readout.
+  press("Escape"); step(2);
+  step(8);
+  snapshot("50_title_with_save");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);

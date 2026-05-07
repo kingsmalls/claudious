@@ -74,6 +74,48 @@
 // ---------- Build flags ----------
 const DEV = true;
 
+// ---------- Save / load (localStorage) ----------
+// Single namespaced key. We versionize on schema change so old saves don't
+// silently misload.
+const SAVE_KEY = "the_block.save.v1";
+const DEFAULT_SAVE = {
+  unlocks:    { rio: true, duke: true, atlas: false },
+  highScores: { rio: 0, duke: 0, atlas: 0 },
+  bestCombo:  0,
+  bestComboPerStage: {},
+  audio:      { master: 0.7, music: 0.7, sfx: 0.9, muted: false },
+  settings:   { difficulty: "normal", reduceFlash: false, reduceShake: false },
+  runs: 0,
+  stagesCleared: 0,
+};
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+function loadSave() {
+  try {
+    if (typeof localStorage === "undefined") return deepClone(DEFAULT_SAVE);
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return deepClone(DEFAULT_SAVE);
+    const data = JSON.parse(raw);
+    const merged = deepClone(DEFAULT_SAVE);
+    Object.assign(merged, data);
+    merged.unlocks    = Object.assign({}, DEFAULT_SAVE.unlocks,    data.unlocks    || {});
+    merged.highScores = Object.assign({}, DEFAULT_SAVE.highScores, data.highScores || {});
+    merged.audio      = Object.assign({}, DEFAULT_SAVE.audio,      data.audio      || {});
+    merged.settings   = Object.assign({}, DEFAULT_SAVE.settings,   data.settings   || {});
+    merged.bestComboPerStage = Object.assign({}, DEFAULT_SAVE.bestComboPerStage, data.bestComboPerStage || {});
+    return merged;
+  } catch (e) {
+    return deepClone(DEFAULT_SAVE);
+  }
+}
+function saveSave() {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    }
+  } catch (e) { /* private mode / quota — ignore */ }
+}
+let save = loadSave();
+
 // ---------- Canvas / context ----------
 const W = 640;
 const H = 360;
@@ -483,6 +525,14 @@ function makePlayer(charKey, x, y) {
     parryMeter: 0,        // 0-100 — at 100, next ATK fires free counter-special
     grabbing: null,       // enemy currently held in grab
     grabFrames: 0,        // frames since grab started; 0 = not grabbing
+    // Per-run statistics (rolled into save on stage clear / game over).
+    score: 0,
+    hitsLanded: 0,
+    damageDealt: 0,
+    parryPerfectCount: 0,
+    parryGoodCount: 0,
+    maxCombo: 0,
+    stagesClearedThisRun: 0,
     hurtboxes: [],
     hitboxes: [],
     attackHits: null,     // Set of victims hit by the current attack (no double-hit)
@@ -3936,6 +3986,9 @@ function applyHit(target, hb, attacker) {
     const before = player.comboHits;
     player.comboHits++;
     player.comboTimer = 1.4;
+    player.hitsLanded++;
+    player.damageDealt += hb.damage;
+    if (player.comboHits > player.maxCombo) player.maxCombo = player.comboHits;
     // Milestone celebrations as the combo grows.
     const milestones = COMBO_MILESTONES;
     for (let i = 0; i < milestones.length; i++) {
@@ -4015,6 +4068,7 @@ function resolveParry(p, hb, attacker) {
 
   if (tier === "PERFECT") {
     p.parryMeter = Math.min(100, p.parryMeter + 30);
+    p.parryPerfectCount++;
     if (p.parryChain >= 2) p.hp = Math.min(p.hpMax, p.hp + PARRY_HEAL_HP);
     if (attacker && !attacker.dead) {
       const counterDmg = Math.round(hb.damage * PARRY_PERFECT_BONUS);
@@ -4040,6 +4094,7 @@ function resolveParry(p, hb, attacker) {
     flashFrames = Math.max(flashFrames, 5);
   } else if (tier === "GOOD") {
     p.parryMeter = Math.min(100, p.parryMeter + 20);
+    p.parryGoodCount++;
     if (attacker && !attacker.dead) {
       attacker.hitstun = 30;
       attacker.attacking = false;
@@ -4195,11 +4250,12 @@ function updateGameOver(dt) {
 }
 
 function updateTitle(dt) {
-  // Quick character toggle on the title screen (will be replaced by the proper
-  // character-select panel in Phase 4.2).
-  if (consumePress("Digit1")) selectedChar = "rio";
-  if (consumePress("Digit2")) selectedChar = "duke";
-  if (consumePress("Digit3")) selectedChar = "atlas";
+  // Quick character toggle on the title screen — gated by save unlocks.
+  if (consumePress("Digit1") && save.unlocks.rio)   selectedChar = "rio";
+  if (consumePress("Digit2") && save.unlocks.duke)  selectedChar = "duke";
+  if (consumePress("Digit3") && save.unlocks.atlas) selectedChar = "atlas";
+  // If the user's stored character is no longer unlocked, snap back to Rio.
+  if (!save.unlocks[selectedChar]) selectedChar = "rio";
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
     enterPlaying();
   }
@@ -4335,6 +4391,8 @@ function updatePlaying(dt) {
     if (!player.deathTimerStarted) {
       player.deathTimerStarted = true;
       player.deathClock = 1.6;
+      // Roll the run's stats into the save on death.
+      finalizeRun(false);
     }
     player.deathClock -= dt;
     player.x += player.knockX * dt;
@@ -4377,6 +4435,19 @@ function beginStageClear() {
   const stage = STAGES[currentStage];
   stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
   stageClearTimer = 2.4;
+  if (player) {
+    player.stagesClearedThisRun++;
+    // Update per-stage best combo.
+    const prev = save.bestComboPerStage[currentStage] || 0;
+    if (player.maxCombo > prev) {
+      save.bestComboPerStage[currentStage] = player.maxCombo;
+    }
+    if (player.maxCombo > save.bestCombo) save.bestCombo = player.maxCombo;
+    save.stagesCleared = Math.max(save.stagesCleared, player.stagesClearedThisRun);
+    // Atlas unlocks after clearing 3 stages in any run.
+    if (player.stagesClearedThisRun >= 3) save.unlocks.atlas = true;
+    saveSave();
+  }
 }
 
 function advanceStage() {
@@ -4389,6 +4460,7 @@ function advanceStage() {
   projectiles = [];
   if (currentStage >= STAGES.length) {
     // End of currently-built stages. Phase 4.1 extends to 10.
+    finalizeRun(true);
     setState("victory");
     return;
   }
@@ -4398,6 +4470,23 @@ function advanceStage() {
     player.y = 300;
     player.vx = 0; player.vy = 0;
   }
+}
+
+// Compute the run's final score, update char-specific high score, persist.
+function finalizeRun(victorious) {
+  if (!player) return;
+  const score = (player.damageDealt | 0)
+              + player.maxCombo * 50
+              + player.parryPerfectCount * 25
+              + player.parryGoodCount * 10
+              + player.stagesClearedThisRun * 1000
+              + (victorious ? 5000 : 0);
+  player.score = score;
+  if (score > (save.highScores[player.char] || 0)) {
+    save.highScores[player.char] = score;
+  }
+  save.runs++;
+  saveSave();
 }
 
 function applyStageHazards(dt) {
@@ -4435,13 +4524,12 @@ function renderVictory() {
   X.font = "bold 28px ui-monospace, monospace";
   X.textAlign = "center";
   X.textBaseline = "middle";
-  X.fillText("BLOCK HELD.", W / 2, H / 2 - 18);
-  X.fillStyle = "#ddd";
-  X.font = "12px ui-monospace, monospace";
-  X.fillText("(more stages arrive in the next phase)", W / 2, H / 2 + 4);
+  X.fillText("BLOCK HELD.", W / 2, H / 2 - 30);
+  if (player) drawRunRecap(W / 2, H / 2);
   const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 2);
   X.fillStyle = "rgba(255,255,255," + pulse.toFixed(2) + ")";
-  X.fillText("PRESS ENTER", W / 2, H / 2 + 36);
+  X.font = "12px ui-monospace, monospace";
+  X.fillText("PRESS ENTER", W / 2, H / 2 + 64);
 }
 
 function renderGameOver() {
@@ -4452,13 +4540,37 @@ function renderGameOver() {
   X.font = "bold 28px ui-monospace, monospace";
   X.textAlign = "center";
   X.textBaseline = "middle";
-  X.fillText("GAME OVER", W / 2, H / 2 - 14);
+  X.fillText("GAME OVER", W / 2, H / 2 - 30);
   X.fillStyle = "#ddd";
-  X.font = "12px ui-monospace, monospace";
-  X.fillText("the block fell.", W / 2, H / 2 + 8);
+  X.font = "11px ui-monospace, monospace";
+  X.fillText("the block fell.", W / 2, H / 2 - 14);
+  if (player) drawRunRecap(W / 2, H / 2);
   const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 2);
   X.fillStyle = "rgba(255,255,255," + pulse.toFixed(2) + ")";
-  X.fillText("PRESS ENTER", W / 2, H / 2 + 36);
+  X.font = "12px ui-monospace, monospace";
+  X.fillText("PRESS ENTER", W / 2, H / 2 + 64);
+}
+
+// Stat readout shown on victory / gameover screens.
+function drawRunRecap(cx, cy) {
+  X.font = "10px ui-monospace, monospace";
+  X.fillStyle = "#ddd";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  const lines = [
+    "score        " + player.score,
+    "max combo    " + player.maxCombo,
+    "perfect parries  " + player.parryPerfectCount,
+    "stages cleared   " + player.stagesClearedThisRun,
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    X.fillText(lines[i], cx, cy + i * 12);
+  }
+  // Highlight if we set a new HI score.
+  if (player.score > 0 && player.score >= (save.highScores[player.char] || 0)) {
+    X.fillStyle = "#e8c04a";
+    X.fillText("NEW HI-SCORE", cx, cy + lines.length * 12 + 4);
+  }
 }
 
 function renderTitle() {
@@ -4484,13 +4596,37 @@ function renderTitle() {
   X.fillText("PRESS ENTER", W / 2, H / 2 + 56);
 
   // Character selection hint — temporary; full select panel arrives in 4.2.
-  X.fillStyle = "#888";
   X.font = "10px ui-monospace, monospace";
   X.textAlign = "center";
-  const charLabel = selectedChar.toUpperCase();
-  X.fillText("[1] RIO   [2] DUKE   [3] ATLAS", W / 2, H - 30);
+  const slots = [
+    { num: "1", name: "RIO",   key: "rio"   },
+    { num: "2", name: "DUKE",  key: "duke"  },
+    { num: "3", name: "ATLAS", key: "atlas" },
+  ];
+  const lineY = H - 30;
+  let s = "";
+  for (const slot of slots) {
+    const locked = !save.unlocks[slot.key];
+    const tag = locked ? slot.name + "*" : slot.name;
+    s += "[" + slot.num + "] " + tag + (slot === slots[slots.length - 1] ? "" : "   ");
+  }
+  X.fillStyle = "#888";
+  X.fillText(s, W / 2, lineY);
   X.fillStyle = "#e8c04a";
-  X.fillText("> " + charLabel + " <", W / 2, H - 16);
+  X.fillText("> " + selectedChar.toUpperCase() + " <", W / 2, H - 16);
+  // High score and personal best beneath the selector.
+  if (save.highScores[selectedChar] > 0 || save.bestCombo > 0) {
+    X.fillStyle = "#aaa";
+    X.font = "9px ui-monospace, monospace";
+    X.fillText("HI-SCORE " + (save.highScores[selectedChar] || 0) +
+               "   BEST COMBO " + save.bestCombo,
+               W / 2, H - 4);
+  }
+  if (!save.unlocks.atlas) {
+    X.fillStyle = "#666";
+    X.font = "8px ui-monospace, monospace";
+    X.fillText("* clear 3 stages to unlock ATLAS", W / 2, H - 44);
+  }
 }
 
 function renderPlaying() {
