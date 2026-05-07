@@ -59,6 +59,22 @@ function step(frames) {
   for (let i = 0; i < frames; i++) window.__advance(17);
 }
 
+// Helper: drive the state machine from ANY state to a fresh "playing" run.
+// Always cycles through title and select so tests start from clean state
+// rather than reusing an in-progress run.
+function goToPlay() {
+  if (window.eval("STATE") !== "title") {
+    press("Escape"); step(4);
+  }
+  // From title press through select → playing.
+  if (window.eval("STATE") === "title") {
+    press("Enter"); step(4);
+  }
+  if (window.eval("STATE") === "select") {
+    press("Enter"); step(4);
+  }
+}
+
 function snapshot(name) {
   const c = document.getElementById("c");
   const url = c.toDataURL("image/png");
@@ -84,8 +100,8 @@ function peek(expr) {
   console.log("STATE after boot:", peek("STATE"));
   snapshot("01_title");
 
-  press("Enter");
-  step(2);
+  press("Enter"); step(2);   // title -> select
+  press("Enter"); step(2);   // select -> playing
   console.log("STATE after Enter:", peek("STATE"), "player:", !!peek("player"));
   snapshot("02_playing_idle");
 
@@ -150,10 +166,7 @@ function peek(expr) {
 
   // ---- RUNNER combat ----
   // Walk into the runners and attack until the first dies.
-  press("Escape");          // back to title
-  step(2);
-  press("Enter");           // re-enter playing (spawns 2 runners at 440,280 and 520,320)
-  step(2);
+  goToPlay();
   console.log("\nenemies spawned:", peek("enemies.length"));
   // Walk right until adjacent to the first runner, then stop.
   hold("KeyD");
@@ -214,8 +227,7 @@ function peek(expr) {
   console.log("after cleanup: enemies =", peek("enemies.length"));
 
   // ---- COMBO CHAIN: J → J → J (atk1 → atk2 → atk3) ----
-  press("Escape");  step(2);
-  press("Enter");   step(2);
+  goToPlay();
   // Walk in to range.
   hold("KeyD");
   while (true) {
@@ -243,8 +255,7 @@ function peek(expr) {
   console.log("combo dealt:", startHp - peek("enemies[0] && enemies[0].hp || 0"), "dmg total");
 
   // ---- DODGE: clean test, no enemies in range ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   // Walk off to the left so runners are off-screen-far when we test dodge.
   hold("KeyA"); step(40); release("KeyA"); step(2);
   hold("ArrowDown");
@@ -268,8 +279,7 @@ function peek(expr) {
   snapshot("15_jump_atk");
 
   // ---- HEAVY whiff: confirm K starts the heavy attack from idle ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   press("KeyK"); step(15);
   console.log("heavy whiff:",
               "atkName=", peek("player.attackName"),
@@ -277,8 +287,7 @@ function peek(expr) {
   snapshot("13_launcher");
 
   // ---- LAUNCHER: position runner adjacent and disable its AI swipe ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   // Mutate state directly: place runner [0] in range, raise its cooldown so it
   // won't swipe Rio mid-startup, and clear runner [1] so it doesn't interfere.
   window.eval(
@@ -310,8 +319,7 @@ function peek(expr) {
   // phase starts (attackFrame becomes 7) on the same tick that the player's
   // parryFrame reaches `targetParryFrame`.
   function setupParry(targetParryFrame) {
-    press("Escape"); step(2);
-    press("Enter");  step(2);
+    goToPlay();
     // attackFrame increments at the start of each updateRunner tick. Tick K sees
     // attackFrame = startFrame + K. Active phase starts when attackFrame = 7.
     // Choose startFrame so startFrame + targetParryFrame == 7.
@@ -364,8 +372,7 @@ function peek(expr) {
   snapshot("19_parry_late");
 
   // COUNTER-SPECIAL at full meter: J fires rio_counter free.
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval("player.parryMeter = 100;");
   press("KeyJ");
   step(2);
@@ -375,8 +382,7 @@ function peek(expr) {
   snapshot("20_counter_special");
 
   // ---- BACK ATTACK: hold left (against facing=right) + J ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   // Place runner directly behind player, facing right.
   window.eval(
     "player.facing = 1;" +
@@ -394,8 +400,7 @@ function peek(expr) {
   snapshot("21_back_atk");
 
   // ---- SPECIAL: Sunset Spin — costs HP, multi-hit AOE ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval(
     "enemies[0].x = player.x + 18; enemies[0].y = player.y;" +
     "enemies[0].aiCooldown = 5;" +
@@ -416,8 +421,7 @@ function peek(expr) {
   snapshot("22_sunset_spin");
 
   // ---- GRAB + THROW ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval(
     "enemies[0].x = player.x + 16; enemies[0].y = player.y;" +
     "enemies[0].aiCooldown = 5;" +
@@ -466,9 +470,9 @@ function peek(expr) {
   snapshot("26_duke_special");
 
   // ---- ATLAS ----
-  press("Escape"); step(2);
-  press("Digit3"); step(2);
-  press("Enter");  step(2);
+  // Force atlas unlocked for the test (early in the run it's still locked).
+  window.eval("save.unlocks.atlas = true; selectedChar = 'atlas';");
+  goToPlay();
   console.log("atlas chosen: char =", peek("player.char"),
               "hp=", peek("player.hp"),
               "walkSpeed=", peek("player.walkSpeed"));
@@ -564,8 +568,7 @@ function peek(expr) {
   snapshot("33_tank_armor");
 
   // ---- DOJO deflect ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval(
     "enemies = [makeEnemy('dojo', player.x + 22, player.y)];" +
     "enemies[0].aiCooldown = 999;" +
@@ -580,8 +583,7 @@ function peek(expr) {
 
   // ---- STAGE BACKDROPS: snapshot each ----
   for (let s = 0; s < 5; s++) {
-    press("Escape"); step(2);
-    press("Enter");  step(2);
+    goToPlay();
     window.eval("currentStage = " + s + "; enemies = []; particles = []; projectiles = [];");
     step(4);
     console.log("stage " + s + " (" + peek("STAGES[" + s + "].name") + "): rendered");
@@ -589,8 +591,7 @@ function peek(expr) {
   }
 
   // ---- STAGE PROGRESSION: clear wave, observe wave delay then next wave spawn ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval("currentStage = 0; currentWave = 0; enemies.forEach(e => { e.dead = true; e.deathTimer = 100; });");
   step(70); // wait for waveDelay (1.0s) + cleanup
   console.log("after clear wave 0: currentWave =", peek("currentWave"),
@@ -599,8 +600,7 @@ function peek(expr) {
   snapshot("46_wave_advance");
 
   // ---- BARON: spawn directly and verify HP bar + AI pattern ----
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   window.eval(
     "currentStage = 2; currentWave = 0;" +
     "enemies = [makeEnemy('baron', 480, 300)];" +
@@ -636,8 +636,7 @@ function peek(expr) {
 
   // ---- SAVE / LOAD: Atlas unlock after clearing 3 stages ----
   console.log("before unlock: atlas =", peek("save.unlocks.atlas"));
-  press("Escape"); step(2);
-  press("Enter");  step(2);
+  goToPlay();
   // Simulate clearing three stages.
   window.eval(
     "player.stagesClearedThisRun = 0;" +
@@ -665,8 +664,7 @@ function peek(expr) {
 
   // ---- LATE-GAME STAGES: snapshot backdrops 6-10 ----
   for (let s = 5; s < 10; s++) {
-    press("Escape"); step(4);
-    press("Enter");  step(6);
+    goToPlay();
     if (!peek("player")) {
       // Force enter playing — title machinery may have eaten the Enter.
       window.eval("enterPlaying();");
@@ -680,8 +678,7 @@ function peek(expr) {
 
   // ---- LATE BOSSES: spawn each, snapshot ----
   for (const b of ["razor", "volt", "blackwell"]) {
-    press("Escape"); step(2);
-    press("Enter");  step(2);
+    goToPlay();
     window.eval("enemies = [makeEnemy('" + b + "', 460, 300)];");
     step(8);
     console.log(b + ": hp =", peek("enemies[0].hp"),
@@ -689,9 +686,23 @@ function peek(expr) {
     snapshot("6" + b[0] + "_" + b);
   }
 
-  // ---- KANE CINEMATIC: enter directly and watch ----
+  // ---- CHARACTER SELECT screen ----
   press("Escape"); step(2);
-  press("Enter");  step(2);
+  // From title, Enter goes to select.
+  press("Enter"); step(4);
+  console.log("select state =", peek("STATE"), "selectedChar =", peek("selectedChar"));
+  snapshot("80_select_rio");
+  press("ArrowRight"); step(4);
+  console.log("after right: selectedChar =", peek("selectedChar"));
+  snapshot("81_select_duke");
+  press("ArrowRight"); step(4);
+  console.log("after right (atlas unlocked? " + peek("save.unlocks.atlas") + "): selectedChar =", peek("selectedChar"));
+  snapshot("82_select_atlas");
+  press("Enter"); step(4);
+  console.log("after enter from select: STATE =", peek("STATE"));
+
+  // ---- KANE CINEMATIC: enter directly and watch ----
+  goToPlay();
   window.eval("currentStage = 9;");
   step(2);
   window.eval("beginKaneCinematic();");

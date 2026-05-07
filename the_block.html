@@ -494,6 +494,63 @@ const CHAR_STATS = {
   atlas: { walkSpeed: 52, runSpeed: 96,  jumpVel: 180, hp: 130 },
 };
 
+// Character bios — used by the character-select panel. Wording is verbatim
+// from the project brief so the personality stays consistent across UI.
+const CHAR_BIOS = {
+  rio: {
+    name: "RIO",
+    age: 24,
+    role: "speed / finesse",
+    stats: { Speed: 5, Power: 2, Range: 3 },
+    signature: "Sunset Spin",
+    sigDesc: "Spinning leg sweep into rising double-fist uppercut. Yellow bandana trails through the arc.",
+    quote: "She smiles when she lands a clean combo.",
+    bio: [
+      "Foster care. Learned to fight on the streets.",
+      "Marcus, a retired pro boxer, found her sparring",
+      "strangers for cash and took her in.",
+      "He died last year. She runs his old gym free for kids.",
+      "The block being torn down is where Marcus first found her.",
+    ],
+    accent: "#e8c04a",
+  },
+  duke: {
+    name: "DUKE",
+    age: 31,
+    role: "balanced",
+    stats: { Speed: 3, Power: 4, Range: 3 },
+    signature: "Rolling Thunder",
+    sigDesc: "Three-hit elbow combo finishing with a haymaker that drops his weight into the strike.",
+    quote: "Tells himself it's about the gym.",
+    bio: [
+      "Semi-pro boxer until the knee injury.",
+      "Bouncing. Debt collection. Things he doesn't talk about.",
+      "Came back when he heard the gym was in trouble.",
+      "Marcus once kept him out of jail.",
+      "It's about that, too.",
+    ],
+    accent: "#a08c4a",
+  },
+  atlas: {
+    name: "ATLAS",
+    age: 47,
+    role: "power / grappler",
+    stats: { Speed: 2, Power: 5, Range: 4 },
+    signature: "Foundation Stone",
+    sigDesc: "Running shoulder charge, picks the enemy up, two-handed slam. The ground shakes.",
+    quote: "Calls everyone 'kid'. Slow to anger.",
+    bio: [
+      "Gym regular for 20 years. Owns the hardware store next door.",
+      "Married. Kids in college.",
+      "Has been holding the block together for years —",
+      "legally, financially, and physically.",
+      "Now they sent people he can't reason with.",
+    ],
+    accent: "#a83040",
+  },
+};
+const CHAR_ORDER = ["rio", "duke", "atlas"];
+
 function makePlayer(charKey, x, y) {
   const stats = CHAR_STATS[charKey] || CHAR_STATS.rio;
   return {
@@ -4896,10 +4953,178 @@ function frame(nowMs) {
 function update(dt) {
   stateTime += dt;
   if (STATE === "title") updateTitle(dt);
+  else if (STATE === "select") updateSelect(dt);
   else if (STATE === "playing") updatePlaying(dt);
   else if (STATE === "cinematic") updateCinematic(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
+}
+
+// ---------- Character select (Phase 4.2) ----------
+let selectIdx = 0;
+
+function updateSelect(dt) {
+  // Sync selectIdx to selectedChar on entry.
+  const curIdx = CHAR_ORDER.indexOf(selectedChar);
+  if (curIdx !== -1 && curIdx !== selectIdx) selectIdx = curIdx;
+
+  // Left/right wraps and skips locked slots.
+  function step(dir) {
+    for (let i = 0; i < CHAR_ORDER.length; i++) {
+      selectIdx = (selectIdx + dir + CHAR_ORDER.length) % CHAR_ORDER.length;
+      if (save.unlocks[CHAR_ORDER[selectIdx]]) break;
+    }
+    selectedChar = CHAR_ORDER[selectIdx];
+  }
+  if (consumePress("ArrowLeft")  || consumePress("KeyA")) step(-1);
+  if (consumePress("ArrowRight") || consumePress("KeyD")) step( 1);
+  if (consumePress("Digit1") && save.unlocks.rio)   { selectedChar = "rio";   selectIdx = 0; }
+  if (consumePress("Digit2") && save.unlocks.duke)  { selectedChar = "duke";  selectIdx = 1; }
+  if (consumePress("Digit3") && save.unlocks.atlas) { selectedChar = "atlas"; selectIdx = 2; }
+  if (consumePress("Escape")) { setState("title"); return; }
+  if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
+    if (save.unlocks[selectedChar]) enterPlaying();
+  }
+}
+
+function renderSelect() {
+  const bio = CHAR_BIOS[selectedChar];
+  const accent = bio ? bio.accent : "#e8c04a";
+  // Atmospheric backdrop — a darkened version of stage 1.
+  drawStageBlock();
+  X.fillStyle = "rgba(0,0,0,0.62)";
+  X.fillRect(0, 0, W, H);
+
+  // Top header.
+  X.fillStyle = accent;
+  X.fillRect(W / 2 - 130, 22, 260, 2);
+  X.fillStyle = "#fff";
+  X.font = "bold 18px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("CHOOSE YOUR FIGHTER", W / 2, 36);
+
+  // Big procedural portrait on the left. Build a scratch entity at a fixed
+  // anchor and let the character renderer draw it.
+  const portraitX = 130;
+  const portraitY = 250;
+  const stub = makePlayer(selectedChar, portraitX, portraitY);
+  stub.facing = 1;
+  stub.animState = "idle";
+  stub.animTime = stateTime;
+  // Wide stage strip backdrop for the portrait.
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.fillRect(40, 86, 180, 200);
+  X.fillStyle = "rgba(255,255,255,0.05)";
+  X.fillRect(40, 86, 180, 1);
+  X.fillRect(40, 285, 180, 1);
+  // Floor stripe under the portrait.
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(portraitX, portraitY + 4, 40, 4, 0, 0, Math.PI*2); X.fill();
+  // Render the portrait at 2x scale by re-using the existing renderer through
+  // a temporary ctx transform.
+  X.save();
+  X.translate(portraitX, portraitY);
+  X.scale(2, 2);
+  X.translate(-portraitX, -portraitY);
+  drawCharacter(stub);
+  X.restore();
+
+  // Right panel — bio and stats.
+  const panelX = 250;
+  let cy = 100;
+  X.fillStyle = accent;
+  X.font = "bold 22px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "alphabetic";
+  X.fillText(bio.name, panelX, cy);
+  // Age + role line.
+  X.fillStyle = "#aaa";
+  X.font = "10px ui-monospace, monospace";
+  X.fillText("age " + bio.age + "   " + bio.role, panelX, cy + 14);
+  cy += 28;
+
+  // Stats bars.
+  X.fillStyle = "#888";
+  X.font = "9px ui-monospace, monospace";
+  for (const stat of ["Speed", "Power", "Range"]) {
+    X.fillStyle = "#aaa";
+    X.fillText(stat.toUpperCase(), panelX, cy);
+    const v = bio.stats[stat] || 0;
+    const bx = panelX + 60, by = cy - 7, bw = 120, bh = 6;
+    X.fillStyle = "#222";
+    X.fillRect(bx, by, bw, bh);
+    X.fillStyle = accent;
+    X.fillRect(bx, by, Math.round((bw / 5) * v), bh);
+    // Pip ticks.
+    X.fillStyle = "#0a0a0a";
+    for (let i = 1; i < 5; i++) X.fillRect(bx + Math.round((bw / 5) * i), by, 1, bh);
+    cy += 14;
+  }
+
+  // Signature.
+  cy += 6;
+  X.fillStyle = accent;
+  X.font = "bold 11px ui-monospace, monospace";
+  X.fillText("SIGNATURE  " + bio.signature, panelX, cy);
+  cy += 12;
+  X.fillStyle = "#aaa";
+  X.font = "9px ui-monospace, monospace";
+  // Wrap signature description manually at ~46 chars.
+  for (const ln of wrapText(bio.sigDesc, 46)) {
+    X.fillText(ln, panelX, cy);
+    cy += 10;
+  }
+  cy += 8;
+  X.fillStyle = "#888";
+  X.font = "italic 9px ui-monospace, monospace";
+  X.fillText('"' + bio.quote + '"', panelX, cy);
+  cy += 14;
+  X.fillStyle = "#ddd";
+  X.font = "9px ui-monospace, monospace";
+  for (const ln of bio.bio) {
+    X.fillText(ln, panelX, cy);
+    cy += 10;
+  }
+
+  // Slot indicator at the bottom — three pips. Locked ones greyed.
+  const pipY = H - 26;
+  for (let i = 0; i < CHAR_ORDER.length; i++) {
+    const ck = CHAR_ORDER[i];
+    const cx = W / 2 + (i - 1) * 28;
+    const locked = !save.unlocks[ck];
+    X.fillStyle = locked ? "#444" : (i === selectIdx ? CHAR_BIOS[ck].accent : "#666");
+    X.fillRect(cx - 8, pipY, 16, 4);
+    if (i === selectIdx) {
+      X.strokeStyle = "#fff";
+      X.lineWidth = 1;
+      X.strokeRect(cx - 9.5, pipY - 1.5, 19, 7);
+    }
+  }
+  // Hi-score readout.
+  X.fillStyle = "#aaa";
+  X.font = "9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("HI-SCORE " + (save.highScores[selectedChar] || 0), W / 2, H - 12);
+
+  // Help line.
+  X.fillStyle = "#888";
+  X.font = "9px ui-monospace, monospace";
+  X.fillText("← / → to switch    ENTER to begin    ESC back", W / 2, 64);
+}
+
+// Word-wrap a single line into N-char-max chunks (whitespace-aware).
+function wrapText(text, maxChars) {
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let cur = "";
+  for (const w of words) {
+    if (!cur) { cur = w; continue; }
+    if (cur.length + 1 + w.length <= maxChars) cur += " " + w;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 // ---------- Kane QTE cinematic (Stage 10 finale) ----------
@@ -5074,14 +5299,14 @@ function updateGameOver(dt) {
 }
 
 function updateTitle(dt) {
-  // Quick character toggle on the title screen — gated by save unlocks.
-  if (consumePress("Digit1") && save.unlocks.rio)   selectedChar = "rio";
-  if (consumePress("Digit2") && save.unlocks.duke)  selectedChar = "duke";
-  if (consumePress("Digit3") && save.unlocks.atlas) selectedChar = "atlas";
-  // If the user's stored character is no longer unlocked, snap back to Rio.
+  // Number keys jump straight into the character select panel pre-pointed at
+  // the chosen slot.
+  if (consumePress("Digit1") && save.unlocks.rio)   { selectedChar = "rio";   setState("select"); return; }
+  if (consumePress("Digit2") && save.unlocks.duke)  { selectedChar = "duke";  setState("select"); return; }
+  if (consumePress("Digit3") && save.unlocks.atlas) { selectedChar = "atlas"; setState("select"); return; }
   if (!save.unlocks[selectedChar]) selectedChar = "rio";
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
-    enterPlaying();
+    setState("select");
   }
 }
 
@@ -5449,6 +5674,7 @@ function render() {
   X.fillStyle = "#000";
   X.fillRect(0, 0, W, H);
   if (STATE === "title") renderTitle();
+  else if (STATE === "select") renderSelect();
   else if (STATE === "playing") renderPlaying();
   else if (STATE === "cinematic") renderCinematic();
   else if (STATE === "victory") renderVictory();
