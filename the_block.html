@@ -162,7 +162,8 @@ document.addEventListener("visibilitychange", () => {
 
 // ---------- Resize / scale ----------
 let scale = 1;
-let isMobile = matchMedia("(pointer: coarse)").matches;
+let isMobile = (typeof matchMedia === "function") &&
+               matchMedia("(pointer: coarse)").matches;
 
 function resize() {
   const vw = window.innerWidth;
