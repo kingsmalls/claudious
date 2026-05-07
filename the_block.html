@@ -197,7 +197,7 @@ let fpsAccum = 0;
 let fpsFrames = 0;
 
 function entityCount() {
-  return (player ? 1 : 0);
+  return (player ? 1 : 0) + enemies.length + particles.length;
 }
 
 // ---------- Stage geometry (2.5D plane) ----------
@@ -210,13 +210,18 @@ const STAGE_RIGHT_PAD = 12;
 const GRAVITY = 620;       // px / s^2
 
 // ---------- Frame-data driven attacks ----------
-// Frames are 60Hz fixed-step ticks. ox is forward offset from player center.
-// w/h are screen-rect dimensions; depth is the y-axis thickness for 2.5D collisions later.
+// Frames are 60Hz fixed-step ticks. Hitboxes are world-space:
+//   fwd  forward distance from player center along facing
+//   hw   half-width on world X (horizontal)
+//   hd   half-depth on world Y (depth axis)
+//   lo,hi  vertical Z range above ground (for jump-over later)
 const ATTACK_DATA = {
   rio_atk1: {
     startup: 4, active: 3, recovery: 9,
     damage: 5,
-    hit: { ox: 14, oy: -28, w: 22, h: 12, depth: 14 },
+    knockback: 80,
+    hitstop: 4,
+    hit: { fwd: 18, hw: 11, hd: 7, lo: 0, hi: 36 },
   },
 };
 
@@ -239,6 +244,10 @@ function makePlayer(charKey, x, y) {
     attackName: null,
     attackFrame: 0,
     hp: 100, hpMax: 100,
+    iframes: 0,
+    hitstun: 0,
+    knockX: 0, knockY: 0,
+    dead: false,
     hurtboxes: [],
     hitboxes: [],
   };
@@ -260,11 +269,15 @@ function advanceAttack(p) {
   if (p.attackFrame > d.startup && p.attackFrame <= d.startup + d.active) {
     const h = d.hit;
     p.hitboxes.push({
-      x: p.x + p.facing * h.ox - h.w / 2,
-      y: p.y + h.oy,
-      w: h.w, h: h.h,
-      depth: h.depth,
+      cx: p.x + p.facing * h.fwd,
+      cy: p.y,
+      hw: h.hw, hd: h.hd,
+      lo: h.lo, hi: h.hi,
       damage: d.damage,
+      knockback: d.knockback,
+      hitstop: d.hitstop,
+      facing: p.facing,
+      owner: p,
     });
   }
   if (p.attackFrame >= total) {
@@ -275,6 +288,26 @@ function advanceAttack(p) {
 }
 
 function updatePlayer(p, dt) {
+  if (p.iframes > 0) p.iframes--;
+
+  // Hitstun: knocked-back movement, no input, no attack progress.
+  if (p.hitstun > 0) {
+    p.hitstun--;
+    p.x += p.knockX * dt;
+    p.y += p.knockY * dt;
+    p.knockX *= 0.82; p.knockY *= 0.82;
+    if (p.x < STAGE_LEFT_PAD) p.x = STAGE_LEFT_PAD;
+    if (p.x > W - STAGE_RIGHT_PAD) p.x = W - STAGE_RIGHT_PAD;
+    if (p.y < STAGE_TOP) p.y = STAGE_TOP;
+    if (p.y > STAGE_BOT) p.y = STAGE_BOT;
+    p.animState = "hurt";
+    p.animTime += dt;
+    p.hitboxes.length = 0;
+    p.hurtboxes.length = 0;
+    p.hurtboxes.push({ cx: p.x, cy: p.y, hw: 9, hd: 5, lo: 0, hi: 36 });
+    return;
+  }
+
   const grounded = p.z <= 0;
   const locked = p.attacking && grounded;
 
@@ -344,11 +377,9 @@ function updatePlayer(p, dt) {
   if (next !== p.animState) { p.animState = next; p.animTime = 0; }
   else p.animTime += dt;
 
-  // Rebuild hurtbox each tick (torso column).
+  // Rebuild hurtbox each tick (torso column, world coords).
   p.hurtboxes.length = 0;
-  p.hurtboxes.push({
-    x: p.x - 9, y: p.y - 36, w: 18, h: 32, depth: 10,
-  });
+  p.hurtboxes.push({ cx: p.x, cy: p.y, hw: 9, hd: 5, lo: 0, hi: 36 });
 }
 
 // ---------- Rio: procedural fillRect rendering ----------
@@ -568,26 +599,25 @@ function drawHUD() {
 
 // ---------- DEV: hitbox / hurtbox visualizer ----------
 function drawDebugBoxes() {
-  if (!player) return;
   X.lineWidth = 1;
-  // Hurtboxes (green)
-  X.strokeStyle = "rgba(0,255,128,0.85)";
-  for (let i = 0; i < player.hurtboxes.length; i++) {
-    const b = player.hurtboxes[i];
-    X.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+  function drawFootprint(b, color) {
+    X.strokeStyle = color;
+    X.strokeRect(Math.round(b.cx - b.hw) + 0.5,
+                 Math.round(b.cy - b.hd) + 0.5,
+                 b.hw * 2, b.hd * 2);
   }
-  // Hitboxes (red)
-  X.strokeStyle = "rgba(255,72,72,0.95)";
-  for (let i = 0; i < player.hitboxes.length; i++) {
-    const b = player.hitboxes[i];
-    X.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+  if (player) {
+    for (const b of player.hurtboxes) drawFootprint(b, "rgba(0,255,128,0.85)");
+    for (const b of player.hitboxes)  drawFootprint(b, "rgba(255,72,72,0.95)");
+    X.fillStyle = "#fff";
+    X.fillRect(Math.round(player.x), Math.round(player.y), 1, 1);
   }
-  // Stage strip outline
+  for (const e of enemies) {
+    for (const b of e.hurtboxes) drawFootprint(b, "rgba(0,255,128,0.55)");
+    for (const b of e.hitboxes)  drawFootprint(b, "rgba(255,160,0,0.95)");
+  }
   X.strokeStyle = "rgba(120,160,255,0.5)";
   X.strokeRect(0.5, STAGE_TOP + 0.5, W - 1, STAGE_BOT - STAGE_TOP);
-  // Player anchor
-  X.fillStyle = "#fff";
-  X.fillRect(Math.round(player.x), Math.round(player.y), 1, 1);
 }
 
 // ---------- Stage 1 placeholder backdrop ----------
@@ -616,6 +646,411 @@ function drawStage1() {
   // Curb at bottom.
   X.fillStyle = "#0e0e15";
   X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+}
+
+// ---------- Enemies ----------
+let enemies = [];
+
+const RUNNER_ATK = {
+  startup: 6, active: 4, recovery: 14,
+  damage: 8,
+  knockback: 70,
+  hitstop: 3,
+  hit: { fwd: 14, hw: 9, hd: 6, lo: 0, hi: 32 },
+};
+
+function makeRunner(x, y) {
+  return {
+    type: "runner",
+    x, y, z: 0,
+    vx: 0, vy: 0,
+    facing: -1,
+    animState: "idle",
+    animTime: 0,
+    walkSpeed: 56,
+    runSpeed: 110,
+    hp: 26, hpMax: 26,
+    attacking: false,
+    attackName: null,
+    attackFrame: 0,
+    iframes: 0,
+    hitstun: 0,
+    knockX: 0, knockY: 0,
+    aiCooldown: 0.5 + Math.random() * 0.7,
+    fleeing: false,
+    dead: false,
+    deathTimer: 0,
+    hitboxes: [],
+    hurtboxes: [],
+  };
+}
+
+function updateRunner(e, dt) {
+  if (e.dead) {
+    e.deathTimer += dt;
+    e.x += e.knockX * dt;
+    e.knockX *= 0.86;
+    e.animTime += dt;
+    e.hitboxes.length = 0;
+    e.hurtboxes.length = 0;
+    if (e.x < STAGE_LEFT_PAD) e.x = STAGE_LEFT_PAD;
+    if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
+    return;
+  }
+
+  if (e.iframes > 0) e.iframes--;
+
+  if (e.hitstun > 0) {
+    e.hitstun--;
+    e.x += e.knockX * dt;
+    e.y += e.knockY * dt;
+    e.knockX *= 0.82; e.knockY *= 0.82;
+    if (e.x < STAGE_LEFT_PAD) e.x = STAGE_LEFT_PAD;
+    if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
+    if (e.y < STAGE_TOP) e.y = STAGE_TOP;
+    if (e.y > STAGE_BOT) e.y = STAGE_BOT;
+    e.animState = "hurt";
+    e.animTime += dt;
+    e.hitboxes.length = 0;
+    e.hurtboxes.length = 0;
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: 0, hi: 30 });
+    return;
+  }
+
+  e.aiCooldown -= dt;
+
+  // "Runs at low HP" — flee threshold 30%.
+  if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
+
+  if (player && !player.dead) {
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const dist = Math.hypot(dx, dy) || 0.0001;
+
+    if (e.attacking) {
+      e.attackFrame++;
+      const d = RUNNER_ATK;
+      e.hitboxes.length = 0;
+      if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+        e.hitboxes.push({
+          cx: e.x + e.facing * d.hit.fwd,
+          cy: e.y,
+          hw: d.hit.hw, hd: d.hit.hd,
+          lo: d.hit.lo, hi: d.hit.hi,
+          damage: d.damage,
+          knockback: d.knockback,
+          hitstop: d.hitstop,
+          facing: e.facing,
+          owner: e,
+        });
+      }
+      if (e.attackFrame >= d.startup + d.active + d.recovery) {
+        e.attacking = false;
+        e.attackName = null;
+        e.hitboxes.length = 0;
+        e.aiCooldown = 0.55 + Math.random() * 0.55;
+      }
+      e.animState = "atk";
+    } else if (e.fleeing) {
+      // Run away on the X axis at runSpeed.
+      const fleeDir = (player.x > e.x) ? -1 : 1;
+      e.facing = fleeDir;
+      e.vx = fleeDir * e.runSpeed;
+      e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      e.animState = "walk";
+    } else {
+      // Approach until in attack range.
+      const range = 24;
+      if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+      if (dist > range) {
+        const speed = e.walkSpeed;
+        e.vx = (dx / dist) * speed;
+        e.vy = (dy / dist) * speed;
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        e.animState = "walk";
+      } else {
+        e.vx = 0; e.vy = 0;
+        e.animState = "idle";
+        if (e.aiCooldown <= 0) {
+          e.attacking = true;
+          e.attackName = "swipe";
+          e.attackFrame = 0;
+        }
+      }
+    }
+    e.animTime += dt;
+  } else {
+    e.animState = "idle";
+    e.animTime += dt;
+  }
+
+  if (e.x < STAGE_LEFT_PAD) e.x = STAGE_LEFT_PAD;
+  if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
+  if (e.y < STAGE_TOP) e.y = STAGE_TOP;
+  if (e.y > STAGE_BOT) e.y = STAGE_BOT;
+
+  e.hurtboxes.length = 0;
+  e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: 0, hi: 30 });
+}
+
+// ---------- RUNNER renderer ----------
+const RUNNER_COLORS = {
+  hoodie:     "#36363f",
+  hoodieDark: "#23232a",
+  pants:      "#2f3a4a",
+  pantsDark:  "#1f2838",
+  shoe:       "#d4cfb8",
+  skin:       "#caa07c",
+  hoodShadow: "#0c0a12",
+};
+
+function drawRunner(e) {
+  const sx = Math.round(e.x);
+  const sy = Math.round(e.y - e.z);
+  const f  = e.facing;
+  const k  = RUNNER_COLORS;
+  const t  = e.animTime;
+
+  // Drop shadow.
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath();
+  X.ellipse(sx, e.y, 9, 3, 0, 0, Math.PI * 2);
+  X.fill();
+
+  if (e.dead) {
+    // Lying on the ground, hood down, motionless.
+    X.fillStyle = k.hoodie;
+    X.fillRect(sx - 13, sy - 6, 26, 5);
+    X.fillStyle = k.pants;
+    X.fillRect(sx + (f > 0 ? -13 : 1), sy - 2, 12, 4);
+    X.fillStyle = k.shoe;
+    X.fillRect(sx + (f > 0 ? -13 : 9), sy - 1, 4, 3);
+    X.fillStyle = k.hoodShadow;
+    X.fillRect(sx + (f > 0 ? 7 : -13), sy - 5, 6, 4);
+    return;
+  }
+
+  let armSwing = 0, legSwing = 0, bob = 0;
+  if (e.animState === "walk") {
+    const s = Math.sin(t * 11);
+    legSwing = s * 1.5;
+    armSwing = -s * 1.2;
+    bob = Math.abs(s) * 0.5;
+  } else if (e.animState === "hurt") {
+    bob = -2;
+  } else if (e.animState === "atk") {
+    bob = Math.sin(t * 18) * 0.4;
+  }
+
+  const torsoY = sy - 30 - bob;
+  const headY  = sy - 38 - bob;
+
+  // Pants + shoes.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 5, sy - 16 + Math.round(legSwing > 0 ? 0 : 1), 4, 12);
+  X.fillRect(sx + 1, sy - 16 + Math.round(legSwing > 0 ? 1 : 0), 4, 12);
+  X.fillStyle = k.pantsDark;
+  X.fillRect(sx - 5, sy - 12, 4, 1);
+  X.fillRect(sx + 1, sy - 12, 4, 1);
+  X.fillStyle = k.shoe;
+  X.fillRect(sx - 5, sy - 4, 4, 4);
+  X.fillRect(sx + 1, sy - 4, 4, 4);
+
+  // Hoodie torso.
+  X.fillStyle = k.hoodie;
+  X.fillRect(sx - 7, torsoY, 14, 14);
+  X.fillStyle = k.hoodieDark;
+  X.fillRect(sx - 7, torsoY + 13, 14, 1);
+  X.fillStyle = k.hoodShadow;
+  X.fillRect(sx - 6, torsoY + 8, 12, 1); // hoodie pocket seam
+
+  // Arms.
+  let atkReach = 0;
+  if (e.attacking) {
+    const d = RUNNER_ATK;
+    if (e.attackFrame <= d.startup) atkReach = (e.attackFrame / d.startup) * 10;
+    else if (e.attackFrame <= d.startup + d.active) atkReach = 10;
+    else atkReach = Math.max(0, 10 - (e.attackFrame - d.startup - d.active));
+  }
+  // Back arm.
+  const backArmX = (f > 0) ? sx - 9 : sx + 7;
+  X.fillStyle = k.hoodie;
+  X.fillRect(backArmX, torsoY + 1 + Math.round(armSwing), 2, 11);
+  // Front arm.
+  if (atkReach > 0) {
+    const ay = torsoY + 4;
+    const armX = (f > 0) ? sx + 5 : sx - 5 - atkReach - 3;
+    X.fillStyle = k.hoodie;
+    X.fillRect(armX, ay, atkReach + 3, 3);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 5 + atkReach, ay, 3, 3);
+    else       X.fillRect(sx - 5 - atkReach - 3, ay, 3, 3);
+  } else {
+    const frontArmX = (f > 0) ? sx + 7 : sx - 9;
+    X.fillStyle = k.hoodie;
+    X.fillRect(frontArmX, torsoY + 1 - Math.round(armSwing), 2, 11);
+  }
+
+  // Hood — wraps the head, comes to a peak.
+  X.fillStyle = k.hoodie;
+  X.fillRect(sx - 6, headY, 12, 10);
+  X.fillRect(sx - 4, headY - 2, 8, 2);
+  X.fillRect(sx - 3, headY - 4, 6, 2);
+  X.fillStyle = k.hoodieDark;
+  X.fillRect(sx - 6, headY + 9, 12, 1);
+  // Inside-the-hood face shadow with two pale eye dots.
+  X.fillStyle = k.hoodShadow;
+  X.fillRect(sx - 4, headY + 4, 8, 4);
+  X.fillStyle = "#bababa";
+  if (f > 0) {
+    X.fillRect(sx + 1, headY + 5, 1, 1);
+    X.fillRect(sx - 2, headY + 5, 1, 1);
+  } else {
+    X.fillRect(sx - 3, headY + 5, 1, 1);
+    X.fillRect(sx,     headY + 5, 1, 1);
+  }
+
+  // Hurt flash — full white silhouette while iframes are fresh.
+  if (e.iframes > 6) {
+    X.fillStyle = "rgba(255,255,255,0.7)";
+    X.fillRect(sx - 7, headY - 4, 14, 50);
+  }
+
+  // HP pip above head.
+  if (e.hp < e.hpMax) {
+    const bw = 18, bh = 2;
+    const bx = sx - bw / 2;
+    const by = headY - 8;
+    X.fillStyle = "#000";
+    X.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+    X.fillStyle = "#3a1010";
+    X.fillRect(bx, by, bw, bh);
+    X.fillStyle = "#e8c04a";
+    X.fillRect(bx, by, Math.max(0, Math.round(bw * (e.hp / e.hpMax))), bh);
+  }
+}
+
+// ---------- Particles (hit feedback) ----------
+let particles = [];
+
+function spawnSparkle(x, y) {
+  particles.push({ kind: "sparkle", x, y, life: 0, max: 0.18 });
+}
+function spawnDmgNumber(x, y, n) {
+  particles.push({ kind: "dmg", x, y, vy: -28, life: 0, max: 0.55, text: String(n) });
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life += dt;
+    if (p.kind === "dmg") {
+      p.y += p.vy * dt;
+      p.vy += 50 * dt;
+    }
+    if (p.life >= p.max) particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const t = p.life / p.max;
+    if (p.kind === "sparkle") {
+      const r = (1 - t) * 7;
+      const a = (1 - t).toFixed(2);
+      X.fillStyle = "rgba(255,240,180," + a + ")";
+      X.fillRect(p.x - r, p.y - 1, r * 2, 2);
+      X.fillRect(p.x - 1, p.y - r, 2, r * 2);
+      X.fillStyle = "rgba(255,255,255," + a + ")";
+      X.fillRect(p.x - 1, p.y - 1, 2, 2);
+    } else if (p.kind === "dmg") {
+      const a = (1 - t).toFixed(2);
+      X.fillStyle = "rgba(255,255,255," + a + ")";
+      X.font = "bold 9px ui-monospace, monospace";
+      X.textAlign = "center";
+      X.textBaseline = "alphabetic";
+      X.fillText(p.text, Math.round(p.x), Math.round(p.y));
+    }
+  }
+}
+
+// ---------- Hit resolution ----------
+let hitstopFrames = 0;
+
+function boxOverlap(a, b) {
+  return Math.abs(a.cx - b.cx) < a.hw + b.hw &&
+         Math.abs(a.cy - b.cy) < a.hd + b.hd;
+}
+
+function applyHit(target, hb) {
+  if (target.dead) return;
+  target.hp -= hb.damage;
+  target.iframes = 12;
+  // Hit cancels the victim's own attack (no trades).
+  if (target.attacking) {
+    target.attacking = false;
+    target.attackName = null;
+    target.attackFrame = 0;
+  }
+  if (target.hitboxes) target.hitboxes.length = 0;
+  // Knockback away from the hitbox center on world X.
+  const dir = (target.x < hb.cx) ? -1 : 1;
+  target.knockX = dir * hb.knockback;
+  target.knockY = 0;
+  target.hitstun = 8;
+  if (target.hp <= 0) {
+    target.dead = true;
+    target.deathTimer = 0;
+    target.knockX = dir * (hb.knockback + 30);
+    target.hitstun = 0;
+  }
+  if (hitstopFrames < (hb.hitstop || 3)) hitstopFrames = hb.hitstop || 3;
+  // Sparkle at the contact point — midway between attacker and target.
+  const sxp = (target.x + hb.cx) / 2;
+  const syp = target.y - 18;
+  spawnSparkle(sxp, syp);
+  spawnDmgNumber(sxp, syp - 6, hb.damage);
+}
+
+function resolveHits() {
+  if (!player) return;
+  // Player hits enemies.
+  if (player.hitboxes.length > 0 && !player.dead) {
+    for (const hb of player.hitboxes) {
+      // Hitbox can hit each enemy at most once per active frame.
+      for (const e of enemies) {
+        if (e.dead || e.iframes > 0) continue;
+        let connected = false;
+        for (const tb of e.hurtboxes) {
+          if (boxOverlap(hb, tb)) { connected = true; break; }
+        }
+        if (connected) applyHit(e, hb);
+      }
+    }
+  }
+  // Enemies hit player.
+  if (player.iframes <= 0 && !player.dead) {
+    for (const e of enemies) {
+      if (e.dead || e.hitboxes.length === 0) continue;
+      for (const hb of e.hitboxes) {
+        let connected = false;
+        for (const tb of player.hurtboxes) {
+          if (boxOverlap(hb, tb)) { connected = true; break; }
+        }
+        if (connected) { applyHit(player, hb); break; }
+      }
+      if (player.iframes > 0) break; // hit registered, stop checking other enemies this tick
+    }
+  }
+}
+
+function cleanupEnemies() {
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    if (enemies[i].dead && enemies[i].deathTimer > 1.4) enemies.splice(i, 1);
+  }
 }
 
 // ---------- Fixed-timestep loop ----------
@@ -676,16 +1111,30 @@ function updateTitle(dt) {
 
 function enterPlaying() {
   player = makePlayer("rio", 120, 300);
+  enemies = [
+    makeRunner(440, 280),
+    makeRunner(520, 320),
+  ];
+  particles = [];
+  hitstopFrames = 0;
   setState("playing");
 }
 
 function updatePlaying(dt) {
   if (consumePress("Escape")) {
     player = null;
+    enemies = [];
+    particles = [];
+    hitstopFrames = 0;
     setState("title");
     return;
   }
+  if (hitstopFrames > 0) { hitstopFrames--; return; }
   if (player) updatePlayer(player, dt);
+  for (const e of enemies) updateRunner(e, dt);
+  resolveHits();
+  cleanupEnemies();
+  updateParticles(dt);
 }
 
 // ---------- Render ----------
@@ -721,7 +1170,13 @@ function renderTitle() {
 
 function renderPlaying() {
   drawStage1();
-  if (player) drawRio(player);
+  // Depth-sort: deeper (lower world Y) renders first so closer entities cover them.
+  const drawables = [];
+  if (player) drawables.push({ y: player.y, draw: () => drawRio(player) });
+  for (const e of enemies) drawables.push({ y: e.y, draw: () => drawRunner(e) });
+  drawables.sort((a, b) => a.y - b.y);
+  for (const d of drawables) d.draw();
+  drawParticles();
   drawHUD();
   if (DEV && debugEl.classList.contains("on")) drawDebugBoxes();
 

@@ -139,7 +139,7 @@ function peek(expr) {
   console.log("left-facing atk: facing =", peek("player.facing"),
               " attackFrame =", peek("player.attackFrame"),
               " hitboxes =", hb && hb.length,
-              " hitbox.x =", (hb && hb[0]) ? hb[0].x.toFixed(1) : "none");
+              " hitbox.cx =", (hb && hb[0]) ? hb[0].cx.toFixed(1) : "none");
   snapshot("07_attack_left");
 
   // Toggle debug overlay and capture with hitbox visualizer
@@ -147,6 +147,71 @@ function peek(expr) {
   press("KeyJ");
   step(6);
   snapshot("08_debug_hitboxes");
+
+  // ---- RUNNER combat ----
+  // Walk into the runners and attack until the first dies.
+  press("Escape");          // back to title
+  step(2);
+  press("Enter");           // re-enter playing (spawns 2 runners at 440,280 and 520,320)
+  step(2);
+  console.log("\nenemies spawned:", peek("enemies.length"));
+  // Walk right until adjacent to the first runner, then stop.
+  hold("KeyD");
+  let walked = 0;
+  while (walked < 300) {
+    step(2); walked += 2;
+    const e0 = peek("enemies[0]");
+    const px = peek("player.x");
+    if (!e0) break;
+    // Stop just before passing the runner so we keep facing it.
+    if (e0.x - px < 26 && e0.x - px > 0) break;
+  }
+  release("KeyD");
+  step(2);
+  console.log("approach end: player.x =", peek("player.x").toFixed(1),
+              " player.hp =", peek("player.hp"),
+              " e0.x =", peek("enemies[0].x").toFixed(1),
+              " e0.hp =", peek("enemies[0].hp"),
+              " facing =", peek("player.facing"));
+  snapshot("09_runner_approach");
+
+  // Throw a punch — should connect on an active frame.
+  press("KeyJ");
+  step(7);
+  console.log("after first jab: e0.hp =", peek("enemies[0].hp"),
+              " hitstop =", peek("hitstopFrames"),
+              " particles =", peek("particles.length"));
+  snapshot("10_first_hit");
+
+  // Recover, then chase + jab until the runner dies. 26hp / 5dmg = 6 hits min.
+  for (let i = 0; i < 30; i++) {
+    step(20); // wait through recovery + iframes
+    if (!peek("enemies[0]") || peek("enemies[0].dead")) break;
+    const dx = peek("enemies[0].x") - peek("player.x");
+    // Walk into range if knocked or runner stepped back.
+    if (Math.abs(dx) > 24) {
+      hold(dx > 0 ? "KeyD" : "KeyA");
+      while (true) {
+        step(2);
+        if (!peek("enemies[0]") || peek("enemies[0].dead")) break;
+        const cur = peek("enemies[0].x") - peek("player.x");
+        if (Math.abs(cur) <= 22) break;
+        if (Math.sign(cur) !== Math.sign(dx)) break; // overshot
+      }
+      release(dx > 0 ? "KeyD" : "KeyA");
+    }
+    press("KeyJ");
+    step(10);
+  }
+  console.log("after combo: enemies =", peek("enemies.length"),
+              " e0.hp =", peek("enemies[0] && enemies[0].hp"),
+              " e0.dead =", peek("enemies[0] && enemies[0].dead"),
+              " player.hp =", peek("player.hp"));
+  snapshot("11_combo_finish");
+
+  // Wait for cleanup (>1.4s after death), confirm dead enemy is removed.
+  step(120);
+  console.log("after cleanup: enemies =", peek("enemies.length"));
 
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
