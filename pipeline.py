@@ -9,6 +9,9 @@ Subcommands:
   release <output.zip>                 Bundle the release (the_block.html + atlas pairs).
   process-sheet <input.png>            Slice a uniform sprite sheet into atlas + packed PNG.
                                        (Used as the export step from sprite_slicer.html.)
+  build-atlas <layout.json>            Generate an atlas JSON from a per-anim layout config
+                                       (row + col + frame count per anim slot). For sheets
+                                       that already have row-by-row anim labels.
 
 The procedural fallback in the_block.html means atlases are optional —
 this tool helps you maintain them when they exist. Pure stdlib by default;
@@ -218,6 +221,110 @@ def cmd_process_sheet(args):
     return 0
 
 
+# ---------- build-atlas ----------
+# Consumes a small JSON layout config that names each animation slot's
+# starting cell and frame count on a uniform-grid sheet. Outputs a full
+# atlas JSON ready for the engine.
+#
+# Layout config schema:
+#   {
+#     "sheet":       "rio.png",        // source PNG (informational only)
+#     "cell_width":  64,
+#     "cell_height": 96,
+#     "fps":         8,                // optional, default 8
+#     "anchor":      { "x": 0.5, "y": 1.0 },   // optional, default bottom-center
+#     "anims": {
+#       "idle":     { "row": 0, "col": 0, "count": 4 },
+#       "walk":     { "row": 0, "col": 4, "count": 6 },
+#       "run":      { "row": 0, "col": 10, "count": 6 },
+#       "jump":     { "row": 1, "col": 0, "count": 3 },
+#       "atk1":     { "row": 1, "col": 3, "count": 4 },
+#       ...
+#     }
+#   }
+#
+# Wraps to the next row automatically if (col + count) overflows the sheet
+# width, but it's clearer to keep each anim within a single row. Frames are
+# named "<anim>_<index>" in the output atlas.
+
+def cmd_build_atlas(args):
+    layout_path = Path(args.layout)
+    if not layout_path.exists():
+        print(f"[build-atlas] no such file: {layout_path}", file=sys.stderr)
+        return 1
+    try:
+        layout = json.loads(layout_path.read_text())
+    except json.JSONDecodeError as e:
+        print(f"[build-atlas] {layout_path}: invalid JSON: {e}", file=sys.stderr)
+        return 1
+
+    cw = layout.get("cell_width")
+    ch = layout.get("cell_height")
+    if not (isinstance(cw, int) and isinstance(ch, int) and cw > 0 and ch > 0):
+        print("[build-atlas] cell_width and cell_height must be positive integers",
+              file=sys.stderr)
+        return 1
+
+    anims_in = layout.get("anims") or {}
+    if not anims_in:
+        print("[build-atlas] no anims defined in layout", file=sys.stderr)
+        return 1
+
+    # Optional sheet width/height in cells, for overflow detection only.
+    sheet_path = layout.get("sheet")
+    sheet_cols = None
+    if sheet_path:
+        try:
+            from PIL import Image
+            spath = layout_path.parent / sheet_path
+            if spath.exists():
+                with Image.open(spath) as im:
+                    sheet_cols = im.width // cw
+        except ImportError:
+            pass  # overflow detection skipped without Pillow
+
+    frames = {}
+    anims_out = {}
+    for anim_name, spec in anims_in.items():
+        row = spec.get("row")
+        col = spec.get("col")
+        count = spec.get("count")
+        if not all(isinstance(v, int) and v >= 0 for v in (row, col, count)) or count == 0:
+            print(f"[build-atlas] anim '{anim_name}': row/col/count must be non-negative ints "
+                  f"with count > 0", file=sys.stderr)
+            return 1
+        seq = []
+        for i in range(count):
+            cur_col = col + i
+            cur_row = row
+            if sheet_cols and cur_col >= sheet_cols:
+                cur_row += cur_col // sheet_cols
+                cur_col = cur_col % sheet_cols
+            fname = f"{anim_name}_{i}"
+            frames[fname] = {
+                "x": cur_col * cw,
+                "y": cur_row * ch,
+                "w": cw,
+                "h": ch,
+            }
+            seq.append(fname)
+        anims_out[anim_name] = seq
+
+    out = {
+        "fps": layout.get("fps", 8),
+        "frames": frames,
+        "anims": anims_out,
+        "anchor": layout.get("anchor", {"x": 0.5, "y": 1.0}),
+    }
+    Path(args.output).write_text(json.dumps(out, indent=2))
+    missing = [a for a in REQUIRED_ANIMS if a not in anims_out]
+    print(f"[build-atlas] wrote {args.output} — {len(frames)} frames, {len(anims_out)} anims")
+    if missing:
+        print(f"[build-atlas] note: anim slots missing (will fall back to procedural): "
+              f"{', '.join(missing)}")
+    return 0
+
+
 # ---------- entry point ----------
 
 def main():
@@ -241,6 +348,11 @@ def main():
     a = sp.add_parser("release", help="bundle release zip")
     a.add_argument("output", help="output .zip path")
     a.set_defaults(func=cmd_release)
+
+    a = sp.add_parser("build-atlas", help="generate atlas JSON from a per-anim layout config")
+    a.add_argument("layout", help="layout config JSON (sheet, cell size, anim row/col/count)")
+    a.add_argument("--output", "-o", required=True, help="output atlas JSON path")
+    a.set_defaults(func=cmd_build_atlas)
 
     a = sp.add_parser("process-sheet", help="slice a uniform sprite sheet into an atlas")
     a.add_argument("input", help="input PNG sprite sheet")
