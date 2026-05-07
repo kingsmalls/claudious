@@ -124,6 +124,36 @@ function consumePress(k) {
   return false;
 }
 
+// ---------- Action bindings ----------
+// WASD / arrows for movement; right-hand row JKLU for combat.
+const KEY = {
+  left:    ["KeyA", "ArrowLeft"],
+  right:   ["KeyD", "ArrowRight"],
+  up:      ["KeyW", "ArrowUp"],
+  down:    ["KeyS", "ArrowDown"],
+  jump:    ["Space"],
+  light:   ["KeyJ"],
+  heavy:   ["KeyK"],
+  special: ["KeyL"],
+  grab:    ["KeyU"],
+};
+
+function actionHeld(a) {
+  const ks = KEY[a];
+  for (let i = 0; i < ks.length; i++) if (keys[ks[i]]) return true;
+  return false;
+}
+function actionPressed(a) {
+  const ks = KEY[a];
+  for (let i = 0; i < ks.length; i++) if (consumePress(ks[i])) return true;
+  return false;
+}
+
+// Double-tap → run, tracked per side.
+let lastTapLeft = -999;
+let lastTapRight = -999;
+const DOUBLE_TAP_WINDOW = 0.28;
+
 // ---------- Pause / visibility ----------
 let paused = false;
 document.addEventListener("visibilitychange", () => {
@@ -166,8 +196,403 @@ let fpsAccum = 0;
 let fpsFrames = 0;
 
 function entityCount() {
-  // Placeholder: no entities exist yet. Returns 0 so the field is wired.
-  return 0;
+  return (player ? 1 : 0);
+}
+
+// ---------- Stage geometry (2.5D plane) ----------
+// World X is horizontal screen pixels. World Y is depth (also pixels — lower y = back).
+// Z is jump height; screen Y of a feet-anchored sprite is (worldY - z).
+const STAGE_TOP = 232;     // back of play strip
+const STAGE_BOT = 340;     // front of play strip
+const STAGE_LEFT_PAD = 12; // sprite half-width clamp
+const STAGE_RIGHT_PAD = 12;
+const GRAVITY = 620;       // px / s^2
+
+// ---------- Frame-data driven attacks ----------
+// Frames are 60Hz fixed-step ticks. ox is forward offset from player center.
+// w/h are screen-rect dimensions; depth is the y-axis thickness for 2.5D collisions later.
+const ATTACK_DATA = {
+  rio_atk1: {
+    startup: 4, active: 3, recovery: 9,
+    damage: 5,
+    hit: { ox: 14, oy: -28, w: 22, h: 12, depth: 14 },
+  },
+};
+
+// ---------- Player ----------
+let player = null;
+
+function makePlayer(charKey, x, y) {
+  return {
+    char: charKey,
+    x, y, z: 0,
+    vx: 0, vy: 0, vz: 0,
+    facing: 1,
+    animState: "idle",
+    animTime: 0,
+    running: false,
+    walkSpeed: 78,   // Rio: speed 5 of 5 in stat tier
+    runSpeed: 148,
+    jumpVel: 210,
+    attacking: false,
+    attackName: null,
+    attackFrame: 0,
+    hp: 100, hpMax: 100,
+    hurtboxes: [],
+    hitboxes: [],
+  };
+}
+
+function startAttack(p, name) {
+  p.attacking = true;
+  p.attackName = name;
+  p.attackFrame = 0;
+  p.vx = 0; p.vy = 0;
+  p.hitboxes.length = 0;
+}
+
+function advanceAttack(p) {
+  const d = ATTACK_DATA[p.char + "_" + p.attackName];
+  if (!d) { p.attacking = false; p.attackName = null; return; }
+  const total = d.startup + d.active + d.recovery;
+  p.hitboxes.length = 0;
+  if (p.attackFrame > d.startup && p.attackFrame <= d.startup + d.active) {
+    const h = d.hit;
+    p.hitboxes.push({
+      x: p.x + p.facing * h.ox - h.w / 2,
+      y: p.y + h.oy,
+      w: h.w, h: h.h,
+      depth: h.depth,
+      damage: d.damage,
+    });
+  }
+  if (p.attackFrame >= total) {
+    p.attacking = false;
+    p.attackName = null;
+    p.hitboxes.length = 0;
+  }
+}
+
+function updatePlayer(p, dt) {
+  const grounded = p.z <= 0;
+  const locked = p.attacking && grounded;
+
+  // Movement input (suppressed during grounded attack lock).
+  let ix = 0, iy = 0;
+  if (!locked) {
+    if (actionHeld("left"))  ix -= 1;
+    if (actionHeld("right")) ix += 1;
+    if (actionHeld("up"))    iy -= 1;
+    if (actionHeld("down"))  iy += 1;
+  }
+
+  // Double-tap → run; releasing stops it.
+  if (actionPressed("left")) {
+    if (stateTime - lastTapLeft < DOUBLE_TAP_WINDOW) p.running = true;
+    lastTapLeft = stateTime;
+  }
+  if (actionPressed("right")) {
+    if (stateTime - lastTapRight < DOUBLE_TAP_WINDOW) p.running = true;
+    lastTapRight = stateTime;
+  }
+  if (ix === 0) p.running = false;
+
+  if (!locked) {
+    if (ix !== 0 || iy !== 0) {
+      const mag = Math.hypot(ix, iy) || 1;
+      const speed = p.running ? p.runSpeed : p.walkSpeed;
+      p.vx = (ix / mag) * speed;
+      p.vy = (iy / mag) * speed;
+      if (ix !== 0) p.facing = ix > 0 ? 1 : -1;
+    } else {
+      p.vx = 0; p.vy = 0;
+    }
+  }
+
+  if (!locked && grounded && actionPressed("jump")) {
+    p.vz = p.jumpVel;
+  }
+
+  if (!locked && grounded && actionPressed("light")) {
+    startAttack(p, "atk1");
+  }
+
+  if (p.attacking) {
+    p.attackFrame++;
+    advanceAttack(p);
+  }
+
+  // Integrate motion. Air control: keep horizontal velocity from jump.
+  p.x += p.vx * dt;
+  p.y += p.vy * dt;
+  p.z += p.vz * dt;
+  if (p.z > 0 || p.vz > 0) p.vz -= GRAVITY * dt;
+  if (p.z < 0) { p.z = 0; p.vz = 0; }
+
+  if (p.x < STAGE_LEFT_PAD) p.x = STAGE_LEFT_PAD;
+  if (p.x > W - STAGE_RIGHT_PAD) p.x = W - STAGE_RIGHT_PAD;
+  if (p.y < STAGE_TOP) p.y = STAGE_TOP;
+  if (p.y > STAGE_BOT) p.y = STAGE_BOT;
+
+  // Animation state selection.
+  let next;
+  if (p.attacking) next = p.attackName;
+  else if (p.z > 0) next = "jump";
+  else if (ix !== 0 || iy !== 0) next = p.running ? "run" : "walk";
+  else next = "idle";
+  if (next !== p.animState) { p.animState = next; p.animTime = 0; }
+  else p.animTime += dt;
+
+  // Rebuild hurtbox each tick (torso column).
+  p.hurtboxes.length = 0;
+  p.hurtboxes.push({
+    x: p.x - 9, y: p.y - 36, w: 18, h: 32, depth: 10,
+  });
+}
+
+// ---------- Rio: procedural fillRect rendering ----------
+const RIO_COLORS = {
+  skin:       "#8a5235",
+  skinDark:   "#6b3f2a",
+  hair:       "#1a1410",
+  jacket:     "#7d8d4f",
+  jacketDark: "#5a6b3a",
+  tank:       "#0a0a10",
+  pants:      "#1a1a22",
+  pantsDark:  "#0e0e15",
+  boot:       "#0a0a10",
+  wraps:      "#dcd6c4",
+  bandana:    "#e8c04a",
+  bandanaDark:"#b89426",
+};
+
+function drawRio(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const f  = p.facing;
+  const t  = p.animTime;
+  const k  = RIO_COLORS;
+
+  // Per-state animation deltas.
+  let armSwing = 0, legSwingL = 0, legSwingR = 0, bodyBob = 0;
+  if (p.animState === "walk") {
+    const s = Math.sin(t * 9);
+    legSwingL =  s * 1.5;
+    legSwingR = -s * 1.5;
+    armSwing  = -s * 1.2;
+    bodyBob   =  Math.abs(s) * 0.6;
+  } else if (p.animState === "run") {
+    const s = Math.sin(t * 15);
+    legSwingL =  s * 2.5;
+    legSwingR = -s * 2.5;
+    armSwing  = -s * 2;
+    bodyBob   =  Math.abs(s) * 1.2;
+  } else if (p.animState === "idle") {
+    bodyBob = Math.sin(t * 2) * 0.5;
+  } else if (p.animState === "jump") {
+    legSwingL = -2; legSwingR = -2;
+    armSwing  = -1;
+  }
+
+  // Attack arm-extension envelope (in pixels of forward reach).
+  let atkReach = 0;
+  if (p.attacking && p.attackName === "atk1") {
+    const d = ATTACK_DATA.rio_atk1;
+    if (p.attackFrame <= d.startup) {
+      atkReach = (p.attackFrame / d.startup) * 14;
+    } else if (p.attackFrame <= d.startup + d.active) {
+      atkReach = 14;
+    } else {
+      const r = (p.attackFrame - d.startup - d.active) / d.recovery;
+      atkReach = Math.max(0, 14 * (1 - r));
+    }
+  }
+
+  // Drop shadow on the ground (always at p.y, not p.y-z).
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  const shY = Math.round(p.y);
+  X.beginPath();
+  X.ellipse(sx, shY, 11 - p.z * 0.04, 3, 0, 0, Math.PI * 2);
+  X.fill();
+
+  const bob = -bodyBob;
+  const headY = sy - 44 + bob;
+  const torsoY = sy - 32 + bob;
+
+  // Legs (in front of torso visually because feet are at sy).
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = k.pantsDark;
+  // Suggest leg motion with a 1px shaded band.
+  X.fillRect(sx - 6, sy - 12 + Math.round(legSwingL), 5, 1);
+  X.fillRect(sx + 1, sy - 12 + Math.round(legSwingR), 5, 1);
+  // Boots.
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 6, sy - 4, 5, 4);
+  X.fillRect(sx + 1, sy - 4, 5, 4);
+  // Waistband.
+  X.fillStyle = k.pantsDark;
+  X.fillRect(sx - 6, sy - 19, 12, 2);
+
+  // Torso: black tank base then olive cropped jacket on top half.
+  X.fillStyle = k.tank;
+  X.fillRect(sx - 7, torsoY, 14, 14);
+  X.fillStyle = k.jacket;
+  X.fillRect(sx - 7, torsoY, 14, 9);
+  X.fillStyle = k.jacketDark;
+  X.fillRect(sx - 7, torsoY + 9, 14, 1);
+
+  // Arms — front and back.
+  // Identify front arm (camera-side) vs back arm.
+  const frontArmX = (f > 0) ? sx + 6 : sx - 9;
+  const backArmX  = (f > 0) ? sx - 9 : sx + 6;
+  const frontWristX = frontArmX;
+  const backWristX  = backArmX;
+
+  // Back arm (drawn first).
+  X.fillStyle = k.skin;
+  X.fillRect(backArmX, torsoY + 1 + Math.round(armSwing), 3, 11);
+  X.fillStyle = k.wraps;
+  X.fillRect(backWristX, torsoY + 12 + Math.round(armSwing), 3, 3);
+
+  // Front arm — extended during attack.
+  if (atkReach > 0) {
+    const ay = torsoY + 4;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 4, ay, atkReach + 3, 3);
+    else       X.fillRect(sx - 3 - atkReach - 3, ay, atkReach + 3, 3);
+    X.fillStyle = k.wraps;
+    if (f > 0) X.fillRect(sx + 4 + atkReach, ay, 3, 3);
+    else       X.fillRect(sx - 3 - atkReach - 3, ay, 3, 3);
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(frontArmX, torsoY + 1 - Math.round(armSwing), 3, 11);
+    X.fillStyle = k.wraps;
+    X.fillRect(frontWristX, torsoY + 12 - Math.round(armSwing), 3, 3);
+  }
+
+  // Yellow bandana — Rio's left wrist. Always visible regardless of facing.
+  // "Her left" = our right when she faces us (faces left, f=-1); our left when she faces right.
+  // We render it on whichever screen-side corresponds to her left wrist.
+  // To keep it always visible, draw it on the FRONT wrist side (camera side).
+  X.fillStyle = k.bandana;
+  if (atkReach > 0 && ((f > 0))) {
+    // Bandana flies forward with extending front arm if Rio is throwing the punch with that hand.
+    X.fillRect(sx + 4 + atkReach - 1, torsoY + 7, 5, 2);
+    X.fillStyle = k.bandanaDark;
+    X.fillRect(sx + 4 + atkReach - 1, torsoY + 9, 5, 1);
+  } else if (atkReach > 0 && f < 0) {
+    X.fillRect(sx - 3 - atkReach - 2, torsoY + 7, 5, 2);
+    X.fillStyle = k.bandanaDark;
+    X.fillRect(sx - 3 - atkReach - 2, torsoY + 9, 5, 1);
+  } else {
+    if (f > 0) {
+      X.fillRect(sx + 5, torsoY + 11 - Math.round(armSwing), 5, 2);
+      X.fillStyle = k.bandanaDark;
+      X.fillRect(sx + 5, torsoY + 13 - Math.round(armSwing), 5, 1);
+    } else {
+      X.fillRect(sx - 10, torsoY + 11 - Math.round(armSwing), 5, 2);
+      X.fillStyle = k.bandanaDark;
+      X.fillRect(sx - 10, torsoY + 13 - Math.round(armSwing), 5, 1);
+    }
+  }
+
+  // Head.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, headY, 12, 12);
+  X.fillStyle = k.skinDark;
+  X.fillRect(sx - 6, headY + 6, 1, 6);
+  X.fillRect(sx + 5, headY + 6, 1, 6);
+  // Locs on top.
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 5, headY - 2, 10, 4);
+  X.fillRect(sx - 4, headY - 3, 8, 1);
+  // Eye dot, direction-indicating.
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, headY + 6, 2, 1);
+  else       X.fillRect(sx - 3, headY + 6, 2, 1);
+  // Gold hoop earring on camera-facing side.
+  X.fillStyle = k.bandana;
+  if (f > 0) X.fillRect(sx + 5, headY + 9, 1, 1);
+  else       X.fillRect(sx - 6, headY + 9, 1, 1);
+}
+
+// ---------- HUD ----------
+function drawHUD() {
+  // Top strip
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.fillRect(0, 0, W, 22);
+
+  // HP bar — Rio.
+  const barX = 8, barY = 6, barW = 140, barH = 10;
+  X.fillStyle = "#222";
+  X.fillRect(barX, barY, barW, barH);
+  const pct = player ? Math.max(0, player.hp / player.hpMax) : 0;
+  X.fillStyle = "#7d8d4f";          // jacket olive
+  X.fillRect(barX, barY, Math.round(barW * pct), barH);
+  X.fillStyle = "#e8c04a";          // bandana yellow rail
+  X.fillRect(barX, barY, barW, 1);
+
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText("RIO", barX, barY - 6);
+
+  // Bottom-right HUD slot reserved for combo / parry meter (Phase 2).
+}
+
+// ---------- DEV: hitbox / hurtbox visualizer ----------
+function drawDebugBoxes() {
+  if (!player) return;
+  X.lineWidth = 1;
+  // Hurtboxes (green)
+  X.strokeStyle = "rgba(0,255,128,0.85)";
+  for (let i = 0; i < player.hurtboxes.length; i++) {
+    const b = player.hurtboxes[i];
+    X.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+  }
+  // Hitboxes (red)
+  X.strokeStyle = "rgba(255,72,72,0.95)";
+  for (let i = 0; i < player.hitboxes.length; i++) {
+    const b = player.hitboxes[i];
+    X.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+  }
+  // Stage strip outline
+  X.strokeStyle = "rgba(120,160,255,0.5)";
+  X.strokeRect(0.5, STAGE_TOP + 0.5, W - 1, STAGE_BOT - STAGE_TOP);
+  // Player anchor
+  X.fillStyle = "#fff";
+  X.fillRect(Math.round(player.x), Math.round(player.y), 1, 1);
+}
+
+// ---------- Stage 1 placeholder backdrop ----------
+function drawStage1() {
+  // Sky / building strip.
+  X.fillStyle = "#11131c";
+  X.fillRect(0, 0, W, 230);
+  // Distant building band.
+  X.fillStyle = "#1a1d2a";
+  X.fillRect(0, 90, W, 120);
+  // Window dots — fixed pattern, not animated.
+  X.fillStyle = "#3b4360";
+  for (let by = 110; by < 200; by += 14) {
+    for (let bx = 20; bx < W; bx += 22) {
+      if (((bx * 13 + by * 7) & 7) < 3) X.fillRect(bx, by, 3, 4);
+    }
+  }
+  // Sidewalk back edge.
+  X.fillStyle = "#2a2a36";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  // Pavement seams.
+  X.fillStyle = "#1f1f29";
+  for (let gx = 0; gx < W; gx += 80) X.fillRect(gx, STAGE_TOP, 1, STAGE_BOT - STAGE_TOP);
+  X.fillRect(0, STAGE_TOP + 22, W, 1);
+  X.fillRect(0, STAGE_TOP + 70, W, 1);
+  // Curb at bottom.
+  X.fillStyle = "#0e0e15";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
 }
 
 // ---------- Fixed-timestep loop ----------
@@ -222,13 +647,22 @@ function update(dt) {
 
 function updateTitle(dt) {
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
-    setState("playing");
+    enterPlaying();
   }
 }
 
+function enterPlaying() {
+  player = makePlayer("rio", 120, 300);
+  setState("playing");
+}
+
 function updatePlaying(dt) {
-  // Stub. Phase 1 Step 2 introduces Rio, walk/run/jump/attack here.
-  if (consumePress("Escape")) setState("title");
+  if (consumePress("Escape")) {
+    player = null;
+    setState("title");
+    return;
+  }
+  if (player) updatePlayer(player, dt);
 }
 
 // ---------- Render ----------
@@ -263,17 +697,16 @@ function renderTitle() {
 }
 
 function renderPlaying() {
-  // Stage 1 placeholder: a flat pavement gradient. Real art arrives in Phase 1 Step 3.
-  X.fillStyle = "#1a1a22";
-  X.fillRect(0, 0, W, H);
-  X.fillStyle = "#2a2a36";
-  X.fillRect(0, H * 0.65, W, H * 0.35);
+  drawStage1();
+  if (player) drawRio(player);
+  drawHUD();
+  if (DEV && debugEl.classList.contains("on")) drawDebugBoxes();
 
   X.fillStyle = "#888";
-  X.font = "10px ui-monospace, monospace";
-  X.textAlign = "left";
+  X.font = "9px ui-monospace, monospace";
+  X.textAlign = "right";
   X.textBaseline = "top";
-  X.fillText("playing — ESC to return to title", 8, 8);
+  X.fillText("ESC : title", W - 6, 4);
 }
 
 // ---------- Boot ----------
