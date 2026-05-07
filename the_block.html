@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>THE BLOCK</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background: #000;
+    color: #ddd;
+    font-family: ui-monospace, "Menlo", "Consolas", monospace;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  canvas {
+    display: block;
+    background: #000;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+  }
+  #debug {
+    position: fixed;
+    top: 6px;
+    left: 8px;
+    font-size: 11px;
+    color: #6f6;
+    text-shadow: 1px 1px 0 #000;
+    pointer-events: none;
+    white-space: pre;
+    display: none;
+  }
+  #debug.on { display: block; }
+  #orient {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #ddd;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    font-size: 14px;
+    z-index: 10;
+  }
+  #orient.on { display: flex; }
+</style>
+</head>
+<body>
+  <div id="wrap"><canvas id="c" width="640" height="360"></canvas></div>
+  <div id="debug"></div>
+  <div id="orient">Rotate your device to landscape.</div>
+<script>
+"use strict";
+
+// ---------- Build flags ----------
+const DEV = true;
+
+// ---------- Canvas / context ----------
+const W = 640;
+const H = 360;
+const C = document.getElementById("c");
+/** Global render context; named X per project convention. */
+let X = C.getContext("2d", { alpha: false });
+X.imageSmoothingEnabled = false;
+
+// ---------- State machine ----------
+// title | select | intro | playing | gameover | victory | credits | interlude | bonus
+let STATE = "title";
+let stateTime = 0;
+
+function setState(next) {
+  STATE = next;
+  stateTime = 0;
+}
+
+// ---------- Input ----------
+const keys = Object.create(null);
+const keysPressed = Object.create(null); // edge-triggered, cleared each frame after consumption
+
+function keyName(e) {
+  // Normalize a few common ones; KeyboardEvent.code is layout-independent.
+  return e.code || e.key;
+}
+
+window.addEventListener("keydown", (e) => {
+  const k = keyName(e);
+  if (!keys[k]) keysPressed[k] = true;
+  keys[k] = true;
+  if (k === "F3") { toggleDebug(); e.preventDefault(); return; }
+  if (k === "Tab" || k === "F5") return; // let browser handle reload, etc.
+  // Prevent page scroll on game keys
+  if (k === "Space" || k.startsWith("Arrow")) e.preventDefault();
+});
+
+window.addEventListener("keyup", (e) => {
+  keys[keyName(e)] = false;
+});
+
+window.addEventListener("blur", () => {
+  for (const k in keys) keys[k] = false;
+});
+
+function consumePress(k) {
+  if (keysPressed[k]) { keysPressed[k] = false; return true; }
+  return false;
+}
+
+// ---------- Pause / visibility ----------
+let paused = false;
+document.addEventListener("visibilitychange", () => {
+  paused = document.hidden;
+});
+
+// ---------- Resize / scale ----------
+let scale = 1;
+let isMobile = matchMedia("(pointer: coarse)").matches;
+
+function resize() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const sx = vw / W;
+  const sy = vh / H;
+  let s = Math.min(sx, sy);
+  if (!isMobile) s = Math.max(1, Math.floor(s)); // integer scale on desktop
+  scale = s;
+  C.style.width = (W * s) + "px";
+  C.style.height = (H * s) + "px";
+  // After CSS resize, re-disable smoothing on the (still-640x360) backing buffer.
+  X.imageSmoothingEnabled = false;
+  // Orientation guard on mobile only.
+  const orient = document.getElementById("orient");
+  if (isMobile && vw < vh) orient.classList.add("on");
+  else orient.classList.remove("on");
+}
+window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", resize);
+resize();
+
+// ---------- Debug overlay ----------
+const debugEl = document.getElementById("debug");
+function toggleDebug() {
+  if (!DEV) return;
+  debugEl.classList.toggle("on");
+}
+let fps = 0;
+let fpsAccum = 0;
+let fpsFrames = 0;
+
+function entityCount() {
+  // Placeholder: no entities exist yet. Returns 0 so the field is wired.
+  return 0;
+}
+
+// ---------- Fixed-timestep loop ----------
+const STEP = 1 / 60;          // 60Hz logical tick — combat frame counts depend on this.
+const MAX_STEPS_PER_FRAME = 5; // spiral-of-death guard
+let last = performance.now() / 1000;
+let acc = 0;
+
+function frame(nowMs) {
+  const now = nowMs / 1000;
+  let dt = now - last;
+  last = now;
+  if (dt > 0.25) dt = 0.25; // tab-resume / debugger pause: discard the gap
+  if (!paused) acc += dt;
+
+  let steps = 0;
+  while (acc >= STEP && steps < MAX_STEPS_PER_FRAME) {
+    update(STEP);
+    acc -= STEP;
+    steps++;
+  }
+  if (steps === MAX_STEPS_PER_FRAME) acc = 0;
+
+  render();
+
+  // FPS sampling
+  fpsAccum += dt;
+  fpsFrames++;
+  if (fpsAccum >= 0.5) {
+    fps = fpsFrames / fpsAccum;
+    fpsAccum = 0;
+    fpsFrames = 0;
+  }
+  if (DEV && debugEl.classList.contains("on")) {
+    debugEl.textContent =
+      "FPS " + fps.toFixed(0) +
+      "\nstate " + STATE +
+      "\nents " + entityCount() +
+      "\nscale " + scale.toFixed(2);
+  }
+
+  requestAnimationFrame(frame);
+}
+
+// ---------- Update ----------
+function update(dt) {
+  stateTime += dt;
+  if (STATE === "title") updateTitle(dt);
+  else if (STATE === "playing") updatePlaying(dt);
+  // Other states declared in the machine but not yet reachable.
+}
+
+function updateTitle(dt) {
+  if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
+    setState("playing");
+  }
+}
+
+function updatePlaying(dt) {
+  // Stub. Phase 1 Step 2 introduces Rio, walk/run/jump/attack here.
+  if (consumePress("Escape")) setState("title");
+}
+
+// ---------- Render ----------
+function render() {
+  X.fillStyle = "#000";
+  X.fillRect(0, 0, W, H);
+  if (STATE === "title") renderTitle();
+  else if (STATE === "playing") renderPlaying();
+}
+
+function renderTitle() {
+  // Title block
+  X.fillStyle = "#e8c04a"; // bandana yellow — Rio's signature, used as title accent
+  X.fillRect(W / 2 - 140, H / 2 - 60, 280, 4);
+  X.fillRect(W / 2 - 140, H / 2 + 18, 280, 4);
+
+  X.fillStyle = "#fff";
+  X.font = "bold 36px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("THE BLOCK", W / 2, H / 2 - 22);
+
+  X.fillStyle = "#aaa";
+  X.font = "12px ui-monospace, monospace";
+  X.fillText("a beat-em-up", W / 2, H / 2 + 4);
+
+  // Press-start prompt — pulses on a 1Hz sine.
+  const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 2);
+  X.fillStyle = "rgba(255,255,255," + pulse.toFixed(3) + ")";
+  X.font = "14px ui-monospace, monospace";
+  X.fillText("PRESS ENTER", W / 2, H / 2 + 56);
+}
+
+function renderPlaying() {
+  // Stage 1 placeholder: a flat pavement gradient. Real art arrives in Phase 1 Step 3.
+  X.fillStyle = "#1a1a22";
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = "#2a2a36";
+  X.fillRect(0, H * 0.65, W, H * 0.35);
+
+  X.fillStyle = "#888";
+  X.font = "10px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText("playing — ESC to return to title", 8, 8);
+}
+
+// ---------- Boot ----------
+requestAnimationFrame((t) => { last = t / 1000; frame(t); });
+</script>
+</body>
+</html>
