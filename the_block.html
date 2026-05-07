@@ -1979,6 +1979,8 @@ function drawHUD() {
   if (player) drawParryHUD();
   // Combo counter (center-top under HP).
   if (player && player.comboHits >= 2) drawComboCounter();
+  // Boss HP bar across the bottom when a boss is alive.
+  drawBossHpBar();
 
   X.fillStyle = tone.rail;
   X.font = "bold 9px ui-monospace, monospace";
@@ -2032,6 +2034,35 @@ function drawParryHUD() {
     X.textAlign = "center";
     X.fillText("READY", mx + mw / 2, my - 1);
   }
+}
+
+// Boss health bar — wide rail across the bottom of the play strip with the
+// boss's name. Draws only while a live boss is in the enemies list.
+function drawBossHpBar() {
+  let boss = null;
+  for (const e of enemies) {
+    if (e.isBoss && !e.dead) { boss = e; break; }
+  }
+  if (!boss) return;
+  const barW = W - 80, barX = 40, barY = H - 38;
+  X.fillStyle = "rgba(0,0,0,0.65)";
+  X.fillRect(barX - 4, barY - 14, barW + 8, 22);
+  X.fillStyle = "#1a0a0e";
+  X.fillRect(barX, barY, barW, 8);
+  const pct = Math.max(0, boss.hp / boss.hpMax);
+  X.fillStyle = "#5a1018";
+  X.fillRect(barX, barY, Math.round(barW * pct), 8);
+  X.fillStyle = pct < 0.3 ? "#ff7060" : (pct < 0.6 ? "#ff9c40" : "#a83040");
+  X.fillRect(barX, barY, Math.round(barW * pct), 4);
+  X.fillStyle = "#e8c04a";
+  X.fillRect(barX, barY, barW, 1);
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 10px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText(boss.bossName || "BOSS", barX, barY - 12);
+  X.textAlign = "right";
+  X.fillText(boss.hp + " / " + boss.hpMax, barX + barW, barY - 12);
 }
 
 // Combo counter + draining meter under the HP bar. Pulses red when about to drop.
@@ -2364,6 +2395,7 @@ const ENEMY_STATS = {
   shade:     { walkSpeed: 62, runSpeed: 120, hp:  30, range: 22, hurtHw: 8,  hurtHd: 5, hurtHi: 32 },
   dojo:      { walkSpeed: 54, runSpeed:  92, hp:  34, range: 24, hurtHw: 8,  hurtHd: 5, hurtHi: 34 },
   rig:       { walkSpeed: 60, runSpeed: 110, hp:  70, range: 26, hurtHw: 10, hurtHd: 6, hurtHi: 38, staggerN: 2 },
+  baron:     { walkSpeed: 48, runSpeed:  78, hp: 220, range: 28, hurtHw: 12, hurtHd: 7, hurtHi: 48, staggerN: 3, isBoss: true, bossName: "BARON" },
 };
 
 // Per-type attack frame data. All in 60Hz frames.
@@ -2409,19 +2441,39 @@ const ENEMY_ATK = {
     damage: 14, knockback: 130, hitstop: 6,
     hit: { fwd: 18, hw: 12, hd: 13, lo: 0, hi: 40 },
   },
+  // BARON — methodical boxing patterns. Brass-knuckle hits land hard.
+  baron_jab: {
+    startup: 6, active: 3, recovery: 14,
+    damage: 11, knockback: 110, hitstop: 5,
+    hit: { fwd: 18, hw: 11, hd: 13, lo: 0, hi: 40 },
+  },
+  baron_cross: {
+    startup: 9, active: 4, recovery: 18,
+    damage: 16, knockback: 150, hitstop: 6,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
+  },
+  baron_haymaker: {
+    startup: 16, active: 5, recovery: 28,
+    damage: 28, knockback: 250, hitstop: 9,
+    hit: { fwd: 24, hw: 15, hd: 15, lo: 0, hi: 44 },
+    superArmor: true,   // not interruptible during startup
+  },
 };
 
 // Default attack name per enemy type — what the AI swings.
 const ENEMY_DEFAULT_ATTACK = {
   runner: "swipe", tank: "slam", lamplight: "shot",
   slice: "lunge", chains: "swing", shade: "strike",
-  dojo: "counter", rig: "strike",
+  dojo: "counter", rig: "strike", baron: "jab",
 };
 
 function makeEnemy(type, x, y) {
   const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
   return {
     type, x, y, z: 0,
+    isBoss: !!stats.isBoss,
+    bossName: stats.bossName || null,
+    bossPatternStep: 0,
     vx: 0, vy: 0, vz: 0,
     airborne: false,
     knockdownFrames: 0,
@@ -2652,6 +2704,7 @@ function runEnemyAI(e, dt) {
     case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
     case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
     case "chains": approachOrAttack(e, dx, dy, dist, dt); break;
+    case "baron":  runBaronAI(e, dx, dy, dist, dt); break;
     case "lamplight": {
       // Stay at long range. If too close, back off; if in range, shoot.
       const idealMin = 70, idealMax = 110;
@@ -2730,6 +2783,34 @@ function updateDojoGuard(e, dt) {
 }
 
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+// BARON: methodical pattern jab → jab → cross → haymaker → jab → cross.
+// Phase 2 (HP < 50%) compresses the pattern and shortens cooldowns.
+function runBaronAI(e, dx, dy, dist, dt) {
+  if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+  const phase2 = e.hp < e.hpMax * 0.5;
+
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+    e.animState = "walk";
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+    if (e.aiCooldown <= 0) {
+      const pattern = phase2
+        ? ["jab", "cross", "jab", "haymaker", "cross", "haymaker"]
+        : ["jab", "jab", "cross", "haymaker", "jab", "cross"];
+      const atk = pattern[e.bossPatternStep % pattern.length];
+      e.bossPatternStep++;
+      startEnemyAttack(e, atk);
+      // Cooldowns set when the attack ends in advanceEnemyAttack; for telegraphed
+      // haymakers we reduce the post-cooldown so the player gets a window.
+    }
+  }
+}
 
 // Dojo deflect — player's incoming hit bounces; player gets pushed back, the
 // dojo immediately starts a counter swing. No damage to dojo.
@@ -3450,6 +3531,184 @@ function drawRig(e) {
   if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 50, e);
 }
 
+// ---- BARON renderer ----
+const BARON_COLORS = {
+  suit:    "#8a7048",
+  suitDk:  "#5e4c30",
+  suitHi:  "#a88c5e",
+  vest:    "#5a4030",
+  vestDk:  "#3a2818",
+  shirt:   "#e8e4d2",
+  tie:     "#7a2030",
+  tieDk:   "#4a1018",
+  pants:   "#2a2018",
+  shoe:    "#0c0a08",
+  skin:    "#d4b890",
+  skinDk:  "#8a6a4c",
+  hair:    "#a8a8a0",
+  hairDk:  "#6a6a64",
+  brass:   "#cfa040",
+  brassHi: "#ffd070",
+};
+
+function drawBaron(e) {
+  const sx = Math.round(e.x);
+  const sy = Math.round(e.y - e.z);
+  const f  = e.facing;
+  const k  = BARON_COLORS;
+  const t  = e.animTime;
+
+  X.fillStyle = "rgba(0,0,0,0.5)";
+  X.beginPath(); X.ellipse(sx, e.y, 13, 4, 0, 0, Math.PI*2); X.fill();
+
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.suit; X.fillRect(sx - 16, sy - 8, 32, 7);
+    X.fillStyle = k.tie;  X.fillRect(sx + (f>0?-3:1), sy - 6, 3, 5);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+
+  let bob = 0, swing = 0;
+  if (e.animState === "walk") { const s = Math.sin(t * 6); swing = s * 1.0; bob = Math.abs(s) * 0.6; }
+  else if (e.animState === "idle") bob = Math.sin(t * 1.6) * 0.4;
+
+  // Per-attack envelope.
+  let atkReach = 0, atkArm = "front", atkUp = 0;
+  if (e.attacking) {
+    if (e.attackName === "jab")       { atkReach = attackEnvelope(e, 16); atkArm = "front"; }
+    else if (e.attackName === "cross") { atkReach = attackEnvelope(e, 20); atkArm = "rear"; }
+    else if (e.attackName === "haymaker") {
+      atkReach = attackEnvelope(e, 22);
+      atkArm = "front";
+      atkUp   = attackEnvelope(e, 8);
+      // Crouch then telegraph during startup.
+      const d = ENEMY_ATK.baron_haymaker;
+      if (e.attackFrame <= d.startup) bob = -(e.attackFrame / d.startup) * 4;
+    }
+  }
+
+  const torsoY = sy - 36 - bob;
+  const headY  = sy - 50 - bob;
+
+  // Trousers + shoes.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 7, sy - 22, 6, 18);
+  X.fillRect(sx + 1, sy - 22, 6, 18);
+  X.fillStyle = k.shoe;
+  X.fillRect(sx - 8, sy - 4, 7, 4);
+  X.fillRect(sx + 1, sy - 4, 7, 4);
+
+  // Suit jacket — wide shoulders, tan.
+  X.fillStyle = k.suit;
+  X.fillRect(sx - 11, torsoY, 22, 18);
+  X.fillStyle = k.suitDk;
+  X.fillRect(sx - 11, torsoY + 17, 22, 1);
+  X.fillStyle = k.suitHi;
+  X.fillRect(sx - 11, torsoY, 22, 1);
+
+  // Vest under the jacket.
+  X.fillStyle = k.vest;
+  X.fillRect(sx - 5, torsoY + 1, 10, 12);
+  X.fillStyle = k.vestDk;
+  X.fillRect(sx - 5, torsoY + 12, 10, 1);
+
+  // Shirt collar peek.
+  X.fillStyle = k.shirt;
+  X.fillRect(sx - 3, torsoY, 6, 3);
+
+  // Tie down the front.
+  X.fillStyle = k.tie;
+  X.fillRect(sx - 1, torsoY + 2, 2, 11);
+  X.fillStyle = k.tieDk;
+  X.fillRect(sx - 1, torsoY + 12, 2, 1);
+
+  // Arms — suit fabric to elbow, skin + brass knuckles at the fist.
+  const frontArmX = (f > 0) ? sx + 9 : sx - 13;
+  const backArmX  = (f > 0) ? sx - 13 : sx + 9;
+
+  // Rear arm — extends on cross / haymaker.
+  if (atkArm === "rear" && atkReach > 0) {
+    const ay = torsoY + 6;
+    X.fillStyle = k.suit;
+    if (f > 0) X.fillRect(sx + 6, ay, atkReach + 4, 4);
+    else        X.fillRect(sx - 6 - atkReach - 4, ay, atkReach + 4, 4);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 6 + atkReach, ay, 4, 4);
+    else        X.fillRect(sx - 6 - atkReach - 4, ay, 4, 4);
+    // Brass knuckles glint.
+    X.fillStyle = k.brass;
+    if (f > 0) X.fillRect(sx + 6 + atkReach + 4, ay, 3, 4);
+    else        X.fillRect(sx - 6 - atkReach - 7, ay, 3, 4);
+    X.fillStyle = k.brassHi;
+    if (f > 0) X.fillRect(sx + 6 + atkReach + 6, ay, 1, 1);
+    else        X.fillRect(sx - 6 - atkReach - 7, ay, 1, 1);
+  } else {
+    X.fillStyle = k.suit;
+    X.fillRect(backArmX, torsoY + 1 + Math.round(swing), 4, 14);
+    X.fillStyle = k.skin;
+    X.fillRect(backArmX, torsoY + 14 + Math.round(swing), 4, 3);
+    X.fillStyle = k.brass;
+    X.fillRect(backArmX, torsoY + 16 + Math.round(swing), 4, 2);
+  }
+
+  // Front arm.
+  if (atkArm === "front" && (atkReach > 0 || atkUp > 0)) {
+    const ay = torsoY + 6 - Math.round(atkUp);
+    X.fillStyle = k.suit;
+    if (f > 0) X.fillRect(sx + 6, ay, atkReach + 4, 4);
+    else        X.fillRect(sx - 6 - atkReach - 4, ay, atkReach + 4, 4);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 6 + atkReach, ay, 4, 4);
+    else        X.fillRect(sx - 6 - atkReach - 4, ay, 4, 4);
+    // Brass knuckles glint with a hot highlight on impact frame.
+    X.fillStyle = k.brass;
+    if (f > 0) X.fillRect(sx + 6 + atkReach + 4, ay, 3, 4);
+    else        X.fillRect(sx - 6 - atkReach - 7, ay, 3, 4);
+    X.fillStyle = k.brassHi;
+    if (f > 0) X.fillRect(sx + 6 + atkReach + 6, ay, 1, 2);
+    else        X.fillRect(sx - 6 - atkReach - 7, ay, 1, 2);
+  } else {
+    X.fillStyle = k.suit;
+    X.fillRect(frontArmX, torsoY + 1 - Math.round(swing), 4, 14);
+    X.fillStyle = k.skin;
+    X.fillRect(frontArmX, torsoY + 14 - Math.round(swing), 4, 3);
+    X.fillStyle = k.brass;
+    X.fillRect(frontArmX, torsoY + 16 - Math.round(swing), 4, 2);
+  }
+
+  // Telegraph for haymaker — bright outline on the brass knuckles during startup.
+  if (e.attacking && e.attackName === "haymaker") {
+    const d = ENEMY_ATK.baron_haymaker;
+    if (e.attackFrame <= d.startup) {
+      const t2 = e.attackFrame / d.startup;
+      X.fillStyle = "rgba(255,200,80," + t2.toFixed(2) + ")";
+      const ay = torsoY + 6 - Math.round(atkUp);
+      if (f > 0) X.fillRect(sx + 14 + atkReach, ay - 1, 4, 6);
+      else        X.fillRect(sx - 18 - atkReach, ay - 1, 4, 6);
+    }
+  }
+
+  // Head — slick-back grey hair, mustache.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 7, headY, 14, 14);
+  X.fillStyle = k.skinDk;
+  X.fillRect(sx - 7, headY + 7, 1, 7);
+  X.fillRect(sx + 6, headY + 7, 1, 7);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 7, headY - 1, 14, 4);
+  X.fillStyle = k.hairDk;
+  X.fillRect(sx - 7, headY + 2, 14, 1);
+  // Mustache.
+  X.fillStyle = k.hairDk;
+  X.fillRect(sx - 3, headY + 9, 6, 1);
+  // Eyes.
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, headY + 6, 2, 1);
+  else       X.fillRect(sx - 3, headY + 6, 2, 1);
+
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 12, headY - 2, 24, 50); }
+}
+
 // Dispatcher.
 function drawEnemy(e) {
   switch (e.type) {
@@ -3460,6 +3719,7 @@ function drawEnemy(e) {
     case "shade":     return drawShade(e);
     case "dojo":      return drawDojo(e);
     case "rig":       return drawRig(e);
+    case "baron":     return drawBaron(e);
     default:          return drawRunner(e);
   }
 }
@@ -4033,6 +4293,7 @@ function enterPlaying() {
   shakeMag = 0;
   stageClearMessage = "";
   stageClearTimer = 0;
+  bossSpawnedFor = {};
   setState("playing");
 }
 
@@ -4092,9 +4353,13 @@ function updatePlaying(dt) {
       const stage = STAGES[currentStage];
       if (stage && stage.waves[currentWave]) {
         enemies = enemies.concat(spawnWave(currentStage, currentWave));
-      } else if (stage && stage.boss) {
-        // Phase 3.3 wires up bosses; until then, treat boss as stage clear.
-        beginStageClear();
+      } else if (stage && stage.boss && !bossSpawnedFor[currentStage]) {
+        // Spawn the stage boss with a brief warning flash.
+        bossSpawnedFor[currentStage] = true;
+        const boss = makeEnemy(stage.boss, 540, 300);
+        enemies = enemies.concat([boss]);
+        flashFrames = Math.max(flashFrames, 6);
+        spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
       } else {
         beginStageClear();
       }
@@ -4104,6 +4369,9 @@ function updatePlaying(dt) {
     waveDelay = 1.0;
   }
 }
+
+// Per-run boss-spawn flags. Reset on enterPlaying.
+let bossSpawnedFor = {};
 
 function beginStageClear() {
   const stage = STAGES[currentStage];

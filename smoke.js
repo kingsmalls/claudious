@@ -598,6 +598,42 @@ function peek(expr) {
               "waveDelay =", peek("waveDelay").toFixed(2));
   snapshot("46_wave_advance");
 
+  // ---- BARON: spawn directly and verify HP bar + AI pattern ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval(
+    "currentStage = 2; currentWave = 0;" +
+    "enemies = [makeEnemy('baron', 480, 300)];" +
+    "particles = [];"
+  );
+  step(8);
+  console.log("baron spawned:",
+              "type=", peek("enemies[0].type"),
+              "isBoss=", peek("enemies[0].isBoss"),
+              "hp=", peek("enemies[0].hp"),
+              "name=", peek("enemies[0].bossName"));
+  snapshot("47_baron_spawn");
+  // Watch the AI run through its first attack.
+  step(60);
+  console.log("baron after 60f:",
+              "atkName=", peek("enemies[0].attackName"),
+              "patternStep=", peek("enemies[0].bossPatternStep"));
+  snapshot("48_baron_attacking");
+  // Land some hits to confirm super-armor.
+  hold("KeyD");
+  while (true) {
+    step(2);
+    if (Math.abs(peek("enemies[0].x") - peek("player.x")) < 26) break;
+    if (peek("enemies[0].dead")) break;
+  }
+  release("KeyD"); step(2);
+  for (let i = 0; i < 5; i++) {
+    press("KeyJ"); step(8);
+  }
+  console.log("after 5 jabs: baron.hp =", peek("enemies[0].hp"),
+              "hitstun =", peek("enemies[0].hitstun"));
+  snapshot("49_baron_armor");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
