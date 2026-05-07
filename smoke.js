@@ -578,6 +578,26 @@ function peek(expr) {
               "dojo.attacking =", peek("enemies[0].attacking"));
   snapshot("34_dojo_deflect");
 
+  // ---- STAGE BACKDROPS: snapshot each ----
+  for (let s = 0; s < 5; s++) {
+    press("Escape"); step(2);
+    press("Enter");  step(2);
+    window.eval("currentStage = " + s + "; enemies = []; particles = []; projectiles = [];");
+    step(4);
+    console.log("stage " + s + " (" + peek("STAGES[" + s + "].name") + "): rendered");
+    snapshot("4" + s + "_stage_" + s);
+  }
+
+  // ---- STAGE PROGRESSION: clear wave, observe wave delay then next wave spawn ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval("currentStage = 0; currentWave = 0; enemies.forEach(e => { e.dead = true; e.deathTimer = 100; });");
+  step(70); // wait for waveDelay (1.0s) + cleanup
+  console.log("after clear wave 0: currentWave =", peek("currentWave"),
+              "enemies =", peek("enemies.length"),
+              "waveDelay =", peek("waveDelay").toFixed(2));
+  snapshot("46_wave_advance");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);

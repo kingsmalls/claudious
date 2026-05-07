@@ -2102,33 +2102,253 @@ function drawDebugBoxes() {
   X.strokeRect(0.5, STAGE_TOP + 0.5, W - 1, STAGE_BOT - STAGE_TOP);
 }
 
-// ---------- Stage 1 placeholder backdrop ----------
-function drawStage1() {
-  // Sky / building strip.
+// ---------- Stage backdrops ----------
+// All 10 stages get their own drawStageX() that paints into the world layer
+// (transformed by screen-shake). Each is purely procedural fillRect work.
+
+// Stage 1: THE BLOCK — neighborhood, urban night.
+function drawStageBlock() {
   X.fillStyle = "#11131c";
   X.fillRect(0, 0, W, 230);
-  // Distant building band.
   X.fillStyle = "#1a1d2a";
   X.fillRect(0, 90, W, 120);
-  // Window dots — fixed pattern, not animated.
   X.fillStyle = "#3b4360";
   for (let by = 110; by < 200; by += 14) {
     for (let bx = 20; bx < W; bx += 22) {
       if (((bx * 13 + by * 7) & 7) < 3) X.fillRect(bx, by, 3, 4);
     }
   }
-  // Sidewalk back edge.
+  // Sidewalk + seams.
   X.fillStyle = "#2a2a36";
   X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
-  // Pavement seams.
   X.fillStyle = "#1f1f29";
   for (let gx = 0; gx < W; gx += 80) X.fillRect(gx, STAGE_TOP, 1, STAGE_BOT - STAGE_TOP);
   X.fillRect(0, STAGE_TOP + 22, W, 1);
   X.fillRect(0, STAGE_TOP + 70, W, 1);
-  // Curb at bottom.
+  // Curb.
   X.fillStyle = "#0e0e15";
   X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+  // A couple of trash-can silhouettes for life.
+  X.fillStyle = "#2a2030";
+  X.fillRect(60,  240, 10, 18);
+  X.fillRect(560, 234, 12, 22);
+  X.fillStyle = "#0e0e15";
+  X.fillRect(60,  240, 10, 1);
+  X.fillRect(560, 234, 12, 1);
 }
+
+// Stage 2: THE TUNNELS — subway / storm drain. Cold dim concrete.
+function drawStageTunnels() {
+  // Dark backwall.
+  X.fillStyle = "#0a0c10";
+  X.fillRect(0, 0, W, 230);
+  // Tunnel arch (curved-ish via two trapezoids).
+  X.fillStyle = "#181b22";
+  X.fillRect(0, 50, W, 180);
+  // Side walls — perspective wedges.
+  X.fillStyle = "#10131a";
+  for (let i = 0; i < 6; i++) {
+    const py = 50 + i * 30;
+    X.fillRect(0, py, 22 + i * 4, 1);
+    X.fillRect(W - 22 - i * 4, py, 22 + i * 4, 1);
+  }
+  // Bare bulbs along the ceiling (procedural pattern).
+  for (let bx = 60; bx < W; bx += 110) {
+    X.fillStyle = "rgba(255,210,150,0.65)";
+    X.fillRect(bx - 4, 60, 8, 2);
+    X.fillStyle = "rgba(255,180,90,0.95)";
+    X.fillRect(bx - 1, 61, 2, 1);
+    // Glow ellipse.
+    X.fillStyle = "rgba(255,210,150,0.10)";
+    X.beginPath(); X.ellipse(bx, 60, 24, 12, 0, 0, Math.PI*2); X.fill();
+  }
+  // Tile bands on the back wall.
+  X.fillStyle = "#1a1f28";
+  for (let ty = 100; ty < 220; ty += 18) X.fillRect(40, ty, W - 80, 2);
+  // Subway track running along the depth strip.
+  X.fillStyle = "#1a1a22";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  // Two rails.
+  X.fillStyle = "#2a2a36";
+  X.fillRect(0, STAGE_TOP + 30, W, 2);
+  X.fillRect(0, STAGE_BOT - 24, W, 2);
+  // Sleepers.
+  X.fillStyle = "#0c0c10";
+  for (let sx = 0; sx < W; sx += 28) X.fillRect(sx, STAGE_TOP + 36, 14, 2);
+  X.fillStyle = "#0a0a0e";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+  // Distant tunnel mouth.
+  X.fillStyle = "#040408";
+  X.fillRect(W - 80, 100, 70, 80);
+}
+
+// Stage 3: RIVER ROW — docks, shipping containers, water hazard at bottom.
+const RIVER_WATER_TOP = STAGE_BOT - 14;
+function drawStageRiver() {
+  // Pale dawn sky.
+  X.fillStyle = "#1a2438";
+  X.fillRect(0, 0, W, 100);
+  X.fillStyle = "#262e44";
+  X.fillRect(0, 100, W, 60);
+  // Distant industrial silhouettes.
+  X.fillStyle = "#0e1320";
+  X.fillRect(0, 130, W, 40);
+  X.fillStyle = "#101522";
+  for (let bx = 0; bx < W; bx += 70) {
+    X.fillRect(bx, 142, 30, 28);
+    X.fillRect(bx + 12, 134, 4, 20); // smokestack
+  }
+  // Shipping containers stacked along the back of the dock.
+  const containers = [
+    [40,  180, "#c66b3a"],
+    [110, 174, "#3a6b66"],
+    [180, 178, "#a83040"],
+    [260, 174, "#3a6b66"],
+    [330, 180, "#c66b3a"],
+    [410, 174, "#7d8d4f"],
+    [490, 178, "#3a6b66"],
+    [560, 180, "#a83040"],
+  ];
+  for (const [cx, cy, col] of containers) {
+    X.fillStyle = col;
+    X.fillRect(cx, cy, 60, 36);
+    X.fillStyle = "rgba(0,0,0,0.4)";
+    X.fillRect(cx, cy, 60, 1);
+    X.fillRect(cx, cy + 35, 60, 1);
+    // Corrugation lines.
+    X.fillStyle = "rgba(0,0,0,0.18)";
+    for (let cx2 = cx + 4; cx2 < cx + 60; cx2 += 6) X.fillRect(cx2, cy, 1, 36);
+    // Decal box.
+    X.fillStyle = "rgba(255,255,255,0.18)";
+    X.fillRect(cx + 6, cy + 8, 14, 6);
+  }
+  // Dock planks.
+  X.fillStyle = "#3a2a1a";
+  X.fillRect(0, STAGE_TOP, W, RIVER_WATER_TOP - STAGE_TOP);
+  X.fillStyle = "#241810";
+  for (let dx = 0; dx < W; dx += 18) X.fillRect(dx, STAGE_TOP, 1, RIVER_WATER_TOP - STAGE_TOP);
+  X.fillStyle = "#5a4030";
+  X.fillRect(0, STAGE_TOP, W, 1);
+  // Water — animated band of cold blue.
+  X.fillStyle = "#0e2c44";
+  X.fillRect(0, RIVER_WATER_TOP, W, H - RIVER_WATER_TOP);
+  X.fillStyle = "#1a4060";
+  for (let wx = 0; wx < W; wx += 20) {
+    const off = Math.sin(stateTime * 1.6 + wx * 0.07) * 1.2;
+    X.fillRect(wx, RIVER_WATER_TOP + 2 + Math.round(off), 14, 1);
+    X.fillRect(wx + 8, RIVER_WATER_TOP + 6 - Math.round(off), 10, 1);
+  }
+  // Foam ridge on the water edge.
+  X.fillStyle = "rgba(255,255,255,0.25)";
+  for (let fx = 0; fx < W; fx += 6) {
+    if ((fx + Math.floor(stateTime * 12)) & 4) X.fillRect(fx, RIVER_WATER_TOP, 3, 1);
+  }
+}
+
+// Stage 4: LANTERN ROW — warm market street lit by paper lanterns.
+function drawStageLantern() {
+  // Sky.
+  X.fillStyle = "#1a0a1a";
+  X.fillRect(0, 0, W, 100);
+  // Far buildings — warm tones.
+  X.fillStyle = "#3a1a20";
+  X.fillRect(0, 100, W, 130);
+  X.fillStyle = "#5a2418";
+  for (let bx = 0; bx < W; bx += 90) X.fillRect(bx, 110, 70, 110);
+  // Lanterns hanging across the top — yellow/orange paper bulbs.
+  for (let lx = 50; lx < W; lx += 70) {
+    const bob = Math.sin(stateTime * 1.2 + lx * 0.05) * 1.5;
+    const ly = 26 + Math.round(bob);
+    // String.
+    X.fillStyle = "#3a1a08";
+    X.fillRect(lx, 0, 1, ly);
+    // Lantern body.
+    X.fillStyle = "#c83820";
+    X.fillRect(lx - 6, ly,     12, 9);
+    X.fillStyle = "#e8581a";
+    X.fillRect(lx - 5, ly + 1, 10, 7);
+    X.fillStyle = "#ffba60";
+    X.fillRect(lx - 3, ly + 2,  6, 4);
+    // Glow halo.
+    X.fillStyle = "rgba(255,180,100,0.10)";
+    X.beginPath(); X.ellipse(lx, ly + 5, 30, 16, 0, 0, Math.PI*2); X.fill();
+    // Tassel.
+    X.fillStyle = "#7a2418";
+    X.fillRect(lx - 1, ly + 9, 2, 3);
+  }
+  // Cloth banners stretched between buildings.
+  X.fillStyle = "#a83040";
+  X.fillRect(0, 90, W, 6);
+  X.fillStyle = "#7a2030";
+  X.fillRect(0, 96, W, 1);
+  // Market stalls along the back.
+  X.fillStyle = "#3a2812";
+  X.fillRect(0,  STAGE_TOP - 10, W, 10);
+  X.fillStyle = "#241810";
+  for (let sx = 0; sx < W; sx += 60) X.fillRect(sx, STAGE_TOP - 10, 1, 10);
+  // Lantern glow on the ground.
+  X.fillStyle = "#3a1812";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#4a201a";
+  X.fillRect(0, STAGE_TOP + 24, W, 1);
+  X.fillRect(0, STAGE_TOP + 60, W, 1);
+  X.fillStyle = "#1a0a0a";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+}
+
+// Stage 5: THE CAGE — underground fight club, chain-link fence with crowd.
+function drawStageCage() {
+  // Smoky low-light.
+  X.fillStyle = "#0a0a0c";
+  X.fillRect(0, 0, W, 230);
+  // Crowd silhouette band.
+  X.fillStyle = "#1a1410";
+  X.fillRect(0, 130, W, 100);
+  // Crowd heads — lots of dark blobs at varying heights.
+  X.fillStyle = "#0e0a08";
+  for (let cx = 0; cx < W; cx += 8) {
+    const ch = ((cx * 7) ^ 0x55) & 7;
+    X.fillRect(cx, 200 - ch * 2, 6, 6 + ch);
+  }
+  // A few scattered phone screens (white dots) in the crowd.
+  X.fillStyle = "rgba(255,255,255,0.55)";
+  for (let i = 0; i < 14; i++) {
+    const px = ((i * 47) % W);
+    const py = 180 + ((i * 13) % 26);
+    X.fillRect(px, py, 1, 1);
+  }
+  // Spotlight glow above the ring.
+  const spotPulse = 0.65 + 0.15 * Math.sin(stateTime * 2.4);
+  X.fillStyle = "rgba(255,210,90," + (spotPulse * 0.18).toFixed(2) + ")";
+  X.beginPath(); X.ellipse(W / 2, 60, 240, 60, 0, 0, Math.PI*2); X.fill();
+  // Chain-link fence — diamond pattern across the front foreground.
+  X.fillStyle = "#3a3030";
+  X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
+  X.fillStyle = "#5a5050";
+  X.fillRect(0, STAGE_TOP, W, 1);
+  X.fillRect(0, STAGE_BOT - 1, W, 1);
+  X.fillStyle = "rgba(120,120,140,0.45)";
+  for (let dx = 0; dx < W + 12; dx += 6) {
+    X.fillRect(dx, STAGE_TOP, 1, STAGE_BOT - STAGE_TOP);
+  }
+  for (let dy = STAGE_TOP; dy < STAGE_BOT; dy += 10) {
+    X.fillRect(0, dy, W, 1);
+  }
+  // Edge ring — yellow tape.
+  X.fillStyle = "#e8c04a";
+  X.fillRect(0, STAGE_TOP - 2, W, 2);
+  X.fillStyle = "#0a0a0a";
+  X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
+}
+
+// Dispatch to the correct stage backdrop. Defaults to Stage 1 if out of bounds.
+function drawCurrentStage() {
+  const s = STAGES[currentStage];
+  if (s && s.drawBg) s.drawBg(); else drawStageBlock();
+}
+
+// Backwards-compat — older calls render the first stage directly.
+function drawStage1() { drawStageBlock(); }
 
 // ---------- Enemies ----------
 let enemies = [];
@@ -3696,7 +3916,22 @@ function update(dt) {
   stateTime += dt;
   if (STATE === "title") updateTitle(dt);
   else if (STATE === "playing") updatePlaying(dt);
-  // Other states declared in the machine but not yet reachable.
+  else if (STATE === "victory") updateVictory(dt);
+  else if (STATE === "gameover") updateGameOver(dt);
+}
+
+function updateVictory(dt) {
+  if (consumePress("Enter") || consumePress("Space") || consumePress("Escape")) {
+    player = null; enemies = []; particles = []; projectiles = [];
+    setState("title");
+  }
+}
+
+function updateGameOver(dt) {
+  if (consumePress("Enter") || consumePress("Space") || consumePress("Escape")) {
+    player = null; enemies = []; particles = []; projectiles = [];
+    setState("title");
+  }
 }
 
 function updateTitle(dt) {
@@ -3714,24 +3949,90 @@ function updateTitle(dt) {
 // or via the proper character-select panel in Phase 4.2.
 let selectedChar = "rio";
 
-// Spawn list selector — currently the same encounter for any stage (Phase 3.2
-// will replace with per-stage configurations).
-function spawnEnemiesForStage(_stageIndex) {
-  return [
-    makeEnemy("runner", 440, 280),
-    makeEnemy("runner", 520, 320),
-  ];
+// ---------- Stage data: backdrops, waves, hazards ----------
+// Each stage has a name, a backdrop renderer, an array of waves (each wave is
+// an array of [type, x, y] triples), an optional hazard hook, and a palette
+// hint that drives the drop-shadow and HUD tone.
+const STAGES = [
+  { // 1
+    name: "THE BLOCK",
+    drawBg: function() { drawStageBlock(); },
+    waves: [
+      [["runner", 440, 280], ["runner", 520, 320]],
+      [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
+      [["chains", 480, 300]],
+    ],
+    boss: null,
+  },
+  { // 2
+    name: "THE TUNNELS",
+    drawBg: function() { drawStageTunnels(); },
+    waves: [
+      [["slice", 440, 280], ["runner", 520, 320]],
+      [["slice", 460, 290], ["slice", 580, 310]],
+      [["chains", 480, 295], ["runner", 600, 320]],
+    ],
+    boss: null,
+  },
+  { // 3
+    name: "RIVER ROW",
+    drawBg: function() { drawStageRiver(); },
+    waves: [
+      [["runner", 440, 280], ["tank", 540, 322]],
+      [["lamplight", 580, 290], ["runner", 460, 320]],
+      [["tank", 480, 290], ["lamplight", 600, 320]],
+    ],
+    boss: "baron",
+    hazard: "water",
+  },
+  { // 4
+    name: "LANTERN ROW",
+    drawBg: function() { drawStageLantern(); },
+    waves: [
+      [["chains", 440, 282], ["slice", 540, 320]],
+      [["shade", 480, 298], ["chains", 600, 320]],
+      [["shade", 460, 290], ["slice", 540, 285], ["slice", 600, 320]],
+    ],
+    boss: null,
+  },
+  { // 5
+    name: "THE CAGE",
+    drawBg: function() { drawStageCage(); },
+    waves: [
+      [["dojo", 460, 290], ["chains", 560, 318]],
+      [["dojo", 460, 290], ["dojo", 560, 318]],
+      [["rig", 480, 300], ["dojo", 580, 320]],
+    ],
+    boss: null,
+  },
+];
+
+let currentStage = 0;
+let currentWave = 0;
+let waveDelay = 0;        // seconds before next wave spawns (after clearing one)
+let stageClearMessage = ""; // overlay text during interlude
+let stageClearTimer = 0;
+
+function spawnWave(stageIdx, waveIdx) {
+  const stage = STAGES[stageIdx];
+  if (!stage || !stage.waves[waveIdx]) return [];
+  return stage.waves[waveIdx].map(([type, x, y]) => makeEnemy(type, x, y));
 }
 
 function enterPlaying() {
   player = makePlayer(selectedChar, 120, 300);
-  enemies = spawnEnemiesForStage(0);
+  currentStage = 0;
+  currentWave = 0;
+  waveDelay = 0;
+  enemies = spawnWave(0, 0);
   particles = [];
   projectiles = [];
   hitstopFrames = 0;
   flashFrames = 0;
   shakeFrames = 0;
   shakeMag = 0;
+  stageClearMessage = "";
+  stageClearTimer = 0;
   setState("playing");
 }
 
@@ -3744,18 +4045,108 @@ function updatePlaying(dt) {
     hitstopFrames = 0;
     flashFrames = 0;
     shakeFrames = 0;
+    stageClearTimer = 0;
     setState("title");
     return;
   }
   if (hitstopFrames > 0) { hitstopFrames--; return; }
   if (flashFrames > 0)  flashFrames--;
   if (shakeFrames > 0)  shakeFrames--;
+
+  if (stageClearTimer > 0) {
+    stageClearTimer -= dt;
+    if (stageClearTimer <= 0) advanceStage();
+    if (player) updatePlayer(player, dt);
+    return;
+  }
+
   if (player) updatePlayer(player, dt);
   for (const e of enemies) updateEnemy(e, dt);
   resolveHits();
+  applyStageHazards(dt);
   cleanupEnemies();
   updateProjectiles(dt);
   updateParticles(dt);
+
+  // Game over when the player runs out of HP. Brief delay so the death
+  // knockback plays out before the overlay locks the input.
+  if (player && player.dead) {
+    if (!player.deathTimerStarted) {
+      player.deathTimerStarted = true;
+      player.deathClock = 1.6;
+    }
+    player.deathClock -= dt;
+    player.x += player.knockX * dt;
+    player.knockX *= 0.86;
+    if (player.deathClock <= 0) {
+      setState("gameover");
+      return;
+    }
+  }
+
+  // Wave / stage progression — advance once all live enemies are gone.
+  if (waveDelay > 0) {
+    waveDelay -= dt;
+    if (waveDelay <= 0) {
+      currentWave++;
+      const stage = STAGES[currentStage];
+      if (stage && stage.waves[currentWave]) {
+        enemies = enemies.concat(spawnWave(currentStage, currentWave));
+      } else if (stage && stage.boss) {
+        // Phase 3.3 wires up bosses; until then, treat boss as stage clear.
+        beginStageClear();
+      } else {
+        beginStageClear();
+      }
+    }
+  } else if (enemies.length === 0 || enemies.every(e => e.dead)) {
+    // Brief pause before next wave / stage clear so death animations land.
+    waveDelay = 1.0;
+  }
+}
+
+function beginStageClear() {
+  const stage = STAGES[currentStage];
+  stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
+  stageClearTimer = 2.4;
+}
+
+function advanceStage() {
+  currentStage++;
+  currentWave = 0;
+  waveDelay = 0;
+  stageClearMessage = "";
+  enemies = [];
+  particles = [];
+  projectiles = [];
+  if (currentStage >= STAGES.length) {
+    // End of currently-built stages. Phase 4.1 extends to 10.
+    setState("victory");
+    return;
+  }
+  enemies = spawnWave(currentStage, 0);
+  if (player) {
+    player.x = 120;
+    player.y = 300;
+    player.vx = 0; player.vy = 0;
+  }
+}
+
+function applyStageHazards(dt) {
+  const stage = STAGES[currentStage];
+  if (!stage || !stage.hazard || !player || player.dead) return;
+  if (stage.hazard === "water") {
+    if (player.y >= RIVER_WATER_TOP - 2 && player.iframes <= 0 && !player.dodging) {
+      player.y = RIVER_WATER_TOP - 4;
+      applyHit(player, {
+        cx: player.x, cy: player.y,
+        hw: 6, hd: 6, damage: 4, knockback: 40, hitstop: 2,
+        hits: new Set(),
+      }, null);
+      // Splash particle.
+      spawnSparkle(player.x, RIVER_WATER_TOP);
+    }
+  }
 }
 
 // ---------- Render ----------
@@ -3764,6 +4155,42 @@ function render() {
   X.fillRect(0, 0, W, H);
   if (STATE === "title") renderTitle();
   else if (STATE === "playing") renderPlaying();
+  else if (STATE === "victory") renderVictory();
+  else if (STATE === "gameover") renderGameOver();
+}
+
+function renderVictory() {
+  drawCurrentStage();
+  X.fillStyle = "rgba(0,0,0,0.7)";
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 28px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("BLOCK HELD.", W / 2, H / 2 - 18);
+  X.fillStyle = "#ddd";
+  X.font = "12px ui-monospace, monospace";
+  X.fillText("(more stages arrive in the next phase)", W / 2, H / 2 + 4);
+  const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 2);
+  X.fillStyle = "rgba(255,255,255," + pulse.toFixed(2) + ")";
+  X.fillText("PRESS ENTER", W / 2, H / 2 + 36);
+}
+
+function renderGameOver() {
+  drawCurrentStage();
+  X.fillStyle = "rgba(20,5,5,0.78)";
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = "#a83040";
+  X.font = "bold 28px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("GAME OVER", W / 2, H / 2 - 14);
+  X.fillStyle = "#ddd";
+  X.font = "12px ui-monospace, monospace";
+  X.fillText("the block fell.", W / 2, H / 2 + 8);
+  const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 2);
+  X.fillStyle = "rgba(255,255,255," + pulse.toFixed(2) + ")";
+  X.fillText("PRESS ENTER", W / 2, H / 2 + 36);
 }
 
 function renderTitle() {
@@ -3808,7 +4235,7 @@ function renderPlaying() {
   }
   if (shakeX || shakeY) X.translate(shakeX, shakeY);
 
-  drawStage1();
+  drawCurrentStage();
   // Depth-sort: deeper (lower world Y) renders first so closer entities cover them.
   const drawables = [];
   if (player) drawables.push({ y: player.y, draw: () => drawCharacter(player) });
@@ -3829,6 +4256,31 @@ function renderPlaying() {
   }
 
   drawHUD();
+
+  // Stage clear / interlude overlay.
+  if (stageClearTimer > 0 && stageClearMessage) {
+    const pop = Math.min(1, (2.4 - stageClearTimer) * 4);
+    const fade = Math.min(1, stageClearTimer / 0.6);
+    X.fillStyle = "rgba(0,0,0," + (0.55 * fade).toFixed(2) + ")";
+    X.fillRect(0, H/2 - 26, W, 52);
+    X.fillStyle = "rgba(232,192,74," + fade.toFixed(2) + ")";
+    X.font = "bold " + Math.round(22 * pop) + "px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.textBaseline = "middle";
+    X.fillText(stageClearMessage, W / 2, H / 2);
+  }
+
+  // Stage label badge in top-right.
+  const stage = STAGES[currentStage];
+  if (stage) {
+    X.fillStyle = "rgba(0,0,0,0.55)";
+    X.fillRect(W - 132, 24, 124, 14);
+    X.fillStyle = "#888";
+    X.font = "bold 8px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText("STAGE " + (currentStage + 1) + " — " + stage.name, W - 128, 27);
+  }
 
   X.fillStyle = "#888";
   X.font = "9px ui-monospace, monospace";
