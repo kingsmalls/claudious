@@ -211,17 +211,48 @@ const GRAVITY = 620;       // px / s^2
 
 // ---------- Frame-data driven attacks ----------
 // Frames are 60Hz fixed-step ticks. Hitboxes are world-space:
-//   fwd  forward distance from player center along facing
+//   fwd  forward distance from attacker center along facing
 //   hw   half-width on world X (horizontal)
 //   hd   half-depth on world Y (depth axis)
-//   lo,hi  vertical Z range above ground (for jump-over later)
+//   lo,hi  vertical Z range above ground (for jump-over)
+// chainLight / chainHeavy : name of follow-up attack on respective input
+// launcher : sets victim's vz on hit (juggle-able)
+// pushSelf : forward velocity (px/s) the attacker carries while active
+// airOnly  : usable only while z > 0
 const ATTACK_DATA = {
+  // --- Rio: boxer-trained, fast 3-hit combo + heavy uppercut launcher ---
+  // Depth tolerance (hd) is intentionally generous — beat-em-ups auto-forgive depth
+  // alignment. Tight hd makes the genre feel finicky.
   rio_atk1: {
     startup: 4, active: 3, recovery: 9,
-    damage: 5,
-    knockback: 80,
-    hitstop: 4,
-    hit: { fwd: 18, hw: 11, hd: 7, lo: 0, hi: 36 },
+    damage: 5, knockback: 80, hitstop: 4,
+    hit: { fwd: 18, hw: 11, hd: 12, lo: 0, hi: 36 },
+    chainLight: "atk2", chainHeavy: "heavy",
+  },
+  rio_atk2: {
+    startup: 5, active: 4, recovery: 11,
+    damage: 7, knockback: 95, hitstop: 5,
+    hit: { fwd: 20, hw: 12, hd: 13, lo: 0, hi: 36 },
+    chainLight: "atk3", chainHeavy: "heavy",
+    pushSelf: 30,
+  },
+  rio_atk3: {
+    startup: 7, active: 5, recovery: 18,
+    damage: 11, knockback: 160, hitstop: 7,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
+    pushSelf: 40,
+  },
+  rio_heavy: {
+    startup: 9, active: 4, recovery: 22,
+    damage: 13, knockback: 50, hitstop: 8,
+    hit: { fwd: 12, hw: 11, hd: 14, lo: 0, hi: 52 },
+    launcher: 220,
+  },
+  rio_jump_atk: {
+    startup: 3, active: 8, recovery: 6,
+    damage: 9, knockback: 90, hitstop: 5,
+    hit: { fwd: 12, hw: 12, hd: 12, lo: 0, hi: 60 },
+    airOnly: true,
   },
 };
 
@@ -248,8 +279,13 @@ function makePlayer(charKey, x, y) {
     hitstun: 0,
     knockX: 0, knockY: 0,
     dead: false,
+    dodging: false,
+    dodgeFrame: 0,
+    comboHits: 0,         // hits landed within the current combo window (HUD)
+    comboTimer: 0,        // seconds remaining before combo resets
     hurtboxes: [],
     hitboxes: [],
+    attackHits: null,     // Set of victims hit by the current attack (no double-hit)
   };
 }
 
@@ -259,31 +295,54 @@ function startAttack(p, name) {
   p.attackFrame = 0;
   p.vx = 0; p.vy = 0;
   p.hitboxes.length = 0;
+  p.attackHits = new Set();
+}
+
+function startDodge(p) {
+  p.dodging = true;
+  p.dodgeFrame = 0;
+  p.iframes = 14;
+  p.attacking = false;
+  p.attackName = null;
+  p.hitboxes.length = 0;
+  p.vx = -p.facing * 220;
+  p.vy = 0;
+  p.animState = "dodge";
+  p.animTime = 0;
 }
 
 function advanceAttack(p) {
   const d = ATTACK_DATA[p.char + "_" + p.attackName];
   if (!d) { p.attacking = false; p.attackName = null; return; }
   const total = d.startup + d.active + d.recovery;
-  p.hitboxes.length = 0;
   if (p.attackFrame > d.startup && p.attackFrame <= d.startup + d.active) {
     const h = d.hit;
-    p.hitboxes.push({
-      cx: p.x + p.facing * h.fwd,
-      cy: p.y,
-      hw: h.hw, hd: h.hd,
-      lo: h.lo, hi: h.hi,
-      damage: d.damage,
-      knockback: d.knockback,
-      hitstop: d.hitstop,
-      facing: p.facing,
-      owner: p,
-    });
+    if (p.hitboxes.length === 0) {
+      p.hitboxes.push({
+        cx: 0, cy: 0,
+        hw: h.hw, hd: h.hd, lo: h.lo, hi: h.hi,
+        damage: d.damage,
+        knockback: d.knockback,
+        hitstop: d.hitstop,
+        launcher: d.launcher || 0,
+        facing: p.facing,
+        owner: p,
+        hits: p.attackHits,
+      });
+    }
+    const hb = p.hitboxes[0];
+    hb.cx = p.x + p.facing * h.fwd;
+    hb.cy = p.y;
+    hb.facing = p.facing;
+    if (d.pushSelf && p.z <= 0) p.x += p.facing * d.pushSelf * STEP;
+  } else {
+    p.hitboxes.length = 0;
   }
   if (p.attackFrame >= total) {
     p.attacking = false;
     p.attackName = null;
     p.hitboxes.length = 0;
+    p.attackHits = null;
   }
 }
 
@@ -309,6 +368,29 @@ function updatePlayer(p, dt) {
   }
 
   const grounded = p.z <= 0;
+
+  // Combo-window timer ticks down whenever no fresh hit lands this frame.
+  if (p.comboTimer > 0) {
+    p.comboTimer -= dt;
+    if (p.comboTimer <= 0) { p.comboTimer = 0; p.comboHits = 0; }
+  }
+
+  // Dodge: locks input and motion to a backward slide with iframes.
+  if (p.dodging) {
+    p.dodgeFrame++;
+    p.x += p.vx * dt;
+    p.vx *= 0.85;
+    p.animState = "dodge";
+    p.animTime += dt;
+    if (p.x < STAGE_LEFT_PAD) p.x = STAGE_LEFT_PAD;
+    if (p.x > W - STAGE_RIGHT_PAD) p.x = W - STAGE_RIGHT_PAD;
+    p.hitboxes.length = 0;
+    p.hurtboxes.length = 0;
+    p.hurtboxes.push({ cx: p.x, cy: p.y, hw: 9, hd: 5, lo: 0, hi: 36 });
+    if (p.dodgeFrame >= 14) p.dodging = false;
+    return;
+  }
+
   const locked = p.attacking && grounded;
 
   // Movement input (suppressed during grounded attack lock).
@@ -320,7 +402,7 @@ function updatePlayer(p, dt) {
     if (actionHeld("down"))  iy += 1;
   }
 
-  // Double-tap → run; releasing stops it.
+  // Double-tap → run; releasing direction stops it.
   if (actionPressed("left")) {
     if (stateTime - lastTapLeft < DOUBLE_TAP_WINDOW) p.running = true;
     lastTapLeft = stateTime;
@@ -338,17 +420,51 @@ function updatePlayer(p, dt) {
       p.vx = (ix / mag) * speed;
       p.vy = (iy / mag) * speed;
       if (ix !== 0) p.facing = ix > 0 ? 1 : -1;
-    } else {
+    } else if (p.z <= 0) {
+      // Air control: preserve horizontal velocity once airborne.
       p.vx = 0; p.vy = 0;
     }
   }
 
+  // Jump / dodge — both bound to the jump key. Down + jump = dodge.
   if (!locked && grounded && actionPressed("jump")) {
-    p.vz = p.jumpVel;
+    if (actionHeld("down")) {
+      startDodge(p);
+    } else {
+      p.vz = p.jumpVel;
+    }
   }
 
-  if (!locked && grounded && actionPressed("light")) {
-    startAttack(p, "atk1");
+  // Attack inputs.
+  // - airborne + light  = jump_atk
+  // - grounded + light  = atk1, or chain to next light/heavy attack
+  // - grounded + heavy  = heavy, or chain finisher from a light
+  // Attack mid-air can chain with light into another aerial — kept simple: one swing.
+  if (actionPressed("light")) {
+    if (!grounded && !p.attacking) {
+      startAttack(p, "jump_atk");
+    } else if (grounded) {
+      if (p.attacking) {
+        const cur = ATTACK_DATA[p.char + "_" + p.attackName];
+        if (cur && cur.chainLight && p.attackFrame >= cur.startup) {
+          startAttack(p, cur.chainLight);
+        }
+      } else {
+        startAttack(p, "atk1");
+      }
+    }
+  }
+  if (actionPressed("heavy")) {
+    if (grounded) {
+      if (p.attacking) {
+        const cur = ATTACK_DATA[p.char + "_" + p.attackName];
+        if (cur && cur.chainHeavy && p.attackFrame >= cur.startup) {
+          startAttack(p, cur.chainHeavy);
+        }
+      } else {
+        startAttack(p, "heavy");
+      }
+    }
   }
 
   if (p.attacking) {
@@ -440,12 +556,54 @@ function drawBandana(sx, torsoY, f, atkReach, armSwing, k) {
   }
 }
 
+// Phase-aware envelope: ramps 0→peak through startup, holds peak through
+// active, ramps peak→0 through recovery. Used by attack renderers.
+function attackEnvelope(p, peak) {
+  if (!p.attacking) return 0;
+  const d = ATTACK_DATA[p.char + "_" + p.attackName];
+  if (!d) return 0;
+  const fr = p.attackFrame;
+  if (fr <= d.startup) return peak * (fr / d.startup);
+  if (fr <= d.startup + d.active) return peak;
+  const r = (fr - d.startup - d.active) / d.recovery;
+  return Math.max(0, peak * (1 - r));
+}
+
 function drawRio(p) {
   const sx = Math.round(p.x);
   const sy = Math.round(p.y - p.z);
   const f  = p.facing;
   const t  = p.animTime;
   const k  = RIO_COLORS;
+
+  // ---- Dodge: backward roll, compact silhouette, motion trail ----
+  if (p.dodging) {
+    const groundY = Math.round(p.y);
+    // Faint trail showing where she was.
+    X.fillStyle = "rgba(125,141,79,0.30)";
+    X.fillRect(sx + f * 6,  groundY - 14, 8, 12);
+    X.fillStyle = "rgba(125,141,79,0.18)";
+    X.fillRect(sx + f * 12, groundY - 12, 7, 10);
+    // Drop shadow.
+    X.fillStyle = "rgba(0,0,0,0.4)";
+    X.beginPath();
+    X.ellipse(sx, groundY, 11, 3, 0, 0, Math.PI * 2);
+    X.fill();
+    // Compact rolling ball — jacket-on-pants oval.
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 8, groundY - 14, 16, 12);
+    X.fillStyle = k.jacket;
+    X.fillRect(sx - 8, groundY - 14, 16, 6);
+    X.fillStyle = k.jacketDark;
+    X.fillRect(sx - 8, groundY - 8, 16, 1);
+    // Hair ridge on the rolled-over side.
+    X.fillStyle = k.hair;
+    X.fillRect(sx - 6, groundY - 16, 12, 2);
+    // Bandana pip stays visible during the roll.
+    X.fillStyle = k.bandana;
+    X.fillRect(sx - f * 7, groundY - 9, 4, 2);
+    return;
+  }
 
   // Per-state animation deltas.
   let armSwing = 0, legSwingL = 0, legSwingR = 0, bodyBob = 0;
@@ -466,19 +624,41 @@ function drawRio(p) {
   } else if (p.animState === "jump") {
     legSwingL = -2; legSwingR = -2;
     armSwing  = -1;
+  } else if (p.animState === "hurt") {
+    bodyBob = -2;
   }
 
-  // Attack arm-extension envelope (in pixels of forward reach).
-  let atkReach = 0;
-  if (p.attacking && p.attackName === "atk1") {
-    const d = ATTACK_DATA.rio_atk1;
-    if (p.attackFrame <= d.startup) {
-      atkReach = (p.attackFrame / d.startup) * 14;
-    } else if (p.attackFrame <= d.startup + d.active) {
-      atkReach = 14;
-    } else {
-      const r = (p.attackFrame - d.startup - d.active) / d.recovery;
-      atkReach = Math.max(0, 14 * (1 - r));
+  // Per-attack visuals.
+  // atkReach   pixels of forward fist extension
+  // atkArm     "front" or "rear" — which side of the body extends
+  // atkYBias   y-offset of the punching arm vs neutral arm height
+  // atkUp      rising offset for the uppercut
+  // atkKick    pixels of forward foot extension for jump_atk
+  // atkSpin    extra body torque for hooking attacks
+  let atkReach = 0, atkArm = "front", atkYBias = 0, atkUp = 0, atkKick = 0, atkSpin = 0;
+  if (p.attacking) {
+    const name = p.attackName;
+    if (name === "atk1") {
+      atkReach = attackEnvelope(p, 14);
+      atkArm = "front"; atkYBias = 0;
+    } else if (name === "atk2") {
+      atkReach = attackEnvelope(p, 19);
+      atkArm = "rear"; atkYBias = -1;
+      atkSpin = attackEnvelope(p, 1);
+    } else if (name === "atk3") {
+      atkReach = attackEnvelope(p, 17);
+      atkArm = "front"; atkYBias = 1;
+      atkSpin = attackEnvelope(p, 2);
+    } else if (name === "heavy") {
+      atkReach = attackEnvelope(p, 9);
+      atkArm = "front";
+      atkUp = attackEnvelope(p, 14);
+      // crouch during startup, rise through active.
+      const d = ATTACK_DATA.rio_heavy;
+      if (p.attackFrame <= d.startup) bodyBob = -(p.attackFrame / d.startup) * 3;
+      else bodyBob = 0.5;
+    } else if (name === "jump_atk") {
+      atkKick = attackEnvelope(p, 14);
     }
   }
 
@@ -517,40 +697,74 @@ function drawRio(p) {
   X.fillStyle = k.jacketDark;
   X.fillRect(sx - 7, torsoY + 9, 14, 1);
 
-  // Arms — front and back.
-  // Identify front arm (camera-side) vs back arm.
+  // Arms — front and back. Position keyed off body midline.
+  // Front arm = camera-side. Rear arm = back.
   const frontArmX = (f > 0) ? sx + 6 : sx - 9;
   const backArmX  = (f > 0) ? sx - 9 : sx + 6;
-  const frontWristX = frontArmX;
-  const backWristX  = backArmX;
 
-  // Back arm (drawn first).
-  X.fillStyle = k.skin;
-  X.fillRect(backArmX, torsoY + 1 + Math.round(armSwing), 3, 11);
-  X.fillStyle = k.wraps;
-  X.fillRect(backWristX, torsoY + 12 + Math.round(armSwing), 3, 3);
-
-  // Front arm — extended during attack.
-  if (atkReach > 0) {
-    const ay = torsoY + 4;
+  // Rear arm — extends forward only on cross (atk2). Otherwise hangs at side.
+  if (atkArm === "rear" && atkReach > 0) {
+    const ay = torsoY + 4 + atkYBias;
     X.fillStyle = k.skin;
     if (f > 0) X.fillRect(sx + 4, ay, atkReach + 3, 3);
-    else       X.fillRect(sx - 3 - atkReach - 3, ay, atkReach + 3, 3);
+    else       X.fillRect(sx - 4 - atkReach - 3, ay, atkReach + 3, 3);
     X.fillStyle = k.wraps;
     if (f > 0) X.fillRect(sx + 4 + atkReach, ay, 3, 3);
-    else       X.fillRect(sx - 3 - atkReach - 3, ay, 3, 3);
+    else       X.fillRect(sx - 4 - atkReach - 3, ay, 3, 3);
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(backArmX, torsoY + 1 + Math.round(armSwing), 3, 11);
+    X.fillStyle = k.wraps;
+    X.fillRect(backArmX, torsoY + 12 + Math.round(armSwing), 3, 3);
+  }
+
+  // Front arm — extends on jab/hook/heavy. Heavy rises with atkUp.
+  if (atkArm === "front" && (atkReach > 0 || atkUp > 0)) {
+    const reach = atkReach;
+    const ay = torsoY + 4 + atkYBias - Math.round(atkUp);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 4, ay, reach + 3, 3);
+    else       X.fillRect(sx - 4 - reach - 3, ay, reach + 3, 3);
+    X.fillStyle = k.wraps;
+    if (f > 0) X.fillRect(sx + 4 + reach, ay, 3, 3);
+    else       X.fillRect(sx - 4 - reach - 3, ay, 3, 3);
+    // For uppercut, draw a vertical forearm rising along atkUp height.
+    if (atkUp > 2) {
+      X.fillStyle = k.skin;
+      X.fillRect((f > 0) ? sx + 4 + reach - 1 : sx - 4 - reach - 2, ay, 3, Math.round(atkUp));
+    }
   } else {
     X.fillStyle = k.skin;
     X.fillRect(frontArmX, torsoY + 1 - Math.round(armSwing), 3, 11);
     X.fillStyle = k.wraps;
-    X.fillRect(frontWristX, torsoY + 12 - Math.round(armSwing), 3, 3);
+    X.fillRect(frontArmX, torsoY + 12 - Math.round(armSwing), 3, 3);
   }
 
-  // Yellow bandana — Rio's left wrist signature. Spec: must always be visible.
-  // Drawn on the camera-side (front) wrist regardless of facing, so it never hides
-  // behind the body. During the punch arc it rides the extending fist with a 2-step
-  // trailing ghost so the eye tracks it.
-  drawBandana(sx, torsoY, f, atkReach, armSwing, k);
+  // Yellow bandana on the camera-side wrist (the "front" arm). Always visible.
+  // The bandana follows the punching arc; for a cross (atk2) the punching arm
+  // is the rear, so the front-side bandana stays at hip-line and an extra fluttering
+  // accent appears on the extending rear wrist.
+  if (atkArm === "front") {
+    drawBandana(sx, torsoY, f, atkReach + atkUp, armSwing, k);
+  } else {
+    drawBandana(sx, torsoY, f, 0, armSwing, k);
+    if (atkReach > 4) {
+      const ay = torsoY + 6 + atkYBias;
+      X.fillStyle = k.bandana;
+      if (f > 0) X.fillRect(sx + 4 + atkReach - 1, ay, 5, 2);
+      else       X.fillRect(sx - 4 - atkReach - 4, ay, 5, 2);
+    }
+  }
+
+  // Front kick for jump_atk — extending leg forward.
+  if (atkKick > 0) {
+    X.fillStyle = k.pants;
+    if (f > 0) X.fillRect(sx + 4, sy - 12, atkKick, 4);
+    else       X.fillRect(sx - 4 - atkKick, sy - 12, atkKick, 4);
+    X.fillStyle = k.boot;
+    if (f > 0) X.fillRect(sx + 4 + atkKick - 3, sy - 12, 4, 5);
+    else       X.fillRect(sx - 4 - atkKick, sy - 12, 4, 5);
+  }
 
   // Head.
   X.fillStyle = k.skin;
@@ -656,14 +870,16 @@ const RUNNER_ATK = {
   damage: 8,
   knockback: 70,
   hitstop: 3,
-  hit: { fwd: 14, hw: 9, hd: 6, lo: 0, hi: 32 },
+  hit: { fwd: 14, hw: 9, hd: 11, lo: 0, hi: 32 },
 };
 
 function makeRunner(x, y) {
   return {
     type: "runner",
     x, y, z: 0,
-    vx: 0, vy: 0,
+    vx: 0, vy: 0, vz: 0,
+    airborne: false,
+    knockdownFrames: 0,
     facing: -1,
     animState: "idle",
     animTime: 0,
@@ -682,6 +898,7 @@ function makeRunner(x, y) {
     deathTimer: 0,
     hitboxes: [],
     hurtboxes: [],
+    attackHits: null,
   };
 }
 
@@ -699,6 +916,41 @@ function updateRunner(e, dt) {
   }
 
   if (e.iframes > 0) e.iframes--;
+
+  // Airborne (juggled by a launcher) — gravity, no AI, vulnerable.
+  if (e.airborne) {
+    e.vz -= GRAVITY * dt;
+    e.z += e.vz * dt;
+    e.x += e.knockX * dt;
+    e.knockX *= 0.94;
+    if (e.x < STAGE_LEFT_PAD) e.x = STAGE_LEFT_PAD;
+    if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
+    if (e.z <= 0) {
+      e.z = 0; e.vz = 0;
+      e.airborne = false;
+      e.knockdownFrames = 28;
+      e.iframes = Math.max(e.iframes, 28);
+    }
+    e.animState = "air";
+    e.animTime += dt;
+    e.hitboxes.length = 0;
+    e.hurtboxes.length = 0;
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: e.z, hi: e.z + 30 });
+    return;
+  }
+
+  // Knockdown — lying on ground, getup countdown.
+  if (e.knockdownFrames > 0) {
+    e.knockdownFrames--;
+    e.animState = "down";
+    e.animTime += dt;
+    e.x += e.knockX * dt;
+    e.knockX *= 0.6;
+    e.hitboxes.length = 0;
+    e.hurtboxes.length = 0;
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 9, hd: 6, lo: 0, hi: 12 });
+    return;
+  }
 
   if (e.hitstun > 0) {
     e.hitstun--;
@@ -730,24 +982,34 @@ function updateRunner(e, dt) {
     if (e.attacking) {
       e.attackFrame++;
       const d = RUNNER_ATK;
-      e.hitboxes.length = 0;
+      // Persistent hitbox across active frames so the attack hits at most once
+      // (hits Set is shared via e.attackHits).
       if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
-        e.hitboxes.push({
-          cx: e.x + e.facing * d.hit.fwd,
-          cy: e.y,
-          hw: d.hit.hw, hd: d.hit.hd,
-          lo: d.hit.lo, hi: d.hit.hi,
-          damage: d.damage,
-          knockback: d.knockback,
-          hitstop: d.hitstop,
-          facing: e.facing,
-          owner: e,
-        });
+        if (e.hitboxes.length === 0) {
+          e.hitboxes.push({
+            cx: 0, cy: 0,
+            hw: d.hit.hw, hd: d.hit.hd,
+            lo: d.hit.lo, hi: d.hit.hi,
+            damage: d.damage,
+            knockback: d.knockback,
+            hitstop: d.hitstop,
+            facing: e.facing,
+            owner: e,
+            hits: e.attackHits,
+          });
+        }
+        const hb = e.hitboxes[0];
+        hb.cx = e.x + e.facing * d.hit.fwd;
+        hb.cy = e.y;
+        hb.facing = e.facing;
+      } else {
+        e.hitboxes.length = 0;
       }
       if (e.attackFrame >= d.startup + d.active + d.recovery) {
         e.attacking = false;
         e.attackName = null;
         e.hitboxes.length = 0;
+        e.attackHits = null;
         e.aiCooldown = 0.55 + Math.random() * 0.55;
       }
       e.animState = "atk";
@@ -778,6 +1040,7 @@ function updateRunner(e, dt) {
           e.attacking = true;
           e.attackName = "swipe";
           e.attackFrame = 0;
+          e.attackHits = new Set();
         }
       }
     }
@@ -814,22 +1077,47 @@ function drawRunner(e) {
   const k  = RUNNER_COLORS;
   const t  = e.animTime;
 
-  // Drop shadow.
-  X.fillStyle = "rgba(0,0,0,0.4)";
+  // Drop shadow — at world y (ground), shrinks with elevation.
+  X.fillStyle = "rgba(0,0,0," + (0.4 - Math.min(0.25, e.z * 0.004)).toFixed(2) + ")";
   X.beginPath();
-  X.ellipse(sx, e.y, 9, 3, 0, 0, Math.PI * 2);
+  X.ellipse(sx, e.y, Math.max(4, 9 - e.z * 0.06), 3, 0, 0, Math.PI * 2);
   X.fill();
 
-  if (e.dead) {
-    // Lying on the ground, hood down, motionless.
+  if (e.dead || e.animState === "down") {
+    // Lying on the ground, hood down. While knocked down (alive) the body
+    // breathes faintly so it reads as "alive but recovering".
+    const breathe = e.dead ? 0 : Math.round(Math.sin(t * 6) * 0.5);
     X.fillStyle = k.hoodie;
-    X.fillRect(sx - 13, sy - 6, 26, 5);
+    X.fillRect(sx - 13, sy - 6 + breathe, 26, 5);
     X.fillStyle = k.pants;
     X.fillRect(sx + (f > 0 ? -13 : 1), sy - 2, 12, 4);
     X.fillStyle = k.shoe;
     X.fillRect(sx + (f > 0 ? -13 : 9), sy - 1, 4, 3);
     X.fillStyle = k.hoodShadow;
-    X.fillRect(sx + (f > 0 ? 7 : -13), sy - 5, 6, 4);
+    X.fillRect(sx + (f > 0 ? 7 : -13), sy - 5 + breathe, 6, 4);
+    if (!e.dead && e.iframes > 0 && (e.iframes & 4)) {
+      X.fillStyle = "rgba(255,255,255,0.4)";
+      X.fillRect(sx - 13, sy - 6, 26, 5);
+    }
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 12, e);
+    return;
+  }
+
+  if (e.animState === "air") {
+    // Limbs flail outward — body stretched across.
+    X.fillStyle = k.hoodie;
+    X.fillRect(sx - 7, sy - 24, 14, 14);   // torso
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 6, sy - 10, 5, 10);    // leg up
+    X.fillRect(sx + 1, sy - 12, 5, 12);
+    X.fillStyle = k.hoodie;
+    X.fillRect(sx - 11, sy - 22, 4, 3);    // arm flailing left
+    X.fillRect(sx + 7,  sy - 26, 4, 3);    // arm flailing right
+    X.fillStyle = k.hoodieDark;
+    X.fillRect(sx - 6, sy - 32, 12, 8);    // hood/head
+    X.fillStyle = k.hoodShadow;
+    X.fillRect(sx - 4, sy - 28, 8, 3);
+    if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 38, e);
     return;
   }
 
@@ -919,18 +1207,19 @@ function drawRunner(e) {
     X.fillRect(sx - 7, headY - 4, 14, 50);
   }
 
-  // HP pip above head.
-  if (e.hp < e.hpMax) {
-    const bw = 18, bh = 2;
-    const bx = sx - bw / 2;
-    const by = headY - 8;
-    X.fillStyle = "#000";
-    X.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
-    X.fillStyle = "#3a1010";
-    X.fillRect(bx, by, bw, bh);
-    X.fillStyle = "#e8c04a";
-    X.fillRect(bx, by, Math.max(0, Math.round(bw * (e.hp / e.hpMax))), bh);
-  }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, headY - 8, e);
+}
+
+function drawEnemyHpPip(sx, by, e) {
+  const bw = 18, bh = 2;
+  const bx = sx - bw / 2;
+  X.fillStyle = "#000";
+  X.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+  X.fillStyle = "#3a1010";
+  X.fillRect(bx, by, bw, bh);
+  const pct = e.hp / e.hpMax;
+  X.fillStyle = pct < 0.3 ? "#ff5050" : (pct < 0.6 ? "#ff9c40" : "#e8c04a");
+  X.fillRect(bx, by, Math.max(0, Math.round(bw * pct)), bh);
 }
 
 // ---------- Particles (hit feedback) ----------
@@ -985,30 +1274,47 @@ function boxOverlap(a, b) {
          Math.abs(a.cy - b.cy) < a.hd + b.hd;
 }
 
-function applyHit(target, hb) {
+function applyHit(target, hb, attacker) {
   if (target.dead) return;
   target.hp -= hb.damage;
-  target.iframes = 12;
-  // Hit cancels the victim's own attack (no trades).
+  // Brief post-hit immunity so simultaneous enemies don't all stack onto one frame
+  // and so the victim's attack-cancel doesn't immediately re-eat the next active frame.
+  // Short enough that player chain combos still land (chain gaps >=10f).
+  target.iframes = 4;
+  // Cancel the victim's own attack (no trades).
   if (target.attacking) {
     target.attacking = false;
     target.attackName = null;
     target.attackFrame = 0;
+    if (target.hitboxes) target.hitboxes.length = 0;
+    target.attackHits = null;
   }
-  if (target.hitboxes) target.hitboxes.length = 0;
   // Knockback away from the hitbox center on world X.
   const dir = (target.x < hb.cx) ? -1 : 1;
   target.knockX = dir * hb.knockback;
   target.knockY = 0;
   target.hitstun = 8;
+  // Launcher pops the victim into the air for juggle followups.
+  if (hb.launcher && target.z !== undefined) {
+    target.vz = hb.launcher;
+    target.airborne = true;
+    target.hitstun = 0;
+    target.knockX = dir * (hb.knockback * 0.5);
+  }
   if (target.hp <= 0) {
     target.dead = true;
     target.deathTimer = 0;
     target.knockX = dir * (hb.knockback + 30);
     target.hitstun = 0;
+    target.airborne = false;
   }
   if (hitstopFrames < (hb.hitstop || 3)) hitstopFrames = hb.hitstop || 3;
-  // Sparkle at the contact point — midway between attacker and target.
+  // Combo accounting — only when the player is the attacker.
+  if (player && attacker === player) {
+    player.comboHits++;
+    player.comboTimer = 1.4;
+  }
+  // Visuals.
   const sxp = (target.x + hb.cx) / 2;
   const syp = target.y - 18;
   spawnSparkle(sxp, syp);
@@ -1017,32 +1323,38 @@ function applyHit(target, hb) {
 
 function resolveHits() {
   if (!player) return;
-  // Player hits enemies.
+  // Player → enemies.
   if (player.hitboxes.length > 0 && !player.dead) {
     for (const hb of player.hitboxes) {
-      // Hitbox can hit each enemy at most once per active frame.
       for (const e of enemies) {
-        if (e.dead || e.iframes > 0) continue;
+        if (e.dead) continue;
+        if (e.iframes > 0) continue;       // knockdown / getup invulnerability
+        if (hb.hits && hb.hits.has(e)) continue;
         let connected = false;
         for (const tb of e.hurtboxes) {
           if (boxOverlap(hb, tb)) { connected = true; break; }
         }
-        if (connected) applyHit(e, hb);
+        if (connected) {
+          if (hb.hits) hb.hits.add(e);
+          applyHit(e, hb, player);
+        }
       }
     }
   }
-  // Enemies hit player.
-  if (player.iframes <= 0 && !player.dead) {
+  // Enemies → player.
+  if (player.iframes <= 0 && !player.dead && !player.dodging) {
     for (const e of enemies) {
       if (e.dead || e.hitboxes.length === 0) continue;
       for (const hb of e.hitboxes) {
+        if (!hb.hits) hb.hits = new Set();
+        if (hb.hits.has(player)) continue;
         let connected = false;
         for (const tb of player.hurtboxes) {
           if (boxOverlap(hb, tb)) { connected = true; break; }
         }
-        if (connected) { applyHit(player, hb); break; }
+        if (connected) { hb.hits.add(player); applyHit(player, hb, e); break; }
       }
-      if (player.iframes > 0) break; // hit registered, stop checking other enemies this tick
+      if (player.iframes > 0) break;
     }
   }
 }

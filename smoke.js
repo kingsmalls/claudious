@@ -213,6 +213,97 @@ function peek(expr) {
   step(120);
   console.log("after cleanup: enemies =", peek("enemies.length"));
 
+  // ---- COMBO CHAIN: J → J → J (atk1 → atk2 → atk3) ----
+  press("Escape");  step(2);
+  press("Enter");   step(2);
+  // Walk in to range.
+  hold("KeyD");
+  while (true) {
+    step(2);
+    const e0 = peek("enemies[0]");
+    if (!e0) break;
+    if (e0.x - peek("player.x") < 24 && e0.x - peek("player.x") > 0) break;
+  }
+  release("KeyD");
+  step(2);
+  const startHp = peek("enemies[0].hp");
+  press("KeyJ"); step(6);  // atk1 active hits at frame 5
+  console.log("after J #1: e0.hp =", peek("enemies[0].hp"),
+              " p.attackName =", peek("player.attackName"),
+              " p.attackFrame =", peek("player.attackFrame"));
+  press("KeyJ"); step(8);  // chain into atk2
+  console.log("after J #2: e0.hp =", peek("enemies[0].hp"),
+              " p.attackName =", peek("player.attackName"),
+              " p.attackFrame =", peek("player.attackFrame"));
+  press("KeyJ"); step(10); // chain into atk3
+  console.log("after J #3: e0.hp =", peek("enemies[0].hp"),
+              " p.attackName =", peek("player.attackName"),
+              " p.comboHits =", peek("player.comboHits"));
+  snapshot("12_combo_chain");
+  console.log("combo dealt:", startHp - peek("enemies[0] && enemies[0].hp || 0"), "dmg total");
+
+  // ---- DODGE: clean test, no enemies in range ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  // Walk off to the left so runners are off-screen-far when we test dodge.
+  hold("KeyA"); step(40); release("KeyA"); step(2);
+  hold("ArrowDown");
+  press("Space");
+  step(2);
+  console.log("dodge fired: dodging =", peek("player.dodging"),
+              " iframes =", peek("player.iframes"),
+              " vx =", peek("player.vx").toFixed(1));
+  snapshot("14_dodge");
+  step(20);
+  console.log("post-dodge: dodging =", peek("player.dodging"));
+  release("ArrowDown");
+
+  // ---- JUMP ATTACK: clean test ----
+  step(10);
+  press("Space"); step(2);
+  console.log("jumped: z =", peek("player.z").toFixed(1));
+  press("KeyJ"); step(3);
+  console.log("jump_atk: attackName =", peek("player.attackName"),
+              " hitboxes:", peek("player.hitboxes.length"));
+  snapshot("15_jump_atk");
+
+  // ---- HEAVY whiff: confirm K starts the heavy attack from idle ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  press("KeyK"); step(15);
+  console.log("heavy whiff:",
+              "atkName=", peek("player.attackName"),
+              "atkFrame=", peek("player.attackFrame"));
+  snapshot("13_launcher");
+
+  // ---- LAUNCHER: position runner adjacent and disable its AI swipe ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  // Mutate state directly: place runner [0] in range, raise its cooldown so it
+  // won't swipe Rio mid-startup, and clear runner [1] so it doesn't interfere.
+  window.eval(
+    "enemies[0].x = player.x + 22;" +
+    "enemies[0].y = player.y;" +
+    "enemies[0].aiCooldown = 5;" +
+    "enemies[1].hp = 0;" +
+    "enemies[1].dead = true;" +
+    "enemies[1].deathTimer = 100;"
+  );
+  step(2);
+  press("KeyK");
+  step(35);
+  console.log("launcher hit:",
+              "e0.hp=", peek("enemies[0] && enemies[0].hp"),
+              "e0.airborne=", peek("enemies[0] && enemies[0].airborne"),
+              "e0.z=", peek("enemies[0] && enemies[0].z || 0").toFixed(1),
+              "e0.vz=", peek("enemies[0] && enemies[0].vz || 0").toFixed(1));
+  snapshot("16_falling");
+  step(40);
+  console.log("after fall:",
+              "e0.z=", peek("enemies[0] && enemies[0].z || 0").toFixed(1),
+              "e0.airborne=", peek("enemies[0] && enemies[0].airborne"),
+              "e0.knockdownFrames=", peek("enemies[0] && enemies[0].knockdownFrames || 0"));
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
