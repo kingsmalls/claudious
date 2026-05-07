@@ -125,7 +125,7 @@ function consumePress(k) {
 }
 
 // ---------- Action bindings ----------
-// WASD / arrows for movement; right-hand row JKLU for combat.
+// WASD / arrows for movement; right-hand row JKLU for combat; I = parry.
 const KEY = {
   left:    ["KeyA", "ArrowLeft"],
   right:   ["KeyD", "ArrowRight"],
@@ -136,6 +136,7 @@ const KEY = {
   heavy:   ["KeyK"],
   special: ["KeyL"],
   grab:    ["KeyU"],
+  parry:   ["KeyI"],
 };
 
 function actionHeld(a) {
@@ -254,7 +255,27 @@ const ATTACK_DATA = {
     hit: { fwd: 12, hw: 12, hd: 12, lo: 0, hi: 60 },
     airOnly: true,
   },
+  // Free counter-special when parry meter is full. Same shape across characters
+  // so the meter UI is universal; per-character flavor lives in renderers.
+  rio_counter: {
+    startup: 3, active: 6, recovery: 14,
+    damage: 22, knockback: 200, hitstop: 10,
+    hit: { fwd: 24, hw: 18, hd: 16, lo: 0, hi: 60 },
+    launcher: 140,
+    counterSpecial: true,
+  },
 };
+
+// ---------- Parry tuning (12-frame window, 18-frame cooldown) ----------
+const PARRY_ACTIVE   = 12;        // frames the parry window stays open
+const PARRY_TOTAL    = 30;        // active + 18-frame cooldown
+const PARRY_PERFECT  = 3;         // frames 1-3
+const PARRY_GOOD     = 7;         // frames 4-7
+// frames 8-12 = LATE
+const PARRY_CHAIN_S  = 1.5;       // seconds chain stays alive
+const PARRY_HEAL_HP  = 3;         // perfect-parry heal at chain >= 2
+const PARRY_PERFECT_BONUS = 1.75; // counter damage multiplier
+const PARRY_PERFECT_HITSTOP = 14; // extended hitstop reads as slow-mo
 
 // ---------- Player ----------
 let player = null;
@@ -283,6 +304,10 @@ function makePlayer(charKey, x, y) {
     dodgeFrame: 0,
     comboHits: 0,         // hits landed within the current combo window (HUD)
     comboTimer: 0,        // seconds remaining before combo resets
+    parryFrame: 0,        // 1-12 active window, 13-30 cooldown, 0 = idle
+    parryChain: 0,        // consecutive successful parries
+    parryChainTimer: 0,   // seconds remaining in chain window
+    parryMeter: 0,        // 0-100 — at 100, next ATK fires free counter-special
     hurtboxes: [],
     hitboxes: [],
     attackHits: null,     // Set of victims hit by the current attack (no double-hit)
@@ -373,6 +398,41 @@ function updatePlayer(p, dt) {
   if (p.comboTimer > 0) {
     p.comboTimer -= dt;
     if (p.comboTimer <= 0) { p.comboTimer = 0; p.comboHits = 0; }
+  }
+
+  // Parry: tick frame counter through the active window then the 18f cooldown.
+  if (p.parryFrame > 0) {
+    p.parryFrame++;
+    if (p.parryFrame > PARRY_TOTAL) p.parryFrame = 0;
+  }
+
+  // Parry chain timeout: if no fresh parry within 1.5s, retain 60% meter.
+  if (p.parryChainTimer > 0) {
+    p.parryChainTimer -= dt;
+    if (p.parryChainTimer <= 0) {
+      p.parryChainTimer = 0;
+      p.parryChain = 0;
+      p.parryMeter = Math.floor(p.parryMeter * 0.6);
+    }
+  }
+
+  // Counter-special at full meter: intercepts the next light/heavy press.
+  if (p.parryMeter >= 100 && grounded && !p.attacking) {
+    if (actionPressed("light") || actionPressed("heavy")) {
+      startAttack(p, "counter");
+      p.parryMeter = 0;
+      p.parryChain = 0;
+      p.parryChainTimer = 0;
+      flashFrames = Math.max(flashFrames, 4);
+    }
+  }
+
+  // Parry input — independent of attacks. Gated by hitstun, dodge, in-progress
+  // parry/cooldown, and grounded state.
+  if (grounded && !p.attacking && !p.dodging && p.parryFrame === 0) {
+    if (actionPressed("parry")) {
+      p.parryFrame = 1;
+    }
   }
 
   // Dodge: locks input and motion to a backward slide with iframes.
@@ -575,6 +635,19 @@ function drawRio(p) {
   const f  = p.facing;
   const t  = p.animTime;
   const k  = RIO_COLORS;
+
+  // ---- Parry: guard pose with a glow ring on the active window. ----
+  if (p.parryFrame >= 1 && p.parryFrame <= PARRY_ACTIVE) {
+    const sxP = Math.round(p.x);
+    const syP = Math.round(p.y - p.z);
+    // Ring of bandana-yellow energy that contracts as the window closes.
+    const r = 22 + (p.parryFrame / PARRY_ACTIVE) * 10;
+    const a = 1 - (p.parryFrame / PARRY_ACTIVE) * 0.7;
+    X.strokeStyle = "rgba(255,215,106," + a.toFixed(2) + ")";
+    X.lineWidth = 2;
+    X.beginPath(); X.arc(sxP, syP - 22, r, 0, Math.PI * 2); X.stroke();
+    X.lineWidth = 1;
+  }
 
   // ---- Dodge: backward roll, compact silhouette, motion trail ----
   if (p.dodging) {
@@ -802,13 +875,78 @@ function drawHUD() {
   X.fillStyle = "#e8c04a";          // bandana yellow rail
   X.fillRect(barX, barY, barW, 1);
 
+  // Parry meter + chain count (bottom right). Pulses "READY" at full.
+  if (player) drawParryHUD();
+  // Combo counter (center-top under HP).
+  if (player && player.comboHits >= 2) drawComboCounter();
+
   X.fillStyle = "#e8c04a";
   X.font = "bold 9px ui-monospace, monospace";
   X.textAlign = "left";
   X.textBaseline = "top";
   X.fillText("RIO", barX, barY - 6);
+}
 
-  // Bottom-right HUD slot reserved for combo / parry meter (Phase 2).
+// Parry meter + chain counter, anchored bottom-right. Pulses READY at 100%.
+function drawParryHUD() {
+  const p = player;
+  const x0 = W - 122;
+  const y0 = H - 26;
+  // Frame plate.
+  X.fillStyle = "rgba(0,0,0,0.55)";
+  X.fillRect(x0 - 4, y0 - 2, 122, 22);
+  // Label.
+  X.fillStyle = "#aaa";
+  X.font = "bold 8px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText("PARRY", x0, y0);
+  // Chain count.
+  if (p.parryChain > 0) {
+    X.fillStyle = "#e8c04a";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "right";
+    X.fillText("x" + p.parryChain, x0 + 110, y0);
+  }
+  // Meter bar.
+  const mx = x0, my = y0 + 10, mw = 110, mh = 6;
+  X.fillStyle = "#222";
+  X.fillRect(mx, my, mw, mh);
+  const pct = p.parryMeter / 100;
+  // Color ramps from olive to bandana yellow to white as it fills.
+  const grad = pct < 0.5 ? "#5a6b3a" : (pct < 1 ? "#e8c04a" : "#fff");
+  X.fillStyle = grad;
+  X.fillRect(mx, my, Math.round(mw * pct), mh);
+  // Tick marks at 50 / 75.
+  X.fillStyle = "#000";
+  X.fillRect(mx + Math.round(mw * 0.5), my, 1, mh);
+  X.fillRect(mx + Math.round(mw * 0.75), my, 1, mh);
+  // Top rail.
+  X.fillStyle = "#e8c04a";
+  X.fillRect(mx, my, mw, 1);
+  // READY pulse at full.
+  if (p.parryMeter >= 100) {
+    const pulse = 0.55 + 0.45 * Math.sin(stateTime * Math.PI * 6);
+    X.fillStyle = "rgba(255,255,255," + pulse.toFixed(2) + ")";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.fillText("READY", mx + mw / 2, my - 1);
+  }
+}
+
+// Compact combo counter under the HP bar — fades quickly when comboTimer expires.
+function drawComboCounter() {
+  const p = player;
+  const fade = Math.min(1, p.comboTimer / 0.4);
+  const cx = W / 2;
+  const cy = 30;
+  X.font = "bold 18px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "alphabetic";
+  X.fillStyle = "rgba(0,0,0," + (0.7 * fade).toFixed(2) + ")";
+  X.fillText(p.comboHits + " HIT", cx + 1, cy + 1);
+  X.fillStyle = "rgba(232,192,74," + fade.toFixed(2) + ")";
+  X.fillText(p.comboHits + " HIT", cx, cy);
 }
 
 // ---------- DEV: hitbox / hurtbox visualizer ----------
@@ -1231,6 +1369,35 @@ function spawnSparkle(x, y) {
 function spawnDmgNumber(x, y, n) {
   particles.push({ kind: "dmg", x, y, vy: -28, life: 0, max: 0.55, text: String(n) });
 }
+// Parry sparkle: a radial burst keyed by tier. PERFECT is bandana yellow, GOOD
+// is olive, LATE is grey. Multiple petals at once for the impact frame.
+function spawnParrySparkle(x, y, tier) {
+  const tone =
+    tier === "perfect" ? { core: "rgba(255,240,180,1)", edge: "rgba(255,215,106,0.9)", n: 8, r: 14 } :
+    tier === "good"    ? { core: "rgba(220,225,200,1)", edge: "rgba(125,141,79,0.9)",  n: 6, r: 11 } :
+                         { core: "rgba(220,220,220,1)", edge: "rgba(140,140,140,0.9)", n: 4, r: 8  };
+  for (let i = 0; i < tone.n; i++) {
+    const ang = (i / tone.n) * Math.PI * 2;
+    const dx = Math.cos(ang) * tone.r;
+    const dy = Math.sin(ang) * tone.r * 0.6;
+    particles.push({
+      kind: "petal", x: x + dx, y: y + dy,
+      vx: dx * 4, vy: dy * 4,
+      life: 0, max: 0.32,
+      core: tone.core, edge: tone.edge,
+    });
+  }
+}
+function spawnParryWord(x, y, text, color) {
+  particles.push({
+    kind: "word", x, y, vy: -22, life: 0, max: 0.85,
+    text, color, scale: 1,
+  });
+}
+// Milestone words for big combo counts (used in Phase 2.5 polish).
+function spawnMilestone(x, y, text) {
+  particles.push({ kind: "word", x, y, vy: -16, life: 0, max: 1.0, text, color: "#e8c04a", scale: 1.4 });
+}
 
 function updateParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -1239,6 +1406,13 @@ function updateParticles(dt) {
     if (p.kind === "dmg") {
       p.y += p.vy * dt;
       p.vy += 50 * dt;
+    } else if (p.kind === "petal") {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.88; p.vy *= 0.88;
+    } else if (p.kind === "word") {
+      p.y += p.vy * dt;
+      p.vy *= 0.93;
     }
     if (p.life >= p.max) particles.splice(i, 1);
   }
@@ -1262,12 +1436,38 @@ function drawParticles() {
       X.textAlign = "center";
       X.textBaseline = "alphabetic";
       X.fillText(p.text, Math.round(p.x), Math.round(p.y));
+    } else if (p.kind === "petal") {
+      const a = 1 - t;
+      const r = 2 + (1 - t) * 1.5;
+      X.fillStyle = p.edge.replace(/0\.\d+\)/, a.toFixed(2) + ")");
+      X.fillRect(Math.round(p.x - r), Math.round(p.y - r), r * 2, r * 2);
+      X.fillStyle = p.core.replace(/1\)$/, (a * 0.9).toFixed(2) + ")");
+      X.fillRect(Math.round(p.x - 1), Math.round(p.y - 1), 2, 2);
+    } else if (p.kind === "word") {
+      // Pop on first 25%, hold, then fade.
+      const pop = t < 0.18 ? (t / 0.18) : 1;
+      const fade = t > 0.6 ? (1 - (t - 0.6) / 0.4) : 1;
+      const sz = Math.round(13 * (p.scale || 1) * (1 + (1 - pop) * 0.4));
+      X.font = "bold " + sz + "px ui-monospace, monospace";
+      X.textAlign = "center";
+      X.textBaseline = "alphabetic";
+      // Drop shadow.
+      X.fillStyle = "rgba(0,0,0," + (0.7 * fade).toFixed(2) + ")";
+      X.fillText(p.text, Math.round(p.x) + 1, Math.round(p.y) + 1);
+      X.fillStyle = p.color.startsWith("#") ? p.color : p.color;
+      X.globalAlpha = fade;
+      X.fillText(p.text, Math.round(p.x), Math.round(p.y));
+      X.globalAlpha = 1;
     }
   }
 }
 
 // ---------- Hit resolution ----------
 let hitstopFrames = 0;
+let flashFrames = 0;
+let flashColor = "rgba(255,255,255,0.85)";
+let shakeFrames = 0;
+let shakeMag = 0;
 
 function boxOverlap(a, b) {
   return Math.abs(a.cx - b.cx) < a.hw + b.hw &&
@@ -1281,6 +1481,14 @@ function applyHit(target, hb, attacker) {
   // and so the victim's attack-cancel doesn't immediately re-eat the next active frame.
   // Short enough that player chain combos still land (chain gaps >=10f).
   target.iframes = 4;
+  // Player taking damage breaks parry chain but retains 40% meter.
+  if (player && target === player) {
+    player.parryChain = 0;
+    player.parryChainTimer = 0;
+    player.parryMeter = Math.floor(player.parryMeter * 0.4);
+    player.comboHits = 0;
+    player.comboTimer = 0;
+  }
   // Cancel the victim's own attack (no trades).
   if (target.attacking) {
     target.attacking = false;
@@ -1321,6 +1529,72 @@ function applyHit(target, hb, attacker) {
   spawnDmgNumber(sxp, syp - 6, hb.damage);
 }
 
+// Resolve a parry: classify by parry frame, deal counter damage on PERFECT,
+// stun the attacker on GOOD, just block on LATE. Updates chain meter and
+// triggers visual feedback.
+function resolveParry(p, hb, attacker) {
+  const f = p.parryFrame;
+  let tier;
+  if      (f <= PARRY_PERFECT) tier = "PERFECT";
+  else if (f <= PARRY_GOOD)    tier = "GOOD";
+  else                         tier = "LATE";
+
+  // Skip the parry window straight into cooldown so this attempt can't land twice.
+  p.parryFrame = PARRY_ACTIVE + 1;
+  p.parryChain++;
+  p.parryChainTimer = PARRY_CHAIN_S;
+
+  if (tier === "PERFECT") {
+    p.parryMeter = Math.min(100, p.parryMeter + 30);
+    if (p.parryChain >= 2) p.hp = Math.min(p.hpMax, p.hp + PARRY_HEAL_HP);
+    if (attacker && !attacker.dead) {
+      const counterDmg = Math.round(hb.damage * PARRY_PERFECT_BONUS);
+      attacker.hp -= counterDmg;
+      attacker.iframes = 4;
+      attacker.hitstun = 24;
+      attacker.attacking = false;
+      attacker.attackName = null;
+      if (attacker.hitboxes) attacker.hitboxes.length = 0;
+      attacker.attackHits = null;
+      const dir = (attacker.x < p.x) ? -1 : 1;
+      attacker.knockX = dir * 140;
+      if (attacker.hp <= 0) {
+        attacker.dead = true;
+        attacker.deathTimer = 0;
+        attacker.knockX = dir * 200;
+      }
+      spawnParrySparkle(p.x, p.y - 24, "perfect");
+      spawnDmgNumber(attacker.x, attacker.y - 26, counterDmg);
+    }
+    spawnParryWord(p.x, p.y - 38, "PERFECT!", "#ffd76a");
+    if (hitstopFrames < PARRY_PERFECT_HITSTOP) hitstopFrames = PARRY_PERFECT_HITSTOP;
+    flashFrames = Math.max(flashFrames, 5);
+  } else if (tier === "GOOD") {
+    p.parryMeter = Math.min(100, p.parryMeter + 20);
+    if (attacker && !attacker.dead) {
+      attacker.hitstun = 30;
+      attacker.attacking = false;
+      attacker.attackName = null;
+      if (attacker.hitboxes) attacker.hitboxes.length = 0;
+      attacker.attackHits = null;
+      const dir = (attacker.x < p.x) ? -1 : 1;
+      attacker.knockX = dir * 60;
+    }
+    spawnParrySparkle(p.x, p.y - 24, "good");
+    spawnParryWord(p.x, p.y - 38, "GOOD", "#7d8d4f");
+    if (hitstopFrames < 5) hitstopFrames = 5;
+  } else {
+    // LATE — block only, no counter, but builds a little meter.
+    p.parryMeter = Math.min(100, p.parryMeter + 10);
+    spawnParrySparkle(p.x, p.y - 24, "late");
+    spawnParryWord(p.x, p.y - 38, "BLOCK", "#888");
+    if (hitstopFrames < 3) hitstopFrames = 3;
+  }
+  // Mark this hitbox as having connected with the player so the same active
+  // phase doesn't re-trigger on subsequent frames.
+  if (hb.hits) hb.hits.add(p);
+}
+
 function resolveHits() {
   if (!player) return;
   // Player → enemies.
@@ -1341,7 +1615,8 @@ function resolveHits() {
       }
     }
   }
-  // Enemies → player.
+  // Enemies → player. If the player has an active parry frame, resolve as a parry
+  // (PERFECT / GOOD / LATE) instead of taking damage.
   if (player.iframes <= 0 && !player.dead && !player.dodging) {
     for (const e of enemies) {
       if (e.dead || e.hitboxes.length === 0) continue;
@@ -1352,9 +1627,16 @@ function resolveHits() {
         for (const tb of player.hurtboxes) {
           if (boxOverlap(hb, tb)) { connected = true; break; }
         }
-        if (connected) { hb.hits.add(player); applyHit(player, hb, e); break; }
+        if (!connected) continue;
+        if (player.parryFrame >= 1 && player.parryFrame <= PARRY_ACTIVE) {
+          resolveParry(player, hb, e);
+        } else {
+          hb.hits.add(player);
+          applyHit(player, hb, e);
+        }
+        break;
       }
-      if (player.iframes > 0) break;
+      if (player.iframes > 0 || player.hitstun > 0) break;
     }
   }
 }
@@ -1429,6 +1711,9 @@ function enterPlaying() {
   ];
   particles = [];
   hitstopFrames = 0;
+  flashFrames = 0;
+  shakeFrames = 0;
+  shakeMag = 0;
   setState("playing");
 }
 
@@ -1438,10 +1723,14 @@ function updatePlaying(dt) {
     enemies = [];
     particles = [];
     hitstopFrames = 0;
+    flashFrames = 0;
+    shakeFrames = 0;
     setState("title");
     return;
   }
   if (hitstopFrames > 0) { hitstopFrames--; return; }
+  if (flashFrames > 0)  flashFrames--;
+  if (shakeFrames > 0)  shakeFrames--;
   if (player) updatePlayer(player, dt);
   for (const e of enemies) updateRunner(e, dt);
   resolveHits();
@@ -1481,6 +1770,15 @@ function renderTitle() {
 }
 
 function renderPlaying() {
+  // Screen shake — translate the world layer (not the HUD) by a damped jitter.
+  let shakeX = 0, shakeY = 0;
+  if (shakeFrames > 0) {
+    const t = shakeFrames;
+    shakeX = (Math.sin(t * 13.1) * shakeMag) | 0;
+    shakeY = (Math.cos(t * 11.7) * shakeMag * 0.6) | 0;
+  }
+  if (shakeX || shakeY) X.translate(shakeX, shakeY);
+
   drawStage1();
   // Depth-sort: deeper (lower world Y) renders first so closer entities cover them.
   const drawables = [];
@@ -1489,8 +1787,18 @@ function renderPlaying() {
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
   drawParticles();
-  drawHUD();
   if (DEV && debugEl.classList.contains("on")) drawDebugBoxes();
+
+  if (shakeX || shakeY) X.translate(-shakeX, -shakeY);
+
+  // Screen flash sits behind HUD so HUD stays readable through the brightest moment.
+  if (flashFrames > 0) {
+    const a = Math.min(0.85, flashFrames / 5);
+    X.fillStyle = "rgba(255,255,255," + a.toFixed(2) + ")";
+    X.fillRect(0, 0, W, H);
+  }
+
+  drawHUD();
 
   X.fillStyle = "#888";
   X.font = "9px ui-monospace, monospace";

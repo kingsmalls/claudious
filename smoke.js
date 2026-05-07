@@ -304,6 +304,76 @@ function peek(expr) {
               "e0.airborne=", peek("enemies[0] && enemies[0].airborne"),
               "e0.knockdownFrames=", peek("enemies[0] && enemies[0].knockdownFrames || 0"));
 
+  // ---- PARRY: tier classification by frame timing ----
+  // Setup helper: place runner adjacent, force-start its swipe at a frame chosen
+  // so that, after `targetParryFrame` ticks of advancing, the runner's active
+  // phase starts (attackFrame becomes 7) on the same tick that the player's
+  // parryFrame reaches `targetParryFrame`.
+  function setupParry(targetParryFrame) {
+    press("Escape"); step(2);
+    press("Enter");  step(2);
+    // attackFrame increments at the start of each updateRunner tick. Tick K sees
+    // attackFrame = startFrame + K. Active phase starts when attackFrame = 7.
+    // Choose startFrame so startFrame + targetParryFrame == 7.
+    const startFrame = 7 - targetParryFrame;
+    window.eval(
+      "enemies[0].x = player.x + 22;" +
+      "enemies[0].y = player.y;" +
+      "enemies[0].attacking = true;" +
+      "enemies[0].attackName = 'swipe';" +
+      "enemies[0].attackFrame = " + startFrame + ";" +
+      "enemies[0].attackHits = new Set();" +
+      "enemies[1].hp = 0; enemies[1].dead = true; enemies[1].deathTimer = 100;" +
+      "player.parryMeter = 0; player.parryChain = 0;"
+    );
+  }
+
+  // PERFECT: parryFrame 1-3 when hit lands. Pick parryFrame=3 (last PERFECT frame).
+  setupParry(3);
+  const hpBefore_perfect = peek("enemies[0].hp");
+  press("KeyI");
+  step(3);
+  console.log("PERFECT:",
+              "p.hp=", peek("player.hp"),
+              "p.meter=", peek("player.parryMeter"),
+              "p.chain=", peek("player.parryChain"),
+              "e0.hp=", peek("enemies[0].hp"),
+              "e0.hitstun=", peek("enemies[0].hitstun"),
+              "dmg=", hpBefore_perfect - peek("enemies[0].hp"));
+  snapshot("17_parry_perfect");
+
+  // GOOD: parryFrame 4-7 when hit.
+  setupParry(6);
+  press("KeyI");
+  step(6);
+  console.log("GOOD:",
+              "p.hp=", peek("player.hp"),
+              "p.meter=", peek("player.parryMeter"),
+              "p.chain=", peek("player.parryChain"),
+              "e0.hitstun=", peek("enemies[0].hitstun"));
+  snapshot("18_parry_good");
+
+  // LATE: parryFrame 8-12 when hit (block, no counter).
+  setupParry(10);
+  press("KeyI");
+  step(10);
+  console.log("LATE:",
+              "p.hp=", peek("player.hp"),
+              "p.meter=", peek("player.parryMeter"),
+              "p.chain=", peek("player.parryChain"));
+  snapshot("19_parry_late");
+
+  // COUNTER-SPECIAL at full meter: J fires rio_counter free.
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval("player.parryMeter = 100;");
+  press("KeyJ");
+  step(2);
+  console.log("counter-special:",
+              "atkName=", peek("player.attackName"),
+              "meter=", peek("player.parryMeter"));
+  snapshot("20_counter_special");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
