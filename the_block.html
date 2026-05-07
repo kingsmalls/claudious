@@ -286,6 +286,96 @@ function vibrate(pattern) {
   try { navigator.vibrate(pattern); } catch (e) {}
 }
 
+// ---------- Sprite atlas loader (opt-in) ----------
+// If <charkey>.png and <charkey>_atlas.json are present alongside this file,
+// the loader picks them up at boot and the renderer prefers sprites for that
+// character. Procedural fillRect rendering remains the always-available
+// fallback so the game ships even with no art at all.
+//
+// Expected atlas format:
+//   {
+//     "fps": 8,
+//     "frames": {
+//       "idle_0": { "x": 0,  "y": 0,  "w": 32, "h": 48 },
+//       "idle_1": { "x": 32, "y": 0,  "w": 32, "h": 48 },
+//       "walk_0": { ... },
+//       "atk1_0": { ... }
+//     },
+//     "anims": {
+//       "idle":  ["idle_0", "idle_1"],
+//       "walk":  ["walk_0", "walk_1", "walk_2", "walk_3"],
+//       "run":   [...],
+//       "jump":  [...],
+//       "atk1":  [...],
+//       "atk2":  [...],
+//       "atk3":  [...],
+//       "heavy": [...],
+//       "jump_atk":  [...],
+//       "back_atk":  [...],
+//       "special":   [...],
+//       "throw":     [...],
+//       "counter":   [...],
+//       "hurt":      [...],
+//       "dodge":     [...]
+//     },
+//     "anchor": { "x": 0.5, "y": 1.0 }   // optional; default bottom-center
+//   }
+const SPRITES = {};
+
+function loadAtlasFor(key) {
+  if (typeof fetch === "undefined" || typeof Image === "undefined") return;
+  let atlas = null, img = null;
+  const tryAttach = () => {
+    if (atlas && img) {
+      SPRITES[key] = { atlas, img };
+    }
+  };
+  fetch(key + "_atlas.json").then(r => r.ok ? r.json() : null)
+    .then(j => { atlas = j; tryAttach(); }).catch(() => {});
+  const i = new Image();
+  i.onload  = () => { img = i; tryAttach(); };
+  i.onerror = () => {};
+  i.src = key + ".png";
+}
+
+if (typeof window !== "undefined" && typeof fetch === "function") {
+  loadAtlasFor("rio");
+  loadAtlasFor("duke");
+  loadAtlasFor("atlas");
+}
+
+// Choose the right frame for an entity's anim state and draw it. Falls back
+// to the procedural renderer when the atlas is missing the requested anim.
+function drawSpriteCharacter(p) {
+  const sprite = SPRITES[p.char];
+  if (!sprite || !sprite.atlas || !sprite.atlas.anims) return false;
+  const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
+  const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
+  if (!frames || frames.length === 0) return false;
+  const fps = sprite.atlas.fps || 8;
+  const idx = Math.max(0, Math.floor(p.animTime * fps)) % frames.length;
+  const frameName = frames[idx];
+  const frame = sprite.atlas.frames[frameName];
+  if (!frame) return false;
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const ax = sprite.atlas.anchor ? sprite.atlas.anchor.x : 0.5;
+  const ay = sprite.atlas.anchor ? sprite.atlas.anchor.y : 1.0;
+
+  // Drop shadow (always visible).
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, p.y, 11 - p.z * 0.04, 3, 0, 0, Math.PI * 2); X.fill();
+
+  X.save();
+  X.translate(sx, sy);
+  if (p.facing === -1) X.scale(-1, 1);
+  X.drawImage(sprite.img,
+    frame.x, frame.y, frame.w, frame.h,
+    -frame.w * ax, -frame.h * ay, frame.w, frame.h);
+  X.restore();
+  return true;
+}
+
 // ---------- Audio (procedural WebAudio SFX) ----------
 let audioCtx = null;
 let masterGain = null;
@@ -2271,8 +2361,10 @@ function drawRio(p) {
   else       X.fillRect(sx - 6, headY + 9, 1, 1);
 }
 
-// Dispatch the right per-character renderer.
+// Dispatch the right per-character renderer. Sprite atlas wins when present;
+// otherwise falls back to the procedural renderer per character.
 function drawCharacter(p) {
+  if (drawSpriteCharacter(p)) return;
   if (p.char === "duke")  return drawDuke(p);
   if (p.char === "atlas") return drawAtlas(p);
   return drawRio(p);
