@@ -1,0 +1,224 @@
+# RIO
+
+## Physical
+
+- **Age:** 24
+- **Height/build:** 5'5", lean athletic — boxer's frame. Visible deltoids and forearms; not bulky, not slight. Tapered waist. Knees slightly bent in idle (fighting stance).
+- **Ethnicity:** Black; deep brown skin.
+- **Body language:** Centered, low. Stays on the balls of her feet. Hands up by default — guard never fully drops.
+- **Face:** Strong jaw, broad cheekbones. Dark eyebrows, deep brown eyes. Straight nose, full lips. Resting expression is calm/focused, not angry. **The smile only appears on a clean combo finisher** — that's the one moment her face changes.
+
+## Hair
+
+- **Style:** Shaved at the temples and back of neck (low fade — short clipper line, not bare). Short locs on top, 2–3 inches long, framing the crown. Locs are dark brown to black, slightly uneven length, a few falling forward over the forehead.
+- **Movement:** Locs swing slightly with hard motion — visible bounce on jumps and the Sunset Spin spin. Not flowing dramatic hair; firm, weighty.
+
+## Costume (head to feet)
+
+1. **Earring:** Single small gold hoop (≈1px sprite), camera-side ear only.
+2. **Neck:** Bare. No jewelry.
+3. **Tank top:** Black ribbed, snug. Visible only where the cropped jacket leaves it exposed (lower torso strip and upper chest collar).
+4. **Bomber jacket:** Cropped (ends at lower ribs). Olive/sage green, faded. Two slash pockets at hip line. Knit collar, cuffs, and hem in slightly darker olive. Zipper open about a third of the way down. **Sleeves end mid-forearm**, leaving wrists exposed.
+5. **Hand wraps:** Off-white/cream cotton, wrapped 4 times around the knuckles and back of hand. Clean white, slightly worn at the edges. Knuckles exposed (no full glove). Both wrists wrapped.
+6. **YELLOW BANDANA:** **Bright marigold yellow, tied around the LEFT wrist over the hand wraps.** A small knot tail (2 pixels) hangs off. The bandana is the single most important visual element — it must be visible in every frame, on the camera side of her body when possible. It TRAILS through fast motion (jabs, the spin, the uppercut, the dodge roll).
+7. **Pants:** Slim-cut cargo pants, near-black charcoal. Two cargo pockets on the thighs, low-profile (not bulky). Tapered to the ankle.
+8. **Boots:** Ankle-high lace-up boxing boots, black with white soles. Laces black. Toe slightly worn.
+
+## Palette (hex)
+
+```
+skin (light)        #8a5235
+skin (shadow)       #6b3f2a
+hair (locs)         #1a1410
+hair (highlight)    #2a201a
+jacket (mid)        #7d8d4f
+jacket (shadow)     #5a6b3a
+jacket (highlight)  #9bab6a
+tank black          #0a0a10
+pants               #1a1a22
+pants shadow        #0e0e15
+boot                #0a0a10
+boot sole           #d8d8c0
+hand wraps          #dcd6c4
+hand wraps shadow   #a8a294
+BANDANA highlight   #ffd76a
+BANDANA mid         #e8c04a
+BANDANA shadow      #b89426
+earring             #e8c04a
+eye whites          #ffffff
+```
+
+## Personality cues that should show in poses
+
+- **Calm head, busy hands.** In idle, her face is neutral but her fists are always ready.
+- **Economy of motion.** No wasted limbs. Every frame's silhouette reads as deliberate.
+- **The SMILE.** Reserved for the third hit of a combo (atk3) and the Sunset Spin's uppercut finisher. One frame, brief, almost imperceptible — but there.
+- **Defensive footwork.** Walks on the balls of her feet, never flat-footed.
+
+## Animations (per slot — pose + key pose details)
+
+### `idle` (4 frames, loops, 6 fps)
+- Frames 1, 3: bounce-down — knees bent slightly, weight on the front foot, hands at chin level.
+- Frames 2, 4: bounce-up — slight rise, locs lift 1px.
+- Bandana visible on left wrist throughout, hanging slightly.
+- Eyes scanning forward. Mouth neutral.
+
+### `walk` (6 frames, 8 fps)
+- 6-frame stride cycle. Forward foot strikes on frames 1 and 4.
+- Front arm swings opposite to leg.
+- Locs bounce subtly (1–2 px).
+- Bandana sways with the wrist.
+- Hands stay roughly at hip level — not raised, not dropped.
+
+### `run` (6 frames, 12 fps)
+- Lower torso, longer stride. Body leans forward 5–10°.
+- Arms pump hard. Bandana trails behind on the back-swing.
+- Frames 3 and 6 have horizontal speedlines behind the heel.
+- Locs bounce more visibly.
+
+### `jump` (3 frames, 8 fps — non-looping)
+- F1: anticipation crouch — knees deep bend, arms drop.
+- F2: peak/airborne — body extended, knees tucked slightly under, both fists raised.
+- F3: landing — knees absorb, body re-collapsing toward idle.
+
+### `atk1` — JAB (4 frames, 12 fps)
+- F1: wind-up — front arm cocks back 4–6 px, body rotates slightly.
+- F2: extend — front fist reaches forward to ~14 px past the body. Bandana trails behind the fist.
+- F3: peak — fist fully extended, knuckles forward, bandana fully forward.
+- F4: retract — fist returns 75% of the way back. Body returns to neutral.
+
+### `atk2` — CROSS (5 frames, 11 fps)
+- F1: wind-up — REAR arm cocks back, hip rotates back.
+- F2: rotation — hip drives forward, rear shoulder rotates over.
+- F3: extend — rear fist crosses the body line, reaching ~18 px forward. Bandana stays at hip on the now-back arm.
+- F4: peak — fist fully extended, body rotated ~45°.
+- F5: retract — body unwinds back toward forward stance.
+
+### `atk3` — HOOK (6 frames, 11 fps) — combo finisher
+- F1: wind-up — front fist drops slightly, body coils.
+- F2: hip drive — body torque begins, hand starts arcing inward.
+- F3: arc — fist sweeps in a horizontal arc, knuckles leading.
+- F4: contact — fist at impact point, body fully torqued.
+- F5: BRIEF SMILE — barely 1-pixel-changed mouth corner.
+- F6: recovery — body returns toward stance.
+
+### `heavy` — UPPERCUT LAUNCHER (7 frames, 10 fps)
+- F1: deep crouch — body drops, weight on rear leg, front fist drops to hip.
+- F2: load — front fist near hip, body coiled.
+- F3–F4: rise — body straightens explosively, front fist drives upward in a vertical line.
+- F5: peak — fist directly above body line, arm fully extended skyward.
+- F6: hold — pose held for emphasis (1 frame).
+- F7: recovery — body lowers back to stance, fist comes down.
+
+### `jump_atk` — AERIAL KNEE (4 frames, 10 fps)
+- F1: airborne preparation — body airborne, front knee lifts toward chest.
+- F2: extend — front knee extends downward + forward, body angles 30° forward.
+- F3: peak — knee at full extension, foot pointing down-forward.
+- F4: recovery — body resets toward landing pose.
+
+### `back_atk` — REAR ELBOW (4 frames, 12 fps)
+- F1: wind-up — body turns slightly toward the rear, rear elbow lifts.
+- F2: drive — elbow drives back behind the body.
+- F3: peak — elbow fully extended *behind* her, body twisted.
+- F4: recovery — body unwinds.
+
+### `special` — SUNSET SPIN (12 frames, 12 fps)
+The signature. Spinning leg sweep into rising double-fist uppercut.
+- F1: low crouch, weight loaded on the back foot.
+- F2: pivot — front foot plants, body begins to rotate.
+- F3–F4: leg sweep (lower body) — back leg sweeps in a 180° arc at ankle height. Bandana trails wide (drawn as a smear/streak across two frames).
+- F5: rotation continues — body fully rotated, leg planting.
+- F6: recovery from sweep — body straightens.
+- F7: load — feet plant wide, both fists drop to hips.
+- F8: BOTH ARMS RISE — vertical fist drive, both fists rocketing upward.
+- F9: peak — both arms fully extended overhead, body slightly leaning into the upward motion.
+- F10: bandana trail — bandana drawn as a streak ABOVE her, having flown skyward.
+- F11: hold — pose for emphasis.
+- F12: recovery — arms come down, body returns to stance.
+
+### `throw` (5 frames, 11 fps)
+- F1: grab — both arms forward, hands on enemy's collar.
+- F2: lift — body straightens, enemy hoisted off-ground.
+- F3: rotation — body twists, enemy pivots overhead.
+- F4: release — enemy released downward, Rio's body in a forward lean.
+- F5: recovery.
+
+### `counter` — counter-special (6 frames, 12 fps)
+- A bigger, brighter atk1 with a bandana flare. Same movement as the jab but the bandana **streaks across the entire arm length** for two frames.
+
+### `hurt` (3 frames, 12 fps)
+- F1: impact — body folds, head rocks back 5°.
+- F2: recoil — torso bent slightly, arms momentarily out.
+- F3: recovery — body straightening back to stance.
+
+### `dodge` — backward roll (5 frames, 14 fps)
+- F1: drop — body crouches sharply.
+- F2: tuck — body curls forward, head down.
+- F3: roll — body fully tucked, mid-roll silhouette (compact ball).
+- F4: extend — body uncoiling out of the roll.
+- F5: stand — back to stance.
+- **Bandana stays visible** even during the tucked frames — a small yellow strip on the curled-up side.
+
+## DO NOT include for Rio
+
+- Glowing energy auras around hands or body
+- Elemental effects (fire, lightning, ice) — she's a boxer, not a magic user
+- Cape/scarf/long flowing items — only the bandana
+- Modern combat boots (military style) — hers are sport boxing boots
+- Long hair flowing — locs are short and structured
+- Open jacket flapping wildly — it's cropped and tight
+
+## Sheet specs (same for all three characters)
+
+### Color discipline
+- Each body part stays within its 3-color palette (mid, shadow, highlight). Don't blend pixels between palettes.
+- Identity-item colors are reserved — bandana yellow, wedding-band silver, cigarette cream are unique to that character. Don't reuse them on other parts.
+
+### Outline
+- 1-pixel hard outline at the silhouette boundary, in the deepest shadow color of that body part (not pure black).
+- No anti-aliasing along the outline.
+
+### Lighting direction
+- Light comes from the upper-front-right of the character (the camera-side, slightly above).
+- Highlights along the upper-front edges, shadows along the lower-back edges.
+
+### Reference quality target
+- Streets of Rage 4 character pixel quality (not the SoR4 final art — they're 2D-vector — but the same readability and silhouette discipline).
+- Fight'N Rage character density and hand-poses.
+- Castle Crashers tier of expressive poses (a bit more cartoon-readable than realistic).
+
+### Frame counts (Rio total: 80)
+
+| Slot | Frames |
+|---|---:|
+| idle | 4 |
+| walk | 6 |
+| run | 6 |
+| jump | 3 |
+| atk1 | 4 |
+| atk2 | 5 |
+| atk3 | 6 |
+| heavy | 7 |
+| jump_atk | 4 |
+| back_atk | 4 |
+| special | 12 |
+| throw | 5 |
+| counter | 6 |
+| hurt | 3 |
+| dodge | 5 |
+
+### Sheet layout
+- Uniform grid, **8 columns × 10 rows = 80 cells**.
+- Each cell: **64 wide × 96 tall**.
+- Background: solid magenta `#ff00ff` for keying, OR transparent PNG.
+- Anchor each frame's character at **bottom-center** of the cell.
+
+### Final integration step
+
+When this sheet lands:
+1. Save to project root as `rio.png`.
+2. Open `sprite_slicer.html`, load the PNG, click through to label all 15 anim slots.
+3. Export `rio_atlas.json` next to the PNG.
+4. `python3 pipeline.py validate-atlas rio_atlas.json`.
+5. Reload `the_block.html`. The atlas loader picks it up automatically — Rio switches from procedural to sprite rendering. Any anim slot that's missing falls back to procedural for that animation only, so partial atlases are fine.
+
