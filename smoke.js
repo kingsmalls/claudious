@@ -701,6 +701,21 @@ function peek(expr) {
   press("Enter"); step(4);
   console.log("after enter from select: STATE =", peek("STATE"));
 
+  // ---- PAUSE MENU ----
+  goToPlay();
+  press("KeyP"); step(4);
+  console.log("after P: STATE =", peek("STATE"));
+  snapshot("85_pause_menu");
+  press("ArrowDown"); step(2);
+  press("ArrowDown"); step(2);
+  console.log("after 2 down: pauseIdx =", peek("pauseIdx"));
+  snapshot("86_pause_diff");
+  press("ArrowRight"); step(2);
+  console.log("difficulty cycled =", peek("save.settings.difficulty"));
+  snapshot("87_pause_diff_cycled");
+  press("KeyP"); step(2);
+  console.log("after P again: STATE =", peek("STATE"));
+
   // ---- MOBILE TOUCH OVERLAY: force-render the buttons for a snapshot ----
   goToPlay();
   // The overlay is normally gated by SHOW_TOUCH (a pointer-coarse check that's

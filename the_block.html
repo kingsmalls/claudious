@@ -286,6 +286,75 @@ function vibrate(pattern) {
   try { navigator.vibrate(pattern); } catch (e) {}
 }
 
+// ---------- Audio (procedural WebAudio SFX) ----------
+let audioCtx = null;
+let masterGain = null;
+function ensureAudio() {
+  if (audioCtx || typeof window === "undefined") return;
+  try {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    audioCtx = new Ctor();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = save.audio.muted ? 0 : save.audio.master;
+    masterGain.connect(audioCtx.destination);
+  } catch (e) { audioCtx = null; masterGain = null; }
+}
+
+function applyMasterVolume() {
+  if (masterGain) masterGain.gain.value = save.audio.muted ? 0 : save.audio.master;
+}
+
+// Short procedural SFX. Each kind picks a frequency / type / decay envelope.
+const SFX_TABLE = {
+  hit:           { f0: 220, f1: 110, dur: 0.06, type: "square",   gain: 0.6 },
+  hit_heavy:     { f0: 140, f1:  60, dur: 0.10, type: "sawtooth", gain: 0.7 },
+  ko:            { f0:  90, f1:  30, dur: 0.18, type: "sawtooth", gain: 0.8 },
+  parry_perfect: { f0: 880, f1: 1320, dur: 0.18, type: "sine",    gain: 0.6 },
+  parry_good:    { f0: 520, f1:  640, dur: 0.10, type: "sine",    gain: 0.5 },
+  parry_late:    { f0: 220, f1:  180, dur: 0.06, type: "square",  gain: 0.4 },
+  jump:          { f0: 440, f1:  640, dur: 0.06, type: "sine",    gain: 0.4 },
+  dodge:         { f0: 600, f1:  300, dur: 0.06, type: "triangle",gain: 0.4 },
+  special:       { f0: 460, f1:  180, dur: 0.22, type: "sawtooth",gain: 0.5 },
+  menu:          { f0: 660, f1:  660, dur: 0.05, type: "square",  gain: 0.4 },
+  menu_select:   { f0: 880, f1: 1100, dur: 0.10, type: "square",  gain: 0.5 },
+  stage_clear:   { f0: 660, f1:  990, dur: 0.30, type: "square",  gain: 0.5 },
+  victory:       { f0: 660, f1: 1320, dur: 0.50, type: "square",  gain: 0.6 },
+  game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5 },
+  bullet:        { f0: 1200, f1: 200, dur: 0.06, type: "square",  gain: 0.4 },
+};
+
+function playSfx(kind) {
+  if (!audioCtx || save.audio.muted) return;
+  const def = SFX_TABLE[kind];
+  if (!def) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = def.type;
+  o.frequency.setValueAtTime(def.f0, t);
+  if (def.f1 !== def.f0) {
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, def.f1), t + def.dur);
+  }
+  g.gain.setValueAtTime(def.gain * save.audio.sfx, t);
+  g.gain.exponentialRampToValueAtTime(0.0005, t + def.dur);
+  o.connect(g); g.connect(masterGain);
+  o.start(t);
+  o.stop(t + def.dur + 0.02);
+}
+
+// Boot the audio context the first time the user interacts (browser autoplay).
+if (typeof window !== "undefined") {
+  const boot = () => {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    window.removeEventListener("keydown", boot, true);
+    window.removeEventListener("pointerdown", boot, true);
+  };
+  window.addEventListener("keydown", boot, true);
+  window.addEventListener("pointerdown", boot, true);
+}
+
 function drawTouchOverlay() {
   if (!SHOW_TOUCH) return;
   X.save();
@@ -940,8 +1009,10 @@ function updatePlayer(p, dt) {
   if (!locked && grounded && actionPressed("jump")) {
     if (actionHeld("down")) {
       startDodge(p);
+      playSfx("dodge");
     } else {
       p.vz = p.jumpVel;
+      playSfx("jump");
     }
   }
 
@@ -1029,6 +1100,7 @@ function updatePlayer(p, dt) {
     if (sp && (p.hp - (sp.hpCost || 0)) > 0) {
       p.hp -= sp.hpCost || 0;
       startAttack(p, "special");
+      playSfx("special");
     }
   }
   if (actionPressed("grab") && grounded && !p.attacking) {
@@ -4768,8 +4840,23 @@ function boxOverlap(a, b) {
          Math.abs(a.cy - b.cy) < a.hd + b.hd;
 }
 
+// Difficulty multiplier applied to damage *taken by player*. Story is forgiving;
+// Brutal makes every hit count. Other-targets unscaled — we don't make enemies
+// tougher per setting, only the player more or less squishy.
+function difficultyDamageMul() {
+  switch (save.settings.difficulty) {
+    case "story":  return 0.5;
+    case "brutal": return 2.0;
+    default:       return 1.0;
+  }
+}
+
 function applyHit(target, hb, attacker) {
   if (target.dead) return;
+  if (player && target === player) {
+    // Difficulty: pre-scale this hit's damage on the player.
+    hb = Object.assign({}, hb, { damage: Math.max(1, Math.round(hb.damage * difficultyDamageMul())) });
+  }
 
   // DOJO deflection: if the target's guard window is active and the attacker is
   // the player, the hit is parried back. No damage; player gets pushed back and
@@ -4833,10 +4920,11 @@ function applyHit(target, hb, attacker) {
     target.knockX = dir * (hb.knockback + 30);
     target.hitstun = 0;
     target.airborne = false;
-    // Haptic kick on KO.
-    if (target === player) vibrate(120);
-    else if (target.isBoss) vibrate([30, 30, 60]);
-    else vibrate(20);
+    if (target === player) { vibrate(120); playSfx("ko"); }
+    else if (target.isBoss) { vibrate([30, 30, 60]); playSfx("ko"); }
+    else { vibrate(20); playSfx("ko"); }
+  } else {
+    playSfx(hb.damage >= 14 ? "hit_heavy" : "hit");
   }
   // Scaled hit feel: hitstop and shake grow with damage and combo count, capped
   // at +50%% by 10 hits. Heavy single hits already feel punchier (high base hitstop)
@@ -4939,6 +5027,7 @@ function resolveParry(p, hb, attacker) {
   p.parryChainTimer = PARRY_CHAIN_S;
 
   if (tier === "PERFECT") {
+    playSfx("parry_perfect");
     p.parryMeter = Math.min(100, p.parryMeter + 30);
     p.parryPerfectCount++;
     if (p.parryChain >= 2) p.hp = Math.min(p.hpMax, p.hp + PARRY_HEAL_HP);
@@ -4965,6 +5054,7 @@ function resolveParry(p, hb, attacker) {
     if (hitstopFrames < PARRY_PERFECT_HITSTOP) hitstopFrames = PARRY_PERFECT_HITSTOP;
     flashFrames = Math.max(flashFrames, 5);
   } else if (tier === "GOOD") {
+    playSfx("parry_good");
     p.parryMeter = Math.min(100, p.parryMeter + 20);
     p.parryGoodCount++;
     if (attacker && !attacker.dead) {
@@ -4980,6 +5070,7 @@ function resolveParry(p, hb, attacker) {
     spawnParryWord(p.x, p.y - 38, "GOOD", "#7d8d4f");
     if (hitstopFrames < 5) hitstopFrames = 5;
   } else {
+    playSfx("parry_late");
     // LATE — block only, no counter, but builds a little meter.
     p.parryMeter = Math.min(100, p.parryMeter + 10);
     spawnParrySparkle(p.x, p.y - 24, "late");
@@ -5101,12 +5192,198 @@ function frame(nowMs) {
 // ---------- Update ----------
 function update(dt) {
   stateTime += dt;
+  pollGamepad();
   if (STATE === "title") updateTitle(dt);
   else if (STATE === "select") updateSelect(dt);
   else if (STATE === "playing") updatePlaying(dt);
+  else if (STATE === "paused") updatePaused(dt);
   else if (STATE === "cinematic") updateCinematic(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
+}
+
+// ---------- Pause menu (Phase 4.4) ----------
+const PAUSE_OPTIONS = [
+  { id: "resume",   label: "RESUME"      },
+  { id: "diff",     label: "DIFFICULTY"  },
+  { id: "vol",      label: "MASTER VOL"  },
+  { id: "sfx",      label: "SFX VOL"     },
+  { id: "muted",    label: "MUTED"       },
+  { id: "flash",    label: "REDUCE FLASH"},
+  { id: "shake",    label: "REDUCE SHAKE"},
+  { id: "quit",     label: "QUIT TO TITLE" },
+];
+let pauseIdx = 0;
+
+function updatePaused(dt) {
+  if (consumePress("KeyP") || consumePress("Pause") || consumePress("Escape")) {
+    setState("playing");
+    saveSave();
+    return;
+  }
+  if (consumePress("ArrowDown") || consumePress("KeyS")) {
+    pauseIdx = (pauseIdx + 1) % PAUSE_OPTIONS.length; playSfx("menu");
+  }
+  if (consumePress("ArrowUp") || consumePress("KeyW")) {
+    pauseIdx = (pauseIdx - 1 + PAUSE_OPTIONS.length) % PAUSE_OPTIONS.length; playSfx("menu");
+  }
+  const left  = consumePress("ArrowLeft")  || consumePress("KeyA");
+  const right = consumePress("ArrowRight") || consumePress("KeyD");
+  const enter = consumePress("Enter") || consumePress("Space");
+  const opt = PAUSE_OPTIONS[pauseIdx];
+  if (opt.id === "resume" && enter) {
+    setState("playing"); saveSave(); return;
+  }
+  if (opt.id === "quit" && enter) {
+    player = null; enemies = []; particles = []; projectiles = [];
+    saveSave(); setState("title"); return;
+  }
+  if (opt.id === "diff" && (left || right || enter)) {
+    const list = ["story", "normal", "brutal"];
+    let i = list.indexOf(save.settings.difficulty);
+    i = (i + (left ? -1 : 1) + list.length) % list.length;
+    save.settings.difficulty = list[i];
+    playSfx("menu_select");
+  }
+  if (opt.id === "vol" && (left || right)) {
+    save.audio.master = clamp(save.audio.master + (left ? -0.1 : 0.1), 0, 1);
+    applyMasterVolume();
+    playSfx("menu");
+  }
+  if (opt.id === "sfx" && (left || right)) {
+    save.audio.sfx = clamp(save.audio.sfx + (left ? -0.1 : 0.1), 0, 1);
+    playSfx("menu");
+  }
+  if (opt.id === "muted" && (left || right || enter)) {
+    save.audio.muted = !save.audio.muted;
+    applyMasterVolume();
+    if (!save.audio.muted) playSfx("menu_select");
+  }
+  if (opt.id === "flash" && (left || right || enter)) {
+    save.settings.reduceFlash = !save.settings.reduceFlash; playSfx("menu");
+  }
+  if (opt.id === "shake" && (left || right || enter)) {
+    save.settings.reduceShake = !save.settings.reduceShake; playSfx("menu");
+  }
+}
+
+function renderPaused() {
+  // Render the playing field underneath, dimmed.
+  renderPlaying();
+  X.fillStyle = "rgba(0,0,0,0.65)";
+  X.fillRect(0, 0, W, H);
+  // Frame.
+  const px = 120, py = 60, pw = W - 240, ph = H - 120;
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  X.fillRect(px, py, pw, ph);
+  X.fillStyle = "#e8c04a";
+  X.fillRect(px, py, pw, 1);
+  X.fillRect(px, py + ph - 1, pw, 1);
+  X.fillStyle = "#fff";
+  X.font = "bold 18px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "middle";
+  X.fillText("PAUSED", W / 2, py + 18);
+
+  X.font = "11px ui-monospace, monospace";
+  X.textAlign = "left";
+  for (let i = 0; i < PAUSE_OPTIONS.length; i++) {
+    const opt = PAUSE_OPTIONS[i];
+    const y = py + 50 + i * 16;
+    if (i === pauseIdx) {
+      X.fillStyle = "rgba(232,192,74,0.18)";
+      X.fillRect(px + 16, y - 7, pw - 32, 14);
+      X.fillStyle = "#e8c04a";
+      X.fillText("›", px + 22, y);
+    }
+    X.fillStyle = i === pauseIdx ? "#fff" : "#aaa";
+    X.fillText(opt.label, px + 38, y);
+    // Right-side value.
+    let valTxt = "";
+    if (opt.id === "diff")  valTxt = save.settings.difficulty.toUpperCase();
+    if (opt.id === "vol")   valTxt = volBarText(save.audio.master);
+    if (opt.id === "sfx")   valTxt = volBarText(save.audio.sfx);
+    if (opt.id === "muted") valTxt = save.audio.muted ? "ON"  : "OFF";
+    if (opt.id === "flash") valTxt = save.settings.reduceFlash ? "ON" : "OFF";
+    if (opt.id === "shake") valTxt = save.settings.reduceShake ? "ON" : "OFF";
+    if (valTxt) {
+      X.textAlign = "right";
+      X.fillStyle = i === pauseIdx ? "#e8c04a" : "#888";
+      X.fillText(valTxt, px + pw - 22, y);
+      X.textAlign = "left";
+    }
+  }
+  X.fillStyle = "#888";
+  X.font = "9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("↑/↓ select   ←/→ adjust   ENTER toggle   P/ESC resume", W / 2, py + ph - 10);
+}
+
+function volBarText(v) {
+  const blocks = Math.round(v * 10);
+  let s = "";
+  for (let i = 0; i < 10; i++) s += i < blocks ? "█" : "░";
+  return s;
+}
+
+// ---------- Gamepad polling (Standard Mapping) ----------
+const gpPrev = { buttons: {}, axes: { x: 0, y: 0 } };
+function pollGamepad() {
+  if (typeof navigator === "undefined" || !navigator.getGamepads) return;
+  let gps;
+  try { gps = navigator.getGamepads(); }
+  catch (e) { return; }   // SecurityError on cross-origin iframes
+  if (!gps) return;
+  for (const gp of gps) {
+    if (!gp || !gp.connected) continue;
+    // Standard mapping: 0=A 1=B 2=X 3=Y 4=LB 5=RB 6=LT 7=RT 8=Back 9=Start 12-15 dpad.
+    const map = [
+      ["jump",     [0]],
+      ["light",    [1, 2]],     // B / X both work as light for friendlier mapping
+      ["heavy",    [3]],
+      ["special",  [7]],
+      ["grab",     [4]],
+      ["parry",    [5, 6]],
+      ["up",       [12]],
+      ["down",     [13]],
+      ["left",     [14]],
+      ["right",    [15]],
+    ];
+    for (const [action, indices] of map) {
+      let pressed = false;
+      for (const i of indices) {
+        const b = gp.buttons[i];
+        if (b && b.pressed) { pressed = true; break; }
+      }
+      // Stick contributions for movement.
+      if (action === "left"  && gp.axes[0] < -0.4) pressed = true;
+      if (action === "right" && gp.axes[0] >  0.4) pressed = true;
+      if (action === "up"    && gp.axes[1] < -0.4) pressed = true;
+      if (action === "down"  && gp.axes[1] >  0.4) pressed = true;
+      const wasPressed = !!gpPrev.buttons[action];
+      gpPrev.buttons[action] = pressed;
+      const codes = KEY[action] || [];
+      for (const code of codes) {
+        if (pressed && !wasPressed) keysPressed[code] = true;
+        keys[code] = pressed || keys[code]; // keyboard hold can keep it true
+      }
+      if (!pressed && wasPressed) {
+        // Only clear keys[] if the keyboard isn't also pressing this action.
+        let kbPressed = false;
+        for (const code of codes) {
+          // No way to distinguish source — leave keys to keyboard up-handler.
+        }
+      }
+    }
+    // Start = pause.
+    const startNow = !!(gp.buttons[9] && gp.buttons[9].pressed);
+    if (startNow && !gpPrev.buttons.start) {
+      if (STATE === "playing") { setState("paused"); playSfx("menu"); }
+      else if (STATE === "paused") { setState("playing"); }
+    }
+    gpPrev.buttons.start = startNow;
+    break; // first connected gamepad only
+  }
 }
 
 // ---------- Character select (Phase 4.2) ----------
@@ -5616,7 +5893,16 @@ function updatePlaying(dt) {
     setState("title");
     return;
   }
+  // P (or gamepad Start) toggles in-game pause. The pause menu opens with it.
+  if (consumePress("KeyP") || consumePress("Pause")) {
+    setState("paused");
+    playSfx("menu");
+    return;
+  }
   if (hitstopFrames > 0) { hitstopFrames--; return; }
+  // Accessibility: clamp flash and shake when the user has asked for less.
+  if (save.settings.reduceFlash) flashFrames = Math.min(flashFrames, 1);
+  if (save.settings.reduceShake) { shakeFrames = 0; shakeMag = 0; }
   if (flashFrames > 0)  flashFrames--;
   if (shakeFrames > 0)  shakeFrames--;
 
@@ -5688,6 +5974,7 @@ function beginStageClear() {
   stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
   stageClearTimer = 2.4;
   vibrate(40);
+  playSfx("stage_clear");
   if (player) {
     player.stagesClearedThisRun++;
     // Update per-stage best combo.
@@ -5826,6 +6113,7 @@ function render() {
   if (STATE === "title") renderTitle();
   else if (STATE === "select") renderSelect();
   else if (STATE === "playing") renderPlaying();
+  else if (STATE === "paused") renderPaused();
   else if (STATE === "cinematic") renderCinematic();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
