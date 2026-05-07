@@ -283,6 +283,132 @@ const ATTACK_DATA = {
     launcher: 80,
     isThrow: true,
   },
+
+  // -------- Duke: balanced fighter, semi-pro boxer. Power 4. --------
+  duke_atk1: {
+    startup: 4, active: 3, recovery: 10,
+    damage: 7, knockback: 90, hitstop: 4,
+    hit: { fwd: 18, hw: 11, hd: 12, lo: 0, hi: 36 },
+    chainLight: "atk2", chainHeavy: "heavy",
+  },
+  duke_atk2: {
+    startup: 5, active: 4, recovery: 12,
+    damage: 9, knockback: 110, hitstop: 5,
+    hit: { fwd: 20, hw: 12, hd: 13, lo: 0, hi: 36 },
+    chainLight: "atk3", chainHeavy: "heavy",
+    pushSelf: 30,
+  },
+  duke_atk3: {
+    startup: 9, active: 5, recovery: 22,
+    damage: 14, knockback: 200, hitstop: 8,
+    hit: { fwd: 24, hw: 14, hd: 14, lo: 0, hi: 40 },
+    pushSelf: 50,
+  },
+  duke_heavy: {
+    startup: 11, active: 4, recovery: 22,
+    damage: 18, knockback: 60, hitstop: 9,
+    hit: { fwd: 14, hw: 12, hd: 14, lo: 0, hi: 52 },
+    launcher: 220,
+  },
+  duke_jump_atk: {
+    startup: 3, active: 8, recovery: 7,
+    damage: 11, knockback: 100, hitstop: 5,
+    hit: { fwd: 14, hw: 13, hd: 12, lo: 0, hi: 60 },
+    airOnly: true,
+  },
+  duke_back_atk: {
+    startup: 3, active: 3, recovery: 9,
+    damage: 8, knockback: 110, hitstop: 5,
+    hit: { fwd: -14, hw: 11, hd: 12, lo: 0, hi: 36 },
+    backwardHit: true,
+  },
+  duke_special: {
+    startup: 6, active: 14, recovery: 16,
+    damage: 8, knockback: 120, hitstop: 5,
+    hit: { fwd: 18, hw: 16, hd: 14, lo: 0, hi: 44 },
+    multiHit: 4,
+    hpCost: 8,
+    signature: "rolling_thunder",
+    finalLauncher: 80,
+    pushSelf: 60,
+  },
+  duke_throw: {
+    startup: 4, active: 1, recovery: 12,
+    damage: 17, knockback: 260, hitstop: 8,
+    hit: { fwd: 16, hw: 14, hd: 14, lo: 0, hi: 50 },
+    launcher: 100,
+    isThrow: true,
+  },
+  duke_counter: {
+    startup: 3, active: 6, recovery: 14,
+    damage: 26, knockback: 220, hitstop: 11,
+    hit: { fwd: 24, hw: 18, hd: 16, lo: 0, hi: 60 },
+    launcher: 140,
+    counterSpecial: true,
+  },
+
+  // -------- Atlas: power-grappler. Big, slow, terrifying. Power 5. --------
+  atlas_atk1: {
+    startup: 6, active: 3, recovery: 12,
+    damage: 9, knockback: 100, hitstop: 5,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
+    chainLight: "atk2", chainHeavy: "heavy",
+  },
+  atlas_atk2: {
+    startup: 7, active: 4, recovery: 14,
+    damage: 12, knockback: 130, hitstop: 6,
+    hit: { fwd: 22, hw: 14, hd: 15, lo: 0, hi: 40 },
+    chainLight: "atk3", chainHeavy: "heavy",
+  },
+  atlas_atk3: {
+    startup: 12, active: 4, recovery: 22,
+    damage: 18, knockback: 260, hitstop: 10,
+    hit: { fwd: 24, hw: 15, hd: 16, lo: 0, hi: 44 },
+    pushSelf: 30,
+  },
+  atlas_heavy: {
+    startup: 13, active: 4, recovery: 26,
+    damage: 24, knockback: 70, hitstop: 11,
+    hit: { fwd: 16, hw: 14, hd: 16, lo: 0, hi: 56 },
+    launcher: 260,
+  },
+  atlas_jump_atk: {
+    startup: 4, active: 9, recovery: 8,
+    damage: 14, knockback: 120, hitstop: 6,
+    hit: { fwd: 12, hw: 14, hd: 14, lo: 0, hi: 60 },
+    airOnly: true,
+  },
+  atlas_back_atk: {
+    startup: 4, active: 3, recovery: 10,
+    damage: 10, knockback: 130, hitstop: 6,
+    hit: { fwd: -14, hw: 12, hd: 14, lo: 0, hi: 40 },
+    backwardHit: true,
+  },
+  atlas_special: {
+    startup: 8, active: 12, recovery: 22,
+    damage: 10, knockback: 140, hitstop: 6,
+    hit: { fwd: 18, hw: 18, hd: 16, lo: 0, hi: 48 },
+    multiHit: 4,
+    hpCost: 12,
+    signature: "foundation_stone",
+    finalLauncher: 240,
+    pushSelf: 90,
+  },
+  atlas_throw: {
+    startup: 5, active: 1, recovery: 14,
+    damage: 18, knockback: 280, hitstop: 9,
+    hit: { fwd: 18, hw: 16, hd: 16, lo: 0, hi: 56 },
+    launcher: 130,
+    isThrow: true,
+  },
+  atlas_counter: {
+    startup: 4, active: 6, recovery: 16,
+    damage: 32, knockback: 240, hitstop: 12,
+    hit: { fwd: 26, hw: 20, hd: 18, lo: 0, hi: 64 },
+    launcher: 180,
+    counterSpecial: true,
+  },
+
   // Free counter-special when parry meter is full. Same shape across characters
   // so the meter UI is universal; per-character flavor lives in renderers.
   rio_counter: {
@@ -308,7 +434,16 @@ const PARRY_PERFECT_HITSTOP = 14; // extended hitstop reads as slow-mo
 // ---------- Player ----------
 let player = null;
 
+// Per-character stats: speed/jump/HP differ between Rio (fast), Duke (balanced),
+// Atlas (slow/heavy). Visuals live in drawRio / drawDuke / drawAtlas.
+const CHAR_STATS = {
+  rio:   { walkSpeed: 78, runSpeed: 148, jumpVel: 210, hp: 100 },
+  duke:  { walkSpeed: 64, runSpeed: 122, jumpVel: 200, hp: 110 },
+  atlas: { walkSpeed: 52, runSpeed: 96,  jumpVel: 180, hp: 130 },
+};
+
 function makePlayer(charKey, x, y) {
+  const stats = CHAR_STATS[charKey] || CHAR_STATS.rio;
   return {
     char: charKey,
     x, y, z: 0,
@@ -317,13 +452,13 @@ function makePlayer(charKey, x, y) {
     animState: "idle",
     animTime: 0,
     running: false,
-    walkSpeed: 78,   // Rio: speed 5 of 5 in stat tier
-    runSpeed: 148,
-    jumpVel: 210,
+    walkSpeed: stats.walkSpeed,
+    runSpeed:  stats.runSpeed,
+    jumpVel:   stats.jumpVel,
     attacking: false,
     attackName: null,
     attackFrame: 0,
-    hp: 100, hpMax: 100,
+    hp: stats.hp, hpMax: stats.hp,
     iframes: 0,
     hitstun: 0,
     knockX: 0, knockY: 0,
@@ -680,6 +815,651 @@ function updatePlayer(p, dt) {
   // Rebuild hurtbox each tick (torso column, world coords).
   p.hurtboxes.length = 0;
   p.hurtboxes.push({ cx: p.x, cy: p.y, hw: 9, hd: 5, lo: 0, hi: 36 });
+}
+
+// ---------- Duke: procedural fillRect rendering ----------
+const DUKE_COLORS = {
+  skin:       "#d4a888",
+  skinDark:   "#9a785a",
+  hair:       "#a08c4a",
+  hairDark:   "#6e5e2c",
+  jacket:     "#5a6678",
+  jacketDark: "#404a5c",
+  shirt:      "#cfc8b8",
+  shirtDark:  "#9b9482",
+  jeans:      "#2a2e3a",
+  jeansDark:  "#191c26",
+  boot:       "#161618",
+  bootDark:   "#0a0a0a",
+  cig:        "#e8e4d2",
+  cigTip:     "#7a4a26",
+  stubble:    "#3a2a1c",
+};
+
+function drawDuke(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const f  = p.facing;
+  const t  = p.animTime;
+  const k  = DUKE_COLORS;
+
+  // Reuse Rio's specials infrastructure where possible — Duke has his own
+  // signature handled in drawRollingThunder.
+  if (p.attacking && p.attackName === "special") {
+    drawRollingThunder(p);
+    return;
+  }
+
+  if (p.dodging) {
+    const groundY = Math.round(p.y);
+    X.fillStyle = "rgba(80,100,140,0.30)";
+    X.fillRect(sx + f * 6,  groundY - 14, 8, 12);
+    X.fillStyle = "rgba(0,0,0,0.4)";
+    X.beginPath(); X.ellipse(sx, groundY, 11, 3, 0, 0, Math.PI * 2); X.fill();
+    X.fillStyle = k.jeans;
+    X.fillRect(sx - 8, groundY - 14, 16, 12);
+    X.fillStyle = k.jacket;
+    X.fillRect(sx - 8, groundY - 14, 16, 6);
+    X.fillStyle = k.hair;
+    X.fillRect(sx - 6, groundY - 16, 12, 2);
+    return;
+  }
+  if (p.grabbing) { drawDukeGrab(sx, sy, f, k); return; }
+  if (p.parryFrame >= 1 && p.parryFrame <= PARRY_ACTIVE) {
+    const r = 22 + (p.parryFrame / PARRY_ACTIVE) * 10;
+    const a = 1 - (p.parryFrame / PARRY_ACTIVE) * 0.7;
+    X.strokeStyle = "rgba(160,140,74," + a.toFixed(2) + ")";
+    X.lineWidth = 2;
+    X.beginPath(); X.arc(sx, sy - 24, r, 0, Math.PI * 2); X.stroke();
+    X.lineWidth = 1;
+  }
+
+  let armSwing = 0, legSwingL = 0, legSwingR = 0, bodyBob = 0;
+  if (p.animState === "walk") {
+    const s = Math.sin(t * 8);
+    legSwingL =  s * 1.5; legSwingR = -s * 1.5;
+    armSwing  = -s * 1.2;
+    bodyBob   =  Math.abs(s) * 0.6;
+  } else if (p.animState === "run") {
+    const s = Math.sin(t * 13);
+    legSwingL =  s * 2.2; legSwingR = -s * 2.2;
+    armSwing  = -s * 1.7;
+    bodyBob   =  Math.abs(s) * 1.0;
+  } else if (p.animState === "idle") {
+    bodyBob = Math.sin(t * 1.6) * 0.5;
+  } else if (p.animState === "jump") {
+    legSwingL = -2; legSwingR = -2;
+    armSwing = -1;
+  }
+
+  // Per-attack envelope (same shape as drawRio).
+  let atkReach = 0, atkArm = "front", atkYBias = 0, atkUp = 0, atkKick = 0;
+  if (p.attacking) {
+    const name = p.attackName;
+    if (name === "atk1") { atkReach = attackEnvelope(p, 14); }
+    else if (name === "atk2") { atkReach = attackEnvelope(p, 18); atkArm = "rear"; }
+    else if (name === "atk3") { atkReach = attackEnvelope(p, 20); atkYBias = 1; }
+    else if (name === "heavy") {
+      atkReach = attackEnvelope(p, 10);
+      atkUp = attackEnvelope(p, 14);
+      const d = ATTACK_DATA.duke_heavy;
+      if (p.attackFrame <= d.startup) bodyBob = -(p.attackFrame / d.startup) * 3;
+    } else if (name === "jump_atk") {
+      atkKick = attackEnvelope(p, 14);
+    } else if (name === "back_atk") {
+      atkReach = attackEnvelope(p, 12);
+      atkArm = "rear-back";
+    } else if (name === "throw" || name === "counter") {
+      atkReach = attackEnvelope(p, 18); atkArm = "front"; atkYBias = -1;
+    }
+  }
+
+  // Drop shadow.
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath();
+  X.ellipse(sx, p.y, 11 - p.z * 0.04, 3, 0, 0, Math.PI * 2);
+  X.fill();
+
+  const bob = -bodyBob;
+  const headY  = sy - 46 + bob;
+  const torsoY = sy - 34 + bob;
+
+  // Legs.
+  X.fillStyle = k.jeans;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = k.jeansDark;
+  X.fillRect(sx - 6, sy - 12 + Math.round(legSwingL), 5, 1);
+  X.fillRect(sx + 1, sy - 12 + Math.round(legSwingR), 5, 1);
+  // Combat boots — chunkier.
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 7, sy - 5, 6, 5);
+  X.fillRect(sx + 1, sy - 5, 6, 5);
+  X.fillStyle = k.bootDark;
+  X.fillRect(sx - 7, sy - 1, 6, 1);
+  X.fillRect(sx + 1, sy - 1, 6, 1);
+  // Belt.
+  X.fillStyle = k.jeansDark;
+  X.fillRect(sx - 6, sy - 19, 12, 2);
+
+  // Torso: white tee under cut-off denim jacket. Jacket has ragged hem.
+  X.fillStyle = k.shirt;
+  X.fillRect(sx - 7, torsoY, 14, 15);
+  X.fillStyle = k.shirtDark;
+  X.fillRect(sx - 7, torsoY + 14, 14, 1);
+  X.fillStyle = k.jacket;
+  X.fillRect(sx - 8, torsoY, 16, 11); // overhanging shoulders for the cut-off
+  X.fillStyle = k.jacketDark;
+  X.fillRect(sx - 8, torsoY + 10, 16, 1);
+  X.fillRect(sx - 8, torsoY + 11, 1, 1); // ragged corner
+  X.fillRect(sx + 7, torsoY + 11, 1, 1);
+
+  // Arms — visible skin from the cut-off sleeves.
+  const frontArmX = (f > 0) ? sx + 7 : sx - 10;
+  const backArmX  = (f > 0) ? sx - 10 : sx + 7;
+
+  // Rear arm.
+  if (atkArm === "rear" && atkReach > 0) {
+    const ay = torsoY + 5 + atkYBias;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 5, ay, atkReach + 3, 3);
+    else       X.fillRect(sx - 5 - atkReach - 3, ay, atkReach + 3, 3);
+    X.fillStyle = k.skinDark;
+    if (f > 0) X.fillRect(sx + 5 + atkReach, ay, 3, 3);
+    else       X.fillRect(sx - 5 - atkReach - 3, ay, 3, 3);
+  } else if (atkArm === "rear-back" && atkReach > 0) {
+    const ay = torsoY + 6;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx - 5 - atkReach - 3, ay, atkReach + 3, 3);
+    else       X.fillRect(sx + 5, ay, atkReach + 3, 3);
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(backArmX, torsoY + 2 + Math.round(armSwing), 3, 11);
+    X.fillStyle = k.skinDark;
+    X.fillRect(backArmX, torsoY + 12 + Math.round(armSwing), 3, 2);
+  }
+
+  // Front arm — extends on jab/hook/heavy.
+  if (atkArm === "front" && (atkReach > 0 || atkUp > 0)) {
+    const reach = atkReach;
+    const ay = torsoY + 5 + atkYBias - Math.round(atkUp);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 5, ay, reach + 3, 3);
+    else       X.fillRect(sx - 5 - reach - 3, ay, reach + 3, 3);
+    X.fillStyle = k.skinDark;
+    if (f > 0) X.fillRect(sx + 5 + reach, ay, 3, 3);
+    else       X.fillRect(sx - 5 - reach - 3, ay, 3, 3);
+    if (atkUp > 2) {
+      X.fillStyle = k.skin;
+      X.fillRect((f > 0) ? sx + 5 + reach - 1 : sx - 5 - reach - 2, ay, 3, Math.round(atkUp));
+    }
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(frontArmX, torsoY + 2 - Math.round(armSwing), 3, 11);
+    X.fillStyle = k.skinDark;
+    X.fillRect(frontArmX, torsoY + 12 - Math.round(armSwing), 3, 2);
+  }
+
+  // Front kick for jump_atk — knee/foot extension.
+  if (atkKick > 0) {
+    X.fillStyle = k.jeans;
+    if (f > 0) X.fillRect(sx + 4, sy - 12, atkKick, 5);
+    else       X.fillRect(sx - 4 - atkKick, sy - 12, atkKick, 5);
+    X.fillStyle = k.boot;
+    if (f > 0) X.fillRect(sx + 4 + atkKick - 4, sy - 12, 5, 6);
+    else       X.fillRect(sx - 4 - atkKick, sy - 12, 5, 6);
+  }
+
+  // Head.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, headY, 12, 12);
+  X.fillStyle = k.skinDark;
+  X.fillRect(sx - 6, headY + 6, 1, 6);
+  X.fillRect(sx + 5, headY + 6, 1, 6);
+  // Messy hair — uneven top.
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 6, headY - 3, 13, 4);
+  X.fillRect(sx - 5, headY - 4, 11, 1);
+  X.fillRect(sx + 5, headY - 5, 2, 2);  // wayward strand
+  X.fillStyle = k.hairDark;
+  X.fillRect(sx - 6, headY, 13, 1);
+  // Stubble — three small dark dots along the jaw.
+  X.fillStyle = k.stubble;
+  X.fillRect(sx - 4, headY + 9, 1, 1);
+  X.fillRect(sx - 1, headY + 10, 1, 1);
+  X.fillRect(sx + 2, headY + 9, 1, 1);
+  // Eye.
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, headY + 6, 2, 1);
+  else       X.fillRect(sx - 3, headY + 6, 2, 1);
+  // Cigarette behind the ear (camera-side).
+  X.fillStyle = k.cig;
+  if (f > 0) X.fillRect(sx + 6, headY + 3, 1, 4);
+  else       X.fillRect(sx - 6, headY + 3, 1, 4);
+  X.fillStyle = k.cigTip;
+  if (f > 0) X.fillRect(sx + 6, headY + 7, 1, 1);
+  else       X.fillRect(sx - 6, headY + 7, 1, 1);
+}
+
+function drawDukeGrab(sx, sy, f, k) {
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, sy, 11, 3, 0, 0, Math.PI * 2); X.fill();
+  X.fillStyle = k.jeans;
+  X.fillRect(sx - 7, sy - 18, 5, 14);
+  X.fillRect(sx + 2, sy - 18, 5, 14);
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 7, sy - 5, 6, 5);
+  X.fillRect(sx + 1, sy - 5, 6, 5);
+  X.fillStyle = k.shirt;
+  X.fillRect(sx - 7, sy - 34, 14, 14);
+  X.fillStyle = k.jacket;
+  X.fillRect(sx - 8, sy - 34, 16, 10);
+  X.fillStyle = k.skin;
+  if (f > 0) X.fillRect(sx + 4, sy - 28, 9, 3);
+  else        X.fillRect(sx - 13, sy - 28, 9, 3);
+  if (f > 0) X.fillRect(sx + 4, sy - 24, 9, 3);
+  else        X.fillRect(sx - 13, sy - 24, 9, 3);
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 46, 12, 12);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 6, sy - 49, 13, 4);
+}
+
+// Rolling Thunder — Duke's three-elbow combo finishing with a haymaker.
+// Procedural: forward-stomping body with three strike pulses across active.
+function drawRollingThunder(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const f  = p.facing;
+  const k  = DUKE_COLORS;
+  const d  = ATTACK_DATA.duke_special;
+  const fr = p.attackFrame;
+  const inActive = fr > d.startup && fr <= d.startup + d.active;
+
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, p.y, 12, 3.5, 0, 0, Math.PI * 2); X.fill();
+
+  // Body — leaning into the strike.
+  X.fillStyle = k.jeans;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 7, sy - 5, 6, 5);
+  X.fillRect(sx + 1, sy - 5, 6, 5);
+  X.fillStyle = k.shirt;
+  X.fillRect(sx - 7, sy - 34, 14, 15);
+  X.fillStyle = k.jacket;
+  X.fillRect(sx - 8, sy - 34, 16, 11);
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 46, 12, 12);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 6, sy - 49, 13, 4);
+
+  // Strike pulses — three quick elbows then a haymaker on the last beat.
+  if (inActive) {
+    const localFr = fr - d.startup;
+    // Three pulses of three frames each, then a 5-frame haymaker.
+    const pulse = Math.floor(localFr / 3);
+    const lift  = (localFr % 3) === 0 ? 0 : (localFr % 3) === 1 ? -2 : -1;
+    if (pulse < 3) {
+      // Elbow strike forward.
+      const reach = 14 + pulse * 2;
+      const ay = sy - 28 + lift;
+      X.fillStyle = k.skin;
+      if (f > 0) X.fillRect(sx + 4, ay, reach + 3, 4);
+      else       X.fillRect(sx - 4 - reach - 3, ay, reach + 3, 4);
+      X.fillStyle = k.skinDark;
+      if (f > 0) X.fillRect(sx + 4 + reach, ay, 3, 3);
+      else       X.fillRect(sx - 4 - reach - 3, ay, 3, 3);
+      // Speedline.
+      X.fillStyle = "rgba(220,220,220,0.55)";
+      if (f > 0) X.fillRect(sx + 4, ay + 1, reach + 8, 1);
+      else       X.fillRect(sx - 4 - reach - 8, ay + 1, reach + 8, 1);
+    } else {
+      // Haymaker — the wind-down. Body tilts and arm windmill.
+      const tilt = (localFr - 9) * 0.5;
+      const reach = 22;
+      const ay = sy - 30 + Math.round(tilt);
+      X.fillStyle = k.skin;
+      if (f > 0) X.fillRect(sx + 4, ay, reach, 4);
+      else       X.fillRect(sx - 4 - reach, ay, reach, 4);
+      X.fillStyle = k.skinDark;
+      if (f > 0) X.fillRect(sx + 4 + reach - 3, ay, 3, 4);
+      else       X.fillRect(sx - 4 - reach, ay, 3, 4);
+      // Impact crack — two diagonal slashes.
+      X.fillStyle = "rgba(255,255,255,0.7)";
+      if (f > 0) {
+        X.fillRect(sx + 4 + reach + 2, ay - 2, 1, 2);
+        X.fillRect(sx + 4 + reach + 4, ay,     1, 3);
+      } else {
+        X.fillRect(sx - 4 - reach - 3, ay - 2, 1, 2);
+        X.fillRect(sx - 4 - reach - 5, ay,     1, 3);
+      }
+    }
+  }
+}
+
+// ---------- Atlas: procedural fillRect rendering (taller, wider) ----------
+const ATLAS_COLORS = {
+  skin:       "#7a5234",
+  skinDark:   "#583820",
+  beard:      "#a8a4a0",
+  beardDark:  "#6e6c6a",
+  flannel:    "#7a3030",
+  flannelDark:"#5a1c1c",
+  flannelHi:  "#9a4040",
+  pants:      "#3a3024",
+  pantsDark:  "#221c14",
+  boot:       "#1c140c",
+  bootDark:   "#100a06",
+  belt:       "#2a1a10",
+  buckle:     "#a89060",
+  silver:     "#c0c0c8",
+  tattoo:     "#332016",
+};
+
+function drawAtlas(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const f  = p.facing;
+  const t  = p.animTime;
+  const k  = ATLAS_COLORS;
+
+  if (p.attacking && p.attackName === "special") {
+    drawFoundationStone(p);
+    return;
+  }
+
+  if (p.dodging) {
+    const groundY = Math.round(p.y);
+    X.fillStyle = "rgba(122,48,48,0.30)";
+    X.fillRect(sx + f * 7, groundY - 16, 10, 14);
+    X.fillStyle = "rgba(0,0,0,0.45)";
+    X.beginPath(); X.ellipse(sx, groundY, 13, 4, 0, 0, Math.PI * 2); X.fill();
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 10, groundY - 16, 20, 14);
+    X.fillStyle = k.flannel;
+    X.fillRect(sx - 10, groundY - 16, 20, 7);
+    return;
+  }
+  if (p.grabbing) { drawAtlasGrab(sx, sy, f, k); return; }
+  if (p.parryFrame >= 1 && p.parryFrame <= PARRY_ACTIVE) {
+    const r = 26 + (p.parryFrame / PARRY_ACTIVE) * 12;
+    const a = 1 - (p.parryFrame / PARRY_ACTIVE) * 0.7;
+    X.strokeStyle = "rgba(154,64,64," + a.toFixed(2) + ")";
+    X.lineWidth = 2;
+    X.beginPath(); X.arc(sx, sy - 28, r, 0, Math.PI * 2); X.stroke();
+    X.lineWidth = 1;
+  }
+
+  let armSwing = 0, legSwingL = 0, legSwingR = 0, bodyBob = 0;
+  if (p.animState === "walk") {
+    const s = Math.sin(t * 6.5);
+    legSwingL = s * 1.5; legSwingR = -s * 1.5;
+    armSwing  = -s * 1.0;
+    bodyBob   = Math.abs(s) * 0.6;
+  } else if (p.animState === "run") {
+    const s = Math.sin(t * 11);
+    legSwingL = s * 2.2; legSwingR = -s * 2.2;
+    armSwing  = -s * 1.6;
+    bodyBob   = Math.abs(s) * 1.4;
+  } else if (p.animState === "idle") {
+    bodyBob = Math.sin(t * 1.2) * 0.6;
+  } else if (p.animState === "jump") {
+    legSwingL = -2; legSwingR = -2; armSwing = -1;
+  }
+
+  let atkReach = 0, atkArm = "front", atkYBias = 0, atkUp = 0, atkKick = 0;
+  if (p.attacking) {
+    const name = p.attackName;
+    if (name === "atk1") { atkReach = attackEnvelope(p, 16); }
+    else if (name === "atk2") { atkReach = attackEnvelope(p, 18); atkArm = "rear"; }
+    else if (name === "atk3") { atkReach = attackEnvelope(p, 22); atkYBias = 1; }
+    else if (name === "heavy") {
+      atkReach = attackEnvelope(p, 12);
+      atkUp = attackEnvelope(p, 18);
+      const d = ATTACK_DATA.atlas_heavy;
+      if (p.attackFrame <= d.startup) bodyBob = -(p.attackFrame / d.startup) * 4;
+    } else if (name === "jump_atk") {
+      atkKick = attackEnvelope(p, 16);
+    } else if (name === "back_atk") {
+      atkReach = attackEnvelope(p, 14);
+      atkArm = "rear-back";
+    } else if (name === "throw" || name === "counter") {
+      atkReach = attackEnvelope(p, 22); atkArm = "front"; atkYBias = -1;
+    }
+  }
+
+  // Drop shadow — wider for the bigger frame.
+  X.fillStyle = "rgba(0,0,0,0.45)";
+  X.beginPath();
+  X.ellipse(sx, p.y, 13 - p.z * 0.04, 4, 0, 0, Math.PI * 2);
+  X.fill();
+
+  const bob = -bodyBob;
+  const headY  = sy - 56 + bob;
+  const torsoY = sy - 42 + bob;
+
+  // Legs — heavy work pants.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 8, sy - 22, 7, 18);
+  X.fillRect(sx + 1, sy - 22, 7, 18);
+  X.fillStyle = k.pantsDark;
+  X.fillRect(sx - 8, sy - 14 + Math.round(legSwingL), 7, 1);
+  X.fillRect(sx + 1, sy - 14 + Math.round(legSwingR), 7, 1);
+  // Steel-toed boots — slightly wider.
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 9, sy - 5, 8, 5);
+  X.fillRect(sx + 1, sy - 5, 8, 5);
+  X.fillStyle = "#3a3a3a";  // steel toe
+  X.fillRect(sx - 9, sy - 1, 3, 1);
+  X.fillRect(sx + 6, sy - 1, 3, 1);
+  // Belt + buckle.
+  X.fillStyle = k.belt;
+  X.fillRect(sx - 9, sy - 24, 18, 3);
+  X.fillStyle = k.buckle;
+  X.fillRect(sx - 2, sy - 24, 4, 3);
+
+  // Torso — sleeveless red flannel; top three buttons undone shows skin.
+  X.fillStyle = k.flannel;
+  X.fillRect(sx - 9, torsoY, 18, 18);
+  X.fillStyle = k.flannelDark;
+  X.fillRect(sx - 9, torsoY + 17, 18, 1);
+  // Plaid stripes.
+  X.fillStyle = k.flannelHi;
+  X.fillRect(sx - 9, torsoY + 4, 18, 1);
+  X.fillRect(sx - 9, torsoY + 11, 18, 1);
+  X.fillRect(sx - 1, torsoY, 1, 18);
+  X.fillRect(sx + 5, torsoY, 1, 18);
+  // Open V from undone buttons.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 2, torsoY, 5, 6);
+  X.fillRect(sx - 1, torsoY + 5, 3, 2);
+  // Silver chain with wedding band.
+  X.fillStyle = k.silver;
+  X.fillRect(sx - 3, torsoY + 1, 1, 1);
+  X.fillRect(sx + 3, torsoY + 1, 1, 1);
+  X.fillRect(sx - 1, torsoY + 3, 1, 1);
+  X.fillRect(sx + 1, torsoY + 4, 1, 1);
+  X.fillRect(sx, torsoY + 6, 2, 2); // band
+
+  // Arms — bare, with tribal tattoo bands.
+  const frontArmX = (f > 0) ? sx + 8 : sx - 12;
+  const backArmX  = (f > 0) ? sx - 12 : sx + 8;
+
+  // Rear arm.
+  if (atkArm === "rear" && atkReach > 0) {
+    const ay = torsoY + 6 + atkYBias;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 6, ay, atkReach + 4, 4);
+    else       X.fillRect(sx - 6 - atkReach - 4, ay, atkReach + 4, 4);
+    X.fillStyle = k.tattoo;
+    if (f > 0) X.fillRect(sx + 12, ay, 2, 4);
+    else       X.fillRect(sx - 12 - 2, ay, 2, 4);
+    X.fillStyle = k.skinDark;
+    if (f > 0) X.fillRect(sx + 6 + atkReach, ay, 4, 4);
+    else       X.fillRect(sx - 6 - atkReach - 4, ay, 4, 4);
+  } else if (atkArm === "rear-back" && atkReach > 0) {
+    const ay = torsoY + 8;
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx - 6 - atkReach - 4, ay, atkReach + 4, 4);
+    else       X.fillRect(sx + 6, ay, atkReach + 4, 4);
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(backArmX, torsoY + 2 + Math.round(armSwing), 4, 14);
+    X.fillStyle = k.tattoo;
+    X.fillRect(backArmX, torsoY + 8 + Math.round(armSwing), 4, 1);
+    X.fillRect(backArmX, torsoY + 11 + Math.round(armSwing), 4, 1);
+  }
+
+  // Front arm.
+  if (atkArm === "front" && (atkReach > 0 || atkUp > 0)) {
+    const reach = atkReach;
+    const ay = torsoY + 6 + atkYBias - Math.round(atkUp);
+    X.fillStyle = k.skin;
+    if (f > 0) X.fillRect(sx + 6, ay, reach + 4, 4);
+    else       X.fillRect(sx - 6 - reach - 4, ay, reach + 4, 4);
+    X.fillStyle = k.skinDark;
+    if (f > 0) X.fillRect(sx + 6 + reach, ay, 4, 4);
+    else       X.fillRect(sx - 6 - reach - 4, ay, 4, 4);
+    if (atkUp > 2) {
+      X.fillStyle = k.skin;
+      X.fillRect((f > 0) ? sx + 6 + reach - 1 : sx - 6 - reach - 3, ay, 4, Math.round(atkUp));
+    }
+  } else {
+    X.fillStyle = k.skin;
+    X.fillRect(frontArmX, torsoY + 2 - Math.round(armSwing), 4, 14);
+    X.fillStyle = k.tattoo;
+    X.fillRect(frontArmX, torsoY + 8 - Math.round(armSwing), 4, 1);
+    X.fillRect(frontArmX, torsoY + 11 - Math.round(armSwing), 4, 1);
+  }
+
+  if (atkKick > 0) {
+    X.fillStyle = k.pants;
+    if (f > 0) X.fillRect(sx + 6, sy - 14, atkKick, 6);
+    else       X.fillRect(sx - 6 - atkKick, sy - 14, atkKick, 6);
+    X.fillStyle = k.boot;
+    if (f > 0) X.fillRect(sx + 6 + atkKick - 4, sy - 14, 5, 7);
+    else       X.fillRect(sx - 6 - atkKick, sy - 14, 5, 7);
+  }
+
+  // Head — bald with full beard.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 7, headY, 14, 14);
+  X.fillStyle = k.skinDark;
+  X.fillRect(sx - 7, headY + 7, 1, 7);
+  X.fillRect(sx + 6, headY + 7, 1, 7);
+  // Bald — no hair on top.
+  X.fillStyle = k.skinDark;
+  X.fillRect(sx - 7, headY, 14, 1); // crown shadow
+  // Beard — wraps lower jaw + chin.
+  X.fillStyle = k.beard;
+  X.fillRect(sx - 7, headY + 8, 14, 6);
+  X.fillStyle = k.beardDark;
+  X.fillRect(sx - 7, headY + 13, 14, 1);
+  // Mustache.
+  X.fillStyle = k.beard;
+  X.fillRect(sx - 4, headY + 7, 8, 1);
+  // Eyes.
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, headY + 5, 2, 1);
+  else       X.fillRect(sx - 3, headY + 5, 2, 1);
+}
+
+function drawAtlasGrab(sx, sy, f, k) {
+  X.fillStyle = "rgba(0,0,0,0.45)";
+  X.beginPath(); X.ellipse(sx, sy, 13, 4, 0, 0, Math.PI * 2); X.fill();
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 8, sy - 22, 7, 18);
+  X.fillRect(sx + 1, sy - 22, 7, 18);
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 9, sy - 5, 8, 5);
+  X.fillRect(sx + 1, sy - 5, 8, 5);
+  X.fillStyle = k.flannel;
+  X.fillRect(sx - 9, sy - 42, 18, 18);
+  X.fillStyle = k.skin;
+  if (f > 0) X.fillRect(sx + 6, sy - 36, 12, 4);
+  else        X.fillRect(sx - 18, sy - 36, 12, 4);
+  if (f > 0) X.fillRect(sx + 6, sy - 30, 12, 4);
+  else        X.fillRect(sx - 18, sy - 30, 12, 4);
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 7, sy - 56, 14, 14);
+  X.fillStyle = k.beard;
+  X.fillRect(sx - 7, sy - 48, 14, 6);
+}
+
+// Foundation Stone — Atlas's running shoulder charge into a slam. The body
+// lurches forward across active and the final 3 frames render the slam.
+function drawFoundationStone(p) {
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z);
+  const f  = p.facing;
+  const k  = ATLAS_COLORS;
+  const d  = ATTACK_DATA.atlas_special;
+  const fr = p.attackFrame;
+  const inSlam = fr > d.startup + d.active - 3 && fr <= d.startup + d.active;
+
+  // Drop shadow.
+  X.fillStyle = "rgba(0,0,0,0.45)";
+  X.beginPath(); X.ellipse(sx, p.y, 14, 4, 0, 0, Math.PI * 2); X.fill();
+
+  if (inSlam) {
+    // Slam pose — both arms overhead, dust burst at feet.
+    const yB = sy + 2;
+    X.fillStyle = k.pants;
+    X.fillRect(sx - 8, yB - 22, 7, 18);
+    X.fillRect(sx + 1, yB - 22, 7, 18);
+    X.fillStyle = k.boot;
+    X.fillRect(sx - 9, yB - 5, 8, 5);
+    X.fillRect(sx + 1, yB - 5, 8, 5);
+    X.fillStyle = k.flannel;
+    X.fillRect(sx - 9, yB - 42, 18, 18);
+    // Both arms straight up.
+    X.fillStyle = k.skin;
+    X.fillRect(sx - 11, yB - 60, 4, 18);
+    X.fillRect(sx + 7,  yB - 60, 4, 18);
+    X.fillStyle = k.tattoo;
+    X.fillRect(sx - 11, yB - 52, 4, 1);
+    X.fillRect(sx + 7,  yB - 52, 4, 1);
+    X.fillStyle = k.skin;
+    X.fillRect(sx - 7, yB - 56, 14, 14);
+    X.fillStyle = k.beard;
+    X.fillRect(sx - 7, yB - 48, 14, 6);
+    // Dust burst.
+    X.fillStyle = "rgba(180,160,120,0.65)";
+    X.fillRect(sx - 18, p.y - 1, 6, 3);
+    X.fillRect(sx + 12, p.y - 1, 6, 3);
+    X.fillRect(sx - 24, p.y, 4, 2);
+    X.fillRect(sx + 20, p.y, 4, 2);
+    return;
+  }
+
+  // Charge — body tilts forward, arms back.
+  const tilt = Math.min(3, (fr / d.startup) * 3);
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 8, sy - 22, 7, 18);
+  X.fillRect(sx + 1, sy - 22, 7, 18);
+  X.fillStyle = k.boot;
+  X.fillRect(sx - 9, sy - 5, 8, 5);
+  X.fillRect(sx + 1, sy - 5, 8, 5);
+  X.fillStyle = k.flannel;
+  X.fillRect(sx - 9, sy - 42 - tilt, 18, 18);
+  // Speed lines.
+  X.fillStyle = "rgba(255,220,200,0.6)";
+  for (let i = 0; i < 3; i++) {
+    const ly = sy - 30 - i * 6;
+    if (f > 0) X.fillRect(sx - 14 - i * 2, ly, 8, 1);
+    else        X.fillRect(sx + 6 + i * 2, ly, 8, 1);
+  }
+  // Shoulder leading.
+  X.fillStyle = k.skin;
+  if (f > 0) X.fillRect(sx + 7, sy - 32 - tilt, 6, 8);
+  else        X.fillRect(sx - 13, sy - 32 - tilt, 6, 8);
+  // Head.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 7, sy - 56 - tilt, 14, 14);
+  X.fillStyle = k.beard;
+  X.fillRect(sx - 7, sy - 48 - tilt, 14, 6);
 }
 
 // ---------- Rio: procedural fillRect rendering ----------
@@ -1159,20 +1939,30 @@ function drawRio(p) {
   else       X.fillRect(sx - 6, headY + 9, 1, 1);
 }
 
+// Dispatch the right per-character renderer.
+function drawCharacter(p) {
+  if (p.char === "duke")  return drawDuke(p);
+  if (p.char === "atlas") return drawAtlas(p);
+  return drawRio(p);
+}
+
 // ---------- HUD ----------
 function drawHUD() {
   // Top strip
   X.fillStyle = "rgba(0,0,0,0.55)";
   X.fillRect(0, 0, W, 22);
 
-  // HP bar — Rio.
+  // HP bar — colored to match the chosen character's signature tone.
   const barX = 8, barY = 6, barW = 140, barH = 10;
   X.fillStyle = "#222";
   X.fillRect(barX, barY, barW, barH);
   const pct = player ? Math.max(0, player.hp / player.hpMax) : 0;
-  X.fillStyle = "#7d8d4f";          // jacket olive
+  const tone = (player && player.char === "duke")  ? { fill: "#5a6678", rail: "#a08c4a", label: "DUKE" } :
+               (player && player.char === "atlas") ? { fill: "#7a3030", rail: "#c0c0c8", label: "ATLAS" } :
+                                                     { fill: "#7d8d4f", rail: "#e8c04a", label: "RIO" };
+  X.fillStyle = tone.fill;
   X.fillRect(barX, barY, Math.round(barW * pct), barH);
-  X.fillStyle = "#e8c04a";          // bandana yellow rail
+  X.fillStyle = tone.rail;
   X.fillRect(barX, barY, barW, 1);
 
   // Parry meter + chain count (bottom right). Pulses "READY" at full.
@@ -1180,11 +1970,11 @@ function drawHUD() {
   // Combo counter (center-top under HP).
   if (player && player.comboHits >= 2) drawComboCounter();
 
-  X.fillStyle = "#e8c04a";
+  X.fillStyle = tone.rail;
   X.font = "bold 9px ui-monospace, monospace";
   X.textAlign = "left";
   X.textBaseline = "top";
-  X.fillText("RIO", barX, barY - 6);
+  X.fillText(tone.label, barX, barY - 6);
 }
 
 // Parry meter + chain counter, anchored bottom-right. Pulses READY at 100%.
@@ -2051,13 +2841,22 @@ function update(dt) {
 }
 
 function updateTitle(dt) {
+  // Quick character toggle on the title screen (will be replaced by the proper
+  // character-select panel in Phase 4.2).
+  if (consumePress("Digit1")) selectedChar = "rio";
+  if (consumePress("Digit2")) selectedChar = "duke";
+  if (consumePress("Digit3")) selectedChar = "atlas";
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
     enterPlaying();
   }
 }
 
+// Selected character for the next run. Switches via 1/2/3 on the title screen
+// or via the proper character-select panel in Phase 4.2.
+let selectedChar = "rio";
+
 function enterPlaying() {
-  player = makePlayer("rio", 120, 300);
+  player = makePlayer(selectedChar, 120, 300);
   enemies = [
     makeRunner(440, 280),
     makeRunner(520, 320),
@@ -2120,6 +2919,15 @@ function renderTitle() {
   X.fillStyle = "rgba(255,255,255," + pulse.toFixed(3) + ")";
   X.font = "14px ui-monospace, monospace";
   X.fillText("PRESS ENTER", W / 2, H / 2 + 56);
+
+  // Character selection hint — temporary; full select panel arrives in 4.2.
+  X.fillStyle = "#888";
+  X.font = "10px ui-monospace, monospace";
+  X.textAlign = "center";
+  const charLabel = selectedChar.toUpperCase();
+  X.fillText("[1] RIO   [2] DUKE   [3] ATLAS", W / 2, H - 30);
+  X.fillStyle = "#e8c04a";
+  X.fillText("> " + charLabel + " <", W / 2, H - 16);
 }
 
 function renderPlaying() {
@@ -2135,7 +2943,7 @@ function renderPlaying() {
   drawStage1();
   // Depth-sort: deeper (lower world Y) renders first so closer entities cover them.
   const drawables = [];
-  if (player) drawables.push({ y: player.y, draw: () => drawRio(player) });
+  if (player) drawables.push({ y: player.y, draw: () => drawCharacter(player) });
   for (const e of enemies) drawables.push({ y: e.y, draw: () => drawRunner(e) });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();

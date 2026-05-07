@@ -440,6 +440,55 @@ function peek(expr) {
   release("KeyD");
   snapshot("24_throw");
 
+  // ---- DUKE: pick character on title, jab, sunset → rolling thunder ----
+  press("Escape"); step(2);
+  press("Digit2"); step(2);
+  press("Enter");  step(2);
+  console.log("duke chosen: char =", peek("player.char"),
+              "hp=", peek("player.hp"),
+              "walkSpeed=", peek("player.walkSpeed"));
+  // Walk in.
+  hold("KeyD");
+  while (true) {
+    step(2);
+    const e0 = peek("enemies[0]");
+    if (!e0) break;
+    if (e0.x - peek("player.x") < 24 && e0.x - peek("player.x") > 0) break;
+  }
+  release("KeyD"); step(2);
+  press("KeyJ"); step(7);
+  console.log("duke jab: e0.hp =", peek("enemies[0].hp"));
+  snapshot("25_duke_idle_atk");
+  press("KeyL");  // rolling thunder
+  step(40);
+  console.log("rolling thunder: p.hp=", peek("player.hp"),
+              "e0.hp=", peek("enemies[0] && enemies[0].hp"));
+  snapshot("26_duke_special");
+
+  // ---- ATLAS ----
+  press("Escape"); step(2);
+  press("Digit3"); step(2);
+  press("Enter");  step(2);
+  console.log("atlas chosen: char =", peek("player.char"),
+              "hp=", peek("player.hp"),
+              "walkSpeed=", peek("player.walkSpeed"));
+  hold("KeyD");
+  while (true) {
+    step(2);
+    const e0 = peek("enemies[0]");
+    if (!e0) break;
+    if (e0.x - peek("player.x") < 28 && e0.x - peek("player.x") > 0) break;
+  }
+  release("KeyD"); step(2);
+  press("KeyJ"); step(8);
+  console.log("atlas atk1: e0.hp =", peek("enemies[0].hp"));
+  snapshot("27_atlas_idle_atk");
+  press("KeyL"); step(45);
+  console.log("foundation stone: p.hp=", peek("player.hp"),
+              "e0.hp=", peek("enemies[0] && enemies[0].hp"),
+              "e0.airborne=", peek("enemies[0] && enemies[0].airborne"));
+  snapshot("28_atlas_special");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
