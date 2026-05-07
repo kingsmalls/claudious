@@ -198,7 +198,7 @@ let fpsAccum = 0;
 let fpsFrames = 0;
 
 function entityCount() {
-  return (player ? 1 : 0) + enemies.length + particles.length;
+  return (player ? 1 : 0) + enemies.length + particles.length + projectiles.length;
 }
 
 // ---------- Stage geometry (2.5D plane) ----------
@@ -2132,28 +2132,89 @@ function drawStage1() {
 
 // ---------- Enemies ----------
 let enemies = [];
+let projectiles = [];
 
-const RUNNER_ATK = {
-  startup: 6, active: 4, recovery: 14,
-  damage: 8,
-  knockback: 70,
-  hitstop: 3,
-  hit: { fwd: 14, hw: 9, hd: 11, lo: 0, hi: 32 },
+// Per-type base stats. Specific AI + visuals branch on e.type.
+const ENEMY_STATS = {
+  runner:    { walkSpeed: 56, runSpeed: 110, hp:  26, range: 24, hurtHw: 8,  hurtHd: 5, hurtHi: 30 },
+  tank:      { walkSpeed: 34, runSpeed:  56, hp:  80, range: 28, hurtHw: 11, hurtHd: 6, hurtHi: 38, staggerN: 3 },
+  lamplight: { walkSpeed: 48, runSpeed:  78, hp:  28, range: 90, hurtHw: 8,  hurtHd: 5, hurtHi: 34 },
+  slice:     { walkSpeed: 70, runSpeed: 130, hp:  22, range: 32, hurtHw: 7,  hurtHd: 4, hurtHi: 30 },
+  chains:    { walkSpeed: 48, runSpeed:  80, hp:  38, range: 38, hurtHw: 10, hurtHd: 6, hurtHi: 36 },
+  shade:     { walkSpeed: 62, runSpeed: 120, hp:  30, range: 22, hurtHw: 8,  hurtHd: 5, hurtHi: 32 },
+  dojo:      { walkSpeed: 54, runSpeed:  92, hp:  34, range: 24, hurtHw: 8,  hurtHd: 5, hurtHi: 34 },
+  rig:       { walkSpeed: 60, runSpeed: 110, hp:  70, range: 26, hurtHw: 10, hurtHd: 6, hurtHi: 38, staggerN: 2 },
 };
 
-function makeRunner(x, y) {
+// Per-type attack frame data. All in 60Hz frames.
+const ENEMY_ATK = {
+  runner_swipe: {
+    startup: 6, active: 4, recovery: 14,
+    damage: 8, knockback: 70, hitstop: 3,
+    hit: { fwd: 14, hw: 9, hd: 11, lo: 0, hi: 32 },
+  },
+  tank_slam: {
+    startup: 14, active: 6, recovery: 26,
+    damage: 18, knockback: 180, hitstop: 7,
+    hit: { fwd: 18, hw: 13, hd: 13, lo: 0, hi: 40 },
+  },
+  lamplight_shot: {
+    startup: 10, active: 1, recovery: 28,
+    damage: 0,           // damage applied on projectile hit, not contact
+    spawnsProjectile: "bullet",
+  },
+  slice_lunge: {
+    startup: 5, active: 4, recovery: 18,
+    damage: 14, knockback: 120, hitstop: 6,
+    hit: { fwd: 18, hw: 11, hd: 11, lo: 0, hi: 30 },
+    pushSelf: 220,
+  },
+  chains_swing: {
+    startup: 10, active: 6, recovery: 22,
+    damage: 12, knockback: 100, hitstop: 5,
+    hit: { fwd: 28, hw: 18, hd: 12, lo: 0, hi: 36 },
+  },
+  shade_strike: {
+    startup: 4, active: 3, recovery: 12,
+    damage: 10, knockback: 80, hitstop: 4,
+    hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
+  },
+  dojo_counter: {
+    startup: 4, active: 3, recovery: 14,
+    damage: 11, knockback: 110, hitstop: 5,
+    hit: { fwd: 16, hw: 11, hd: 12, lo: 0, hi: 32 },
+  },
+  rig_strike: {
+    startup: 7, active: 4, recovery: 16,
+    damage: 14, knockback: 130, hitstop: 6,
+    hit: { fwd: 18, hw: 12, hd: 13, lo: 0, hi: 40 },
+  },
+};
+
+// Default attack name per enemy type — what the AI swings.
+const ENEMY_DEFAULT_ATTACK = {
+  runner: "swipe", tank: "slam", lamplight: "shot",
+  slice: "lunge", chains: "swing", shade: "strike",
+  dojo: "counter", rig: "strike",
+};
+
+function makeEnemy(type, x, y) {
+  const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
   return {
-    type: "runner",
-    x, y, z: 0,
+    type, x, y, z: 0,
     vx: 0, vy: 0, vz: 0,
     airborne: false,
     knockdownFrames: 0,
     facing: -1,
     animState: "idle",
     animTime: 0,
-    walkSpeed: 56,
-    runSpeed: 110,
-    hp: 26, hpMax: 26,
+    walkSpeed: stats.walkSpeed,
+    runSpeed:  stats.runSpeed,
+    hp: stats.hp, hpMax: stats.hp,
+    range: stats.range,
+    hurtHw: stats.hurtHw, hurtHd: stats.hurtHd, hurtHi: stats.hurtHi,
+    staggerN: stats.staggerN || 1,
+    staggerCount: 0,
     attacking: false,
     attackName: null,
     attackFrame: 0,
@@ -2165,13 +2226,25 @@ function makeRunner(x, y) {
     dead: false,
     deathTimer: 0,
     grabbedBy: null,
+    // Type-specific scratch state.
+    vanishTimer: type === "shade" ? 1.6 + Math.random() : 0,
+    vanishAlpha: 1,
+    vanishing: false,
+    guardActive: type === "dojo",
+    guardTimer: type === "dojo" ? 0 : 0,
     hitboxes: [],
     hurtboxes: [],
     attackHits: null,
   };
 }
 
-function updateRunner(e, dt) {
+// Backwards-compat alias used by old call sites.
+function makeRunner(x, y) { return makeEnemy("runner", x, y); }
+
+// Single dispatcher for every enemy type. The framework branches (dead /
+// grabbed / airborne / knockdown / hitstun) are common; the AI choice
+// branches by e.type.
+function updateEnemy(e, dt) {
   if (e.dead) {
     e.deathTimer += dt;
     e.x += e.knockX * dt;
@@ -2183,8 +2256,6 @@ function updateRunner(e, dt) {
     if (e.x > W - STAGE_RIGHT_PAD) e.x = W - STAGE_RIGHT_PAD;
     return;
   }
-
-  // Held in a grab — position is driven entirely by the player.
   if (e.grabbedBy) {
     e.animState = "grabbed";
     e.animTime += dt;
@@ -2192,10 +2263,8 @@ function updateRunner(e, dt) {
     e.hurtboxes.length = 0;
     return;
   }
-
   if (e.iframes > 0) e.iframes--;
 
-  // Airborne (juggled by a launcher) — gravity, no AI, vulnerable.
   if (e.airborne) {
     e.vz -= GRAVITY * dt;
     e.z += e.vz * dt;
@@ -2213,11 +2282,9 @@ function updateRunner(e, dt) {
     e.animTime += dt;
     e.hitboxes.length = 0;
     e.hurtboxes.length = 0;
-    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: e.z, hi: e.z + 30 });
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: e.z, hi: e.z + e.hurtHi });
     return;
   }
-
-  // Knockdown — lying on ground, getup countdown.
   if (e.knockdownFrames > 0) {
     e.knockdownFrames--;
     e.animState = "down";
@@ -2226,10 +2293,9 @@ function updateRunner(e, dt) {
     e.knockX *= 0.6;
     e.hitboxes.length = 0;
     e.hurtboxes.length = 0;
-    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 9, hd: 6, lo: 0, hi: 12 });
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw + 1, hd: e.hurtHd + 1, lo: 0, hi: 12 });
     return;
   }
-
   if (e.hitstun > 0) {
     e.hitstun--;
     e.x += e.knockX * dt;
@@ -2243,86 +2309,23 @@ function updateRunner(e, dt) {
     e.animTime += dt;
     e.hitboxes.length = 0;
     e.hurtboxes.length = 0;
-    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: 0, hi: 30 });
+    e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi });
     return;
   }
 
   e.aiCooldown -= dt;
 
-  // "Runs at low HP" — flee threshold 30%.
-  if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
+  // Per-type "passive" behavior (vanish countdowns, guard cycles, etc.).
+  if (e.type === "shade") updateShadeVanish(e, dt);
+  else if (e.type === "dojo") updateDojoGuard(e, dt);
 
-  if (player && !player.dead) {
-    const dx = player.x - e.x;
-    const dy = player.y - e.y;
-    const dist = Math.hypot(dx, dy) || 0.0001;
-
-    if (e.attacking) {
-      e.attackFrame++;
-      const d = RUNNER_ATK;
-      // Persistent hitbox across active frames so the attack hits at most once
-      // (hits Set is shared via e.attackHits).
-      if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
-        if (e.hitboxes.length === 0) {
-          e.hitboxes.push({
-            cx: 0, cy: 0,
-            hw: d.hit.hw, hd: d.hit.hd,
-            lo: d.hit.lo, hi: d.hit.hi,
-            damage: d.damage,
-            knockback: d.knockback,
-            hitstop: d.hitstop,
-            facing: e.facing,
-            owner: e,
-            hits: e.attackHits,
-          });
-        }
-        const hb = e.hitboxes[0];
-        hb.cx = e.x + e.facing * d.hit.fwd;
-        hb.cy = e.y;
-        hb.facing = e.facing;
-      } else {
-        e.hitboxes.length = 0;
-      }
-      if (e.attackFrame >= d.startup + d.active + d.recovery) {
-        e.attacking = false;
-        e.attackName = null;
-        e.hitboxes.length = 0;
-        e.attackHits = null;
-        e.aiCooldown = 0.55 + Math.random() * 0.55;
-      }
-      e.animState = "atk";
-    } else if (e.fleeing) {
-      // Run away on the X axis at runSpeed.
-      const fleeDir = (player.x > e.x) ? -1 : 1;
-      e.facing = fleeDir;
-      e.vx = fleeDir * e.runSpeed;
-      e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
-      e.x += e.vx * dt;
-      e.y += e.vy * dt;
-      e.animState = "walk";
-    } else {
-      // Approach until in attack range.
-      const range = 24;
-      if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
-      if (dist > range) {
-        const speed = e.walkSpeed;
-        e.vx = (dx / dist) * speed;
-        e.vy = (dy / dist) * speed;
-        e.x += e.vx * dt;
-        e.y += e.vy * dt;
-        e.animState = "walk";
-      } else {
-        e.vx = 0; e.vy = 0;
-        e.animState = "idle";
-        if (e.aiCooldown <= 0) {
-          e.attacking = true;
-          e.attackName = "swipe";
-          e.attackFrame = 0;
-          e.attackHits = new Set();
-        }
-      }
-    }
+  // Drive an in-progress attack to completion (frame data lookup is by name).
+  if (e.attacking) {
+    advanceEnemyAttack(e);
+    e.animState = "atk";
     e.animTime += dt;
+  } else if (player && !player.dead) {
+    runEnemyAI(e, dt);
   } else {
     e.animState = "idle";
     e.animTime += dt;
@@ -2334,7 +2337,271 @@ function updateRunner(e, dt) {
   if (e.y > STAGE_BOT) e.y = STAGE_BOT;
 
   e.hurtboxes.length = 0;
-  e.hurtboxes.push({ cx: e.x, cy: e.y, hw: 8, hd: 5, lo: 0, hi: 30 });
+  e.hurtboxes.push({
+    cx: e.x, cy: e.y,
+    hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi,
+  });
+}
+
+// Keep the old name for compatibility (the dispatcher in updatePlaying calls it).
+const updateRunner = updateEnemy;
+
+// Step the active attack: position the persistent hitbox each tick, expire on
+// recovery end. Spawns a projectile on the active frame for shooter enemies.
+function advanceEnemyAttack(e) {
+  e.attackFrame++;
+  const d = ENEMY_ATK[e.type + "_" + e.attackName];
+  if (!d) {
+    e.attacking = false; e.attackName = null;
+    e.hitboxes.length = 0; e.attackHits = null;
+    return;
+  }
+
+  // Self-push for dashing attacks (slice's lunge).
+  if (d.pushSelf && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+    e.x += e.facing * d.pushSelf * STEP;
+  }
+
+  // Spawn projectile on first active frame.
+  if (d.spawnsProjectile && e.attackFrame === d.startup + 1) {
+    spawnProjectile(d.spawnsProjectile, e.x + e.facing * 12, e.y - 22, e.facing, e);
+  }
+
+  if (d.hit && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+    if (e.hitboxes.length === 0) {
+      e.hitboxes.push({
+        cx: 0, cy: 0,
+        hw: d.hit.hw, hd: d.hit.hd,
+        lo: d.hit.lo, hi: d.hit.hi,
+        damage: d.damage,
+        knockback: d.knockback,
+        hitstop: d.hitstop,
+        facing: e.facing,
+        owner: e,
+        hits: e.attackHits,
+      });
+    }
+    const hb = e.hitboxes[0];
+    hb.cx = e.x + e.facing * d.hit.fwd;
+    hb.cy = e.y;
+    hb.facing = e.facing;
+  } else {
+    e.hitboxes.length = 0;
+  }
+  if (e.attackFrame >= d.startup + d.active + d.recovery) {
+    e.attacking = false;
+    e.attackName = null;
+    e.hitboxes.length = 0;
+    e.attackHits = null;
+    e.aiCooldown = 0.55 + Math.random() * 0.55;
+  }
+}
+
+function startEnemyAttack(e, name) {
+  e.attacking = true;
+  e.attackName = name;
+  e.attackFrame = 0;
+  e.attackHits = new Set();
+  e.vx = 0; e.vy = 0;
+}
+
+function runEnemyAI(e, dt) {
+  const dx = player.x - e.x;
+  const dy = player.y - e.y;
+  const dist = Math.hypot(dx, dy) || 0.0001;
+  if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
+
+  switch (e.type) {
+    case "runner": {
+      if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
+      if (e.fleeing) {
+        const fleeDir = (player.x > e.x) ? -1 : 1;
+        e.facing = fleeDir;
+        e.vx = fleeDir * e.runSpeed;
+        e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
+        e.x += e.vx * dt; e.y += e.vy * dt;
+        e.animState = "walk";
+      } else {
+        approachOrAttack(e, dx, dy, dist, dt);
+      }
+      break;
+    }
+    case "tank":   approachOrAttack(e, dx, dy, dist, dt); break;
+    case "slice":  approachOrAttack(e, dx, dy, dist, dt); break;
+    case "rig":    approachOrAttack(e, dx, dy, dist, dt); break;
+    case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
+    case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
+    case "chains": approachOrAttack(e, dx, dy, dist, dt); break;
+    case "lamplight": {
+      // Stay at long range. If too close, back off; if in range, shoot.
+      const idealMin = 70, idealMax = 110;
+      if (dist < idealMin) {
+        const back = -Math.sign(dx || 1);
+        e.vx = back * e.walkSpeed;
+        e.x += e.vx * dt;
+        e.animState = "walk";
+      } else if (dist > idealMax) {
+        e.vx = (dx / dist) * e.walkSpeed * 0.6;
+        e.vy = (dy / dist) * e.walkSpeed * 0.6;
+        e.x += e.vx * dt; e.y += e.vy * dt;
+        e.animState = "walk";
+      } else {
+        e.vx = 0; e.vy = 0;
+        e.animState = "idle";
+        if (e.aiCooldown <= 0) {
+          startEnemyAttack(e, ENEMY_DEFAULT_ATTACK[e.type]);
+        }
+      }
+      break;
+    }
+    default: approachOrAttack(e, dx, dy, dist, dt); break;
+  }
+  e.animTime += dt;
+}
+
+function approachOrAttack(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    const speed = e.walkSpeed;
+    e.vx = (dx / dist) * speed;
+    e.vy = (dy / dist) * speed;
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+    e.animState = "walk";
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+    if (e.aiCooldown <= 0) {
+      startEnemyAttack(e, ENEMY_DEFAULT_ATTACK[e.type]);
+    }
+  }
+}
+
+// SHADE: pulse-vanish and reposition behind the player.
+function updateShadeVanish(e, dt) {
+  e.vanishTimer -= dt;
+  if (e.vanishing) {
+    e.vanishAlpha -= dt * 4;
+    if (e.vanishAlpha <= 0) {
+      // Reappear behind the player on the opposite side.
+      e.vanishAlpha = 0;
+      if (player) {
+        const side = (player.x > W / 2) ? -1 : 1;
+        e.x = clamp(player.x + side * 70, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
+        e.y = clamp(player.y, STAGE_TOP, STAGE_BOT);
+      }
+      e.vanishing = false;
+      e.vanishAlpha = 0.05;
+    }
+  } else {
+    if (e.vanishAlpha < 1) e.vanishAlpha = Math.min(1, e.vanishAlpha + dt * 4);
+    if (e.vanishTimer <= 0 && !e.attacking && e.hitstun === 0) {
+      e.vanishing = true;
+      e.vanishTimer = 2.0 + Math.random() * 1.4;
+    }
+  }
+}
+
+// DOJO: short guard windows. While guardActive, incoming player hits are
+// deflected by deflectHit() and the dojo immediately counters.
+function updateDojoGuard(e, dt) {
+  e.guardTimer = (e.guardTimer || 0) + dt;
+  // 1.0s guard / 1.4s open cycle.
+  e.guardActive = (e.guardTimer % 2.4) < 1.0;
+}
+
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+// Dojo deflect — player's incoming hit bounces; player gets pushed back, the
+// dojo immediately starts a counter swing. No damage to dojo.
+function deflectHit(d, hb, attacker) {
+  if (attacker !== player) return;
+  // Shove the player back.
+  const dir = (player.x < d.x) ? -1 : 1;
+  player.knockX = dir * 80;
+  player.hitstun = 6;
+  player.attacking = false;
+  player.attackName = null;
+  if (player.hitboxes) player.hitboxes.length = 0;
+  player.attackHits = null;
+  // Spark + word.
+  spawnParrySparkle(d.x - dir * 12, d.y - 18, "good");
+  spawnParryWord(d.x, d.y - 30, "DEFLECT", "#a8c8f4");
+  if (hitstopFrames < 5) hitstopFrames = 5;
+  // Counter immediately.
+  startEnemyAttack(d, "counter");
+  if (hb.hits) hb.hits.add(d);   // mark as consumed so this frame doesn't keep retriggering
+}
+
+// ---------- Projectiles (LAMPLIGHT bullets, bottle throws, etc.) ----------
+function spawnProjectile(kind, x, y, dir, owner) {
+  const def =
+    kind === "bullet" ? { speed: 280, damage: 9, knockback: 60, hitstop: 4, w: 5, h: 2, color: "#ffd76a" } :
+    kind === "bottle" ? { speed: 180, damage: 6, knockback: 40, hitstop: 3, w: 4, h: 5, color: "#7fa8a4", arc: -160 } :
+                        { speed: 200, damage: 5, knockback: 40, hitstop: 3, w: 4, h: 4, color: "#fff" };
+  projectiles.push({
+    kind, x, y, vx: dir * def.speed, vy: 0, vz: def.arc || 0, z: 0,
+    life: 0, maxLife: 1.6,
+    damage: def.damage, knockback: def.knockback, hitstop: def.hitstop,
+    w: def.w, h: def.h, color: def.color,
+    facing: dir, owner,
+  });
+}
+
+function updateProjectiles(dt) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.life += dt;
+    p.x += p.vx * dt;
+    p.z += p.vz * dt;
+    if (p.kind === "bottle") p.vz -= 240 * dt;
+    if (p.z < -2) { projectiles.splice(i, 1); continue; }
+    if (p.x < -8 || p.x > W + 8 || p.life > p.maxLife) { projectiles.splice(i, 1); continue; }
+    // Hit player if any.
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+      // Box overlap on x and depth.
+      if (Math.abs(p.x - player.x) < player.hurtboxes[0]?.hw + p.w / 2 + 2 &&
+          Math.abs(p.y - player.y) < player.hurtboxes[0]?.hd + 6) {
+        // Player parry intercepts projectile.
+        if (player.parryFrame >= 1 && player.parryFrame <= PARRY_ACTIVE) {
+          resolveParry(player, {
+            cx: p.x, cy: p.y, hw: p.w, hd: p.h,
+            damage: p.damage, knockback: p.knockback, hitstop: p.hitstop,
+            hits: new Set(),
+          }, p.owner);
+        } else {
+          applyHit(player, {
+            cx: p.x, cy: p.y, hw: p.w, hd: p.h,
+            damage: p.damage, knockback: p.knockback, hitstop: p.hitstop,
+            hits: new Set(),
+          }, p.owner);
+        }
+        projectiles.splice(i, 1);
+      }
+    }
+  }
+}
+
+function drawProjectiles() {
+  for (const p of projectiles) {
+    const sx = Math.round(p.x), sy = Math.round(p.y - p.z);
+    if (p.kind === "bullet") {
+      // Tracer streak with a glowing core.
+      X.fillStyle = "rgba(255,215,106,0.45)";
+      X.fillRect(sx - p.facing * 8, sy - 1, 8, 2);
+      X.fillStyle = p.color;
+      X.fillRect(sx - 2, sy - 1, p.w, p.h);
+      X.fillStyle = "rgba(255,255,255,1)";
+      X.fillRect(sx, sy, 2, 1);
+    } else if (p.kind === "bottle") {
+      X.fillStyle = p.color;
+      X.fillRect(sx - 2, sy - 3, 4, 5);
+      X.fillStyle = "#a8d4d0";
+      X.fillRect(sx - 1, sy - 4, 2, 1);
+    } else {
+      X.fillStyle = p.color;
+      X.fillRect(sx - p.w / 2, sy - p.h / 2, p.w, p.h);
+    }
+  }
 }
 
 // ---------- RUNNER renderer ----------
@@ -2436,7 +2703,7 @@ function drawRunner(e) {
   // Arms.
   let atkReach = 0;
   if (e.attacking) {
-    const d = RUNNER_ATK;
+    const d = ENEMY_ATK.runner_swipe;
     if (e.attackFrame <= d.startup) atkReach = (e.attackFrame / d.startup) * 10;
     else if (e.attackFrame <= d.startup + d.active) atkReach = 10;
     else atkReach = Math.max(0, 10 - (e.attackFrame - d.startup - d.active));
@@ -2486,6 +2753,495 @@ function drawRunner(e) {
   }
 
   if (e.hp < e.hpMax) drawEnemyHpPip(sx, headY - 8, e);
+}
+
+// ---------- Other enemy renderers ----------
+const TANK_COLORS = {
+  jumpsuit:   "#4a3a2a",
+  jumpsuitHi: "#6a5236",
+  jumpsuitDk: "#2a1e14",
+  skin:       "#b88c64",
+  skinDark:   "#7a5a3c",
+  hair:       "#1a1410",
+  belt:       "#1a1410",
+  bootDark:   "#0a0805",
+};
+function drawTank(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = TANK_COLORS, t = e.animTime;
+  X.fillStyle = "rgba(0,0,0,0.5)";
+  X.beginPath(); X.ellipse(sx, e.y, 14, 4, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.jumpsuit; X.fillRect(sx - 16, sy - 7, 32, 7);
+    X.fillStyle = k.bootDark; X.fillRect(sx - 16, sy - 1, 8, 3);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  let bob = 0, swing = 0;
+  if (e.animState === "walk") { const s = Math.sin(t * 6); swing = s * 1.4; bob = Math.abs(s); }
+  // Wide squat body.
+  X.fillStyle = k.jumpsuit;
+  X.fillRect(sx - 11, sy - 22 - bob, 22, 22);
+  X.fillStyle = k.jumpsuitDk;
+  X.fillRect(sx - 11, sy - 1, 22, 1);
+  X.fillStyle = k.jumpsuitHi;
+  X.fillRect(sx - 11, sy - 22 - bob, 22, 1);
+  X.fillRect(sx, sy - 22 - bob, 1, 22);
+  // Belt.
+  X.fillStyle = k.belt;
+  X.fillRect(sx - 11, sy - 14, 22, 3);
+  // Legs at the bottom.
+  X.fillStyle = k.jumpsuitDk;
+  X.fillRect(sx - 9, sy - 4, 7, 4);
+  X.fillRect(sx + 2, sy - 4, 7, 4);
+  X.fillStyle = k.bootDark;
+  X.fillRect(sx - 10, sy, 8, 1);
+  X.fillRect(sx + 2,  sy, 8, 1);
+  // Arms — bulky.
+  X.fillStyle = k.jumpsuit;
+  X.fillRect(sx - 14, sy - 22, 4, 16);
+  X.fillRect(sx + 10, sy - 22, 4, 16);
+  // Attack — heavy slam, both arms overhead during active.
+  if (e.attacking && e.attackName === "slam") {
+    const d = ENEMY_ATK.tank_slam;
+    if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      X.fillStyle = k.jumpsuit;
+      X.fillRect(sx - 14, sy - 36, 4, 16);
+      X.fillRect(sx + 10, sy - 36, 4, 16);
+      X.fillStyle = "rgba(255,255,255,0.6)";
+      X.fillRect(sx - 6, sy - 1, 12, 2);
+    }
+  }
+  // Head — small, low. Bald, with a heavy brow.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 30 - bob, 12, 8);
+  X.fillStyle = k.skinDark;
+  X.fillRect(sx - 6, sy - 26 - bob, 12, 1); // brow shadow
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 5, sy - 31 - bob, 10, 2); // crew cut
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, sy - 27 - bob, 2, 1);
+  else       X.fillRect(sx - 3, sy - 27 - bob, 2, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 11, sy - 32, 22, 34); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 36, e);
+}
+
+const LAMP_COLORS = {
+  coat: "#3a3024", coatDk: "#241c14", coatHi: "#5a4a30",
+  shirt: "#a89878", shirtDk: "#6e604a",
+  skin:  "#caa07c", skinDk: "#8a6a4c",
+  hair:  "#1a1410", hat: "#1a1410", hatBand: "#5a4a30",
+  pistol: "#2a2a2e", pistolHi: "#7a7a82",
+};
+function drawLamplight(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = LAMP_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, e.y, 9, 3, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.coat; X.fillRect(sx - 13, sy - 6, 26, 5);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  // Long coat covers most of the body.
+  X.fillStyle = k.coat;
+  X.fillRect(sx - 6, sy - 38, 12, 38);
+  X.fillStyle = k.coatDk;
+  X.fillRect(sx - 6, sy - 1, 12, 1);
+  X.fillStyle = k.coatHi;
+  X.fillRect(sx - 6, sy - 38, 12, 1);
+  // Coat lapels.
+  X.fillStyle = k.shirt;
+  X.fillRect(sx - 2, sy - 30, 4, 4);
+  // Boots.
+  X.fillStyle = "#1a1410";
+  X.fillRect(sx - 6, sy - 4, 5, 4);
+  X.fillRect(sx + 1, sy - 4, 5, 4);
+  // Arm holding pistol — extends slightly during shot active.
+  let armX = (f > 0) ? sx + 5 : sx - 8;
+  let pistolX = (f > 0) ? sx + 9 : sx - 14;
+  if (e.attacking && e.attackName === "shot") {
+    const d = ENEMY_ATK.lamplight_shot;
+    if (e.attackFrame > d.startup) {
+      // Recoil pose.
+      X.fillStyle = k.coat;
+      X.fillRect(armX - (f>0?0:2), sy - 26, 4, 4);
+      X.fillStyle = k.pistol;
+      X.fillRect(pistolX, sy - 24, 5, 3);
+      X.fillStyle = k.pistolHi;
+      X.fillRect(pistolX + (f>0?4:0), sy - 24, 1, 1);
+      // Muzzle flash.
+      X.fillStyle = "rgba(255,215,106,0.95)";
+      X.fillRect(pistolX + (f>0?5:-3), sy - 24, 3, 3);
+    } else {
+      X.fillStyle = k.coat;
+      X.fillRect(armX, sy - 26, 3, 12);
+    }
+  } else {
+    X.fillStyle = k.coat;
+    X.fillRect(armX, sy - 26, 3, 12);
+    X.fillStyle = k.pistol;
+    X.fillRect(pistolX, sy - 22, 4, 3);
+  }
+  // Head — wide-brim hat.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 5, sy - 44, 10, 8);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 5, sy - 38, 10, 1);
+  X.fillStyle = k.hat;
+  X.fillRect(sx - 8, sy - 47, 16, 3);
+  X.fillRect(sx - 5, sy - 50, 10, 3);
+  X.fillStyle = k.hatBand;
+  X.fillRect(sx - 5, sy - 47, 10, 1);
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, sy - 41, 2, 1);
+  else       X.fillRect(sx - 3, sy - 41, 2, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 8, sy - 50, 16, 52); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 54, e);
+}
+
+const SLICE_COLORS = {
+  black: "#0a0a10", blackHi: "#1a1a22",
+  skin: "#d4a888", skinDk: "#9a785a",
+  blade: "#cfd0d6", bladeHi: "#ffffff",
+  red:   "#a83040",
+};
+function drawSlice(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = SLICE_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, e.y, 7, 2.5, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.black; X.fillRect(sx - 12, sy - 5, 24, 5);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  // Skinny black silhouette.
+  X.fillStyle = k.black;
+  X.fillRect(sx - 4, sy - 30, 8, 30);
+  X.fillStyle = k.blackHi;
+  X.fillRect(sx - 4, sy - 30, 8, 1);
+  // Boots.
+  X.fillStyle = "#000";
+  X.fillRect(sx - 4, sy - 4, 4, 4);
+  X.fillRect(sx, sy - 4, 4, 4);
+  // Knife arm — extends on lunge.
+  let bladeReach = 0;
+  if (e.attacking && e.attackName === "lunge") {
+    const d = ENEMY_ATK.slice_lunge;
+    if (e.attackFrame <= d.startup) bladeReach = 3 * (e.attackFrame / d.startup);
+    else if (e.attackFrame <= d.startup + d.active) bladeReach = 16;
+    else bladeReach = Math.max(0, 16 - (e.attackFrame - d.startup - d.active));
+  }
+  const armY = sy - 22;
+  X.fillStyle = k.black;
+  if (f > 0) X.fillRect(sx + 3, armY, 3 + bladeReach, 3);
+  else       X.fillRect(sx - 6 - bladeReach, armY, 3 + bladeReach, 3);
+  if (bladeReach > 1) {
+    X.fillStyle = k.blade;
+    if (f > 0) X.fillRect(sx + 3 + bladeReach, armY, 6, 2);
+    else        X.fillRect(sx - 9 - bladeReach, armY, 6, 2);
+    X.fillStyle = k.bladeHi;
+    if (f > 0) X.fillRect(sx + 3 + bladeReach + 4, armY, 2, 1);
+    else        X.fillRect(sx - 9 - bladeReach, armY, 2, 1);
+  }
+  // Head — narrow, black hood with red eyes.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 4, sy - 40, 8, 10);
+  X.fillStyle = k.black;
+  X.fillRect(sx - 5, sy - 41, 10, 7);
+  X.fillStyle = k.red;
+  if (f > 0) X.fillRect(sx + 1, sy - 36, 1, 1);
+  else       X.fillRect(sx - 2, sy - 36, 1, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 5, sy - 44, 10, 46); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 46, e);
+}
+
+const CHAINS_COLORS = {
+  vest: "#3a2a1a", vestDk: "#1f1410", vestHi: "#5a4030",
+  pants: "#2a2a2e", boots: "#0a0a10",
+  skin: "#9a7048", skinDk: "#5a3e22",
+  mohawk: "#6a3050", mohawkHi: "#a04068",
+  chain: "#a8a8a8", chainDk: "#5a5a60",
+  metal: "#e8c04a",
+};
+function drawChains(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = CHAINS_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.45)";
+  X.beginPath(); X.ellipse(sx, e.y, 10, 3, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.vest; X.fillRect(sx - 14, sy - 6, 28, 6);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  // Pants and boots.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = k.boots;
+  X.fillRect(sx - 6, sy - 4, 5, 4);
+  X.fillRect(sx + 1, sy - 4, 5, 4);
+  // Bare arms + vest.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 8, sy - 28, 3, 14);
+  X.fillRect(sx + 5, sy - 28, 3, 14);
+  X.fillStyle = k.vest;
+  X.fillRect(sx - 7, sy - 32, 14, 14);
+  X.fillStyle = k.vestDk;
+  X.fillRect(sx - 7, sy - 18, 14, 1);
+  X.fillStyle = k.metal;
+  X.fillRect(sx - 5, sy - 30, 1, 1); X.fillRect(sx - 1, sy - 28, 1, 1);
+  X.fillRect(sx + 4, sy - 30, 1, 1); X.fillRect(sx + 2, sy - 24, 1, 1); // studs
+  // Head — mohawk.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 44, 12, 12);
+  X.fillStyle = k.mohawk;
+  X.fillRect(sx - 1, sy - 50, 2, 7);
+  X.fillStyle = k.mohawkHi;
+  X.fillRect(sx, sy - 50, 1, 7);
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, sy - 38, 2, 1);
+  else       X.fillRect(sx - 3, sy - 38, 2, 1);
+  // Chain weapon — long arc during swing active.
+  if (e.attacking && e.attackName === "swing") {
+    const d = ENEMY_ATK.chains_swing;
+    if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      const phase = (e.attackFrame - d.startup) / d.active;
+      // Draw chain links along an arc in front.
+      for (let i = 0; i < 7; i++) {
+        const t = i / 6;
+        const arc = Math.sin(phase * Math.PI) * 14;
+        const lx = sx + f * (8 + t * 22);
+        const ly = sy - 24 + Math.sin(phase * Math.PI + t * 1.4) * arc - t * 4;
+        X.fillStyle = (i % 2) ? k.chain : k.chainDk;
+        X.fillRect(Math.round(lx), Math.round(ly), 2, 2);
+      }
+      // Spiked end.
+      X.fillStyle = k.metal;
+      const ex = sx + f * 30;
+      const ey = sy - 28 + Math.sin(phase * Math.PI + 1.4) * 14;
+      X.fillRect(Math.round(ex), Math.round(ey), 4, 4);
+    }
+  } else {
+    // Coiled at hip.
+    X.fillStyle = k.chain;
+    X.fillRect(sx + (f > 0 ? 5 : -8), sy - 16, 3, 6);
+  }
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 8, sy - 50, 16, 52); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 50, e);
+}
+
+const SHADE_COLORS = {
+  cloak: "#1a1626", cloakDk: "#0a081a", cloakHi: "#3a2e4e",
+  glow: "#a878d8", glowHi: "#d8b8ff",
+  void: "#000010",
+};
+function drawShade(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = SHADE_COLORS;
+  const a = e.vanishAlpha ?? 1;
+  if (a < 0.05) return;
+  X.globalAlpha = a;
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, e.y, 9, 3, 0, 0, Math.PI*2); X.fill();
+  // Tall hooded silhouette.
+  X.fillStyle = k.cloak;
+  X.fillRect(sx - 6, sy - 36, 12, 36);
+  X.fillStyle = k.cloakDk;
+  X.fillRect(sx - 6, sy - 1, 12, 1);
+  // Hood opening with violet glow.
+  X.fillStyle = k.void;
+  X.fillRect(sx - 5, sy - 36, 10, 8);
+  X.fillStyle = k.glow;
+  if (f > 0) X.fillRect(sx + 1, sy - 32, 2, 2);
+  else       X.fillRect(sx - 3, sy - 32, 2, 2);
+  X.fillStyle = k.glowHi;
+  if (f > 0) X.fillRect(sx + 2, sy - 32, 1, 1);
+  else       X.fillRect(sx - 2, sy - 32, 1, 1);
+  // Hood point.
+  X.fillStyle = k.cloak;
+  X.fillRect(sx - 4, sy - 38, 8, 2);
+  X.fillRect(sx - 2, sy - 40, 4, 2);
+  // Shadow tendril at the base.
+  X.fillStyle = k.cloakHi;
+  X.fillRect(sx - 7, sy - 6, 14, 2);
+  if (e.attacking && e.attackName === "strike") {
+    const d = ENEMY_ATK.shade_strike;
+    if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      // Violet streak slashing forward.
+      X.fillStyle = k.glowHi;
+      if (f > 0) X.fillRect(sx + 4, sy - 22, 14, 2);
+      else        X.fillRect(sx - 18, sy - 22, 14, 2);
+    }
+  }
+  X.globalAlpha = 1;
+  if (e.hp < e.hpMax && a > 0.4) drawEnemyHpPip(sx, sy - 44, e);
+}
+
+const DOJO_COLORS = {
+  gi: "#e0dcc6", giDk: "#a89c80", giHi: "#ffffff",
+  belt: "#1a1410",
+  pants: "#1a1410", pantsHi: "#3a3026",
+  skin: "#caa07c", skinDk: "#8a6a4c",
+  hair: "#1a1410",
+  red: "#a83040",
+};
+function drawDojo(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = DOJO_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.4)";
+  X.beginPath(); X.ellipse(sx, e.y, 10, 3, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.gi; X.fillRect(sx - 13, sy - 6, 26, 5);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  // Black pants.
+  X.fillStyle = k.pants;
+  X.fillRect(sx - 6, sy - 18, 5, 14);
+  X.fillRect(sx + 1, sy - 18, 5, 14);
+  X.fillStyle = "#000";
+  X.fillRect(sx - 6, sy - 4, 5, 4);
+  X.fillRect(sx + 1, sy - 4, 5, 4);
+  // Gi top — overlapping panels.
+  X.fillStyle = k.gi;
+  X.fillRect(sx - 8, sy - 32, 16, 16);
+  X.fillStyle = k.giDk;
+  X.fillRect(sx - 8, sy - 17, 16, 1);
+  X.fillStyle = k.gi;
+  X.fillRect(sx - 6, sy - 32, 4, 14);
+  X.fillRect(sx + 2, sy - 32, 4, 14);
+  X.fillStyle = k.giHi;
+  X.fillRect(sx - 5, sy - 31, 1, 12); // collar
+  X.fillRect(sx + 4, sy - 31, 1, 12);
+  // Black belt.
+  X.fillStyle = k.belt;
+  X.fillRect(sx - 8, sy - 19, 16, 3);
+  // Arms — guarded pose during guard window, fists up.
+  X.fillStyle = k.skin;
+  if (e.guardActive) {
+    X.fillRect(sx - 10, sy - 30, 4, 8);
+    X.fillRect(sx + 6,  sy - 30, 4, 8);
+  } else {
+    X.fillRect(sx - 10, sy - 28, 3, 12);
+    X.fillRect(sx + 7,  sy - 28, 3, 12);
+  }
+  // Counter punch animation.
+  if (e.attacking && e.attackName === "counter") {
+    const d = ENEMY_ATK.dojo_counter;
+    if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      X.fillStyle = k.skin;
+      if (f > 0) X.fillRect(sx + 6, sy - 26, 14, 3);
+      else        X.fillRect(sx - 20, sy - 26, 14, 3);
+    }
+  }
+  // Head.
+  X.fillStyle = k.skin;
+  X.fillRect(sx - 6, sy - 44, 12, 12);
+  X.fillStyle = k.hair;
+  X.fillRect(sx - 5, sy - 46, 10, 3);
+  // Headband.
+  X.fillStyle = k.red;
+  X.fillRect(sx - 6, sy - 41, 12, 1);
+  X.fillStyle = "#fff";
+  if (f > 0) X.fillRect(sx + 1, sy - 38, 2, 1);
+  else       X.fillRect(sx - 3, sy - 38, 2, 1);
+  // Guard glow.
+  if (e.guardActive) {
+    X.strokeStyle = "rgba(168,200,244,0.55)";
+    X.lineWidth = 1;
+    X.beginPath(); X.arc(sx, sy - 22, 18, 0, Math.PI * 2); X.stroke();
+  }
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 10, sy - 50, 20, 52); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 50, e);
+}
+
+const RIG_COLORS = {
+  plate: "#2a3038", plateDk: "#181c22", plateHi: "#4a5258",
+  trim: "#7a3030",
+  eye: "#ff5040", eyeHi: "#ffb0a0",
+  jet: "#a8cfff", jetHi: "#e0f0ff",
+  leg: "#1a1820",
+};
+function drawRig(e) {
+  const sx = Math.round(e.x), sy = Math.round(e.y - e.z);
+  const f = e.facing, k = RIG_COLORS;
+  X.fillStyle = "rgba(0,0,0,0.5)";
+  X.beginPath(); X.ellipse(sx, e.y, 11, 3, 0, 0, Math.PI*2); X.fill();
+  if (e.dead || e.animState === "down") {
+    X.fillStyle = k.plate; X.fillRect(sx - 14, sy - 6, 28, 6);
+    X.fillStyle = k.eye; X.fillRect(sx + (f>0?6:-7), sy - 4, 2, 1);
+    if (!e.dead && e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 14, e);
+    return;
+  }
+  // Reinforced legs.
+  X.fillStyle = k.leg;
+  X.fillRect(sx - 7, sy - 20, 6, 16);
+  X.fillRect(sx + 1, sy - 20, 6, 16);
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 7, sy - 4, 6, 4);
+  X.fillRect(sx + 1, sy - 4, 6, 4);
+  // Plated torso.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 9, sy - 36, 18, 18);
+  X.fillStyle = k.plateHi;
+  X.fillRect(sx - 9, sy - 36, 18, 1);
+  X.fillRect(sx, sy - 36, 1, 18);
+  X.fillStyle = k.plateDk;
+  X.fillRect(sx - 9, sy - 19, 18, 1);
+  X.fillStyle = k.trim;
+  X.fillRect(sx - 9, sy - 28, 18, 1);
+  // Arms — heavier, with hard shoulders.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 12, sy - 36, 5, 16);
+  X.fillRect(sx + 7,  sy - 36, 5, 16);
+  X.fillStyle = k.plateHi;
+  X.fillRect(sx - 12, sy - 36, 5, 1);
+  X.fillRect(sx + 7,  sy - 36, 5, 1);
+  // Strike animation.
+  if (e.attacking && e.attackName === "strike") {
+    const d = ENEMY_ATK.rig_strike;
+    if (e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
+      X.fillStyle = k.plate;
+      if (f > 0) X.fillRect(sx + 8, sy - 28, 14, 4);
+      else        X.fillRect(sx - 22, sy - 28, 14, 4);
+      X.fillStyle = k.eye;
+      if (f > 0) X.fillRect(sx + 22, sy - 28, 2, 4);
+      else        X.fillRect(sx - 22, sy - 28, 2, 4);
+    }
+  }
+  // Head — single glowing eye.
+  X.fillStyle = k.plate;
+  X.fillRect(sx - 7, sy - 44, 14, 10);
+  X.fillStyle = k.plateDk;
+  X.fillRect(sx - 7, sy - 35, 14, 1);
+  X.fillStyle = k.plateHi;
+  X.fillRect(sx - 7, sy - 44, 14, 1);
+  // Glowing eye band — pulses.
+  const pulse = 0.65 + 0.35 * Math.sin(e.animTime * 8);
+  X.fillStyle = "rgba(255,80,64," + pulse.toFixed(2) + ")";
+  if (f > 0) X.fillRect(sx, sy - 41, 6, 2);
+  else        X.fillRect(sx - 6, sy - 41, 6, 2);
+  X.fillStyle = k.eyeHi;
+  if (f > 0) X.fillRect(sx + 4, sy - 41, 1, 1);
+  else        X.fillRect(sx - 4, sy - 41, 1, 1);
+  if (e.iframes > 6) { X.fillStyle = "rgba(255,255,255,0.65)"; X.fillRect(sx - 12, sy - 46, 24, 48); }
+  if (e.hp < e.hpMax) drawEnemyHpPip(sx, sy - 50, e);
+}
+
+// Dispatcher.
+function drawEnemy(e) {
+  switch (e.type) {
+    case "tank":      return drawTank(e);
+    case "lamplight": return drawLamplight(e);
+    case "slice":     return drawSlice(e);
+    case "chains":    return drawChains(e);
+    case "shade":     return drawShade(e);
+    case "dojo":      return drawDojo(e);
+    case "rig":       return drawRig(e);
+    default:          return drawRunner(e);
+  }
 }
 
 function drawEnemyHpPip(sx, by, e) {
@@ -2616,7 +3372,25 @@ function boxOverlap(a, b) {
 
 function applyHit(target, hb, attacker) {
   if (target.dead) return;
+
+  // DOJO deflection: if the target's guard window is active and the attacker is
+  // the player, the hit is parried back. No damage; player gets pushed back and
+  // the dojo immediately counters.
+  if (target.type === "dojo" && target.guardActive && attacker === player) {
+    deflectHit(target, hb, attacker);
+    return;
+  }
+
   target.hp -= hb.damage;
+  // TANK super-armor: shrugs off hitstun until staggerN hits land in a row.
+  // Tracks via staggerCount which resets when the tank attacks.
+  let absorbHitstun = false;
+  if (target.staggerN && target.staggerN > 1 && !hb.launcher) {
+    target.staggerCount = (target.staggerCount || 0) + 1;
+    if (target.staggerCount < target.staggerN) absorbHitstun = true;
+    else target.staggerCount = 0;
+  }
+
   // Brief post-hit immunity so simultaneous enemies don't all stack onto one frame
   // and so the victim's attack-cancel doesn't immediately re-eat the next active frame.
   // Short enough that player chain combos still land (chain gaps >=10f).
@@ -2630,7 +3404,7 @@ function applyHit(target, hb, attacker) {
     player.comboTimer = 0;
   }
   // Cancel the victim's own attack (no trades).
-  if (target.attacking) {
+  if (target.attacking && !absorbHitstun) {
     target.attacking = false;
     target.attackName = null;
     target.attackFrame = 0;
@@ -2639,15 +3413,21 @@ function applyHit(target, hb, attacker) {
   }
   // Knockback away from the hitbox center on world X.
   const dir = (target.x < hb.cx) ? -1 : 1;
-  target.knockX = dir * hb.knockback;
-  target.knockY = 0;
-  target.hitstun = 8;
+  if (!absorbHitstun) {
+    target.knockX = dir * hb.knockback;
+    target.knockY = 0;
+    target.hitstun = 8;
+  } else {
+    // Light recoil only.
+    target.knockX = dir * hb.knockback * 0.2;
+  }
   // Launcher pops the victim into the air for juggle followups.
   if (hb.launcher && target.z !== undefined) {
     target.vz = hb.launcher;
     target.airborne = true;
     target.hitstun = 0;
     target.knockX = dir * (hb.knockback * 0.5);
+    if (target.staggerCount !== undefined) target.staggerCount = 0;
   }
   if (target.hp <= 0) {
     target.dead = true;
@@ -2934,13 +3714,20 @@ function updateTitle(dt) {
 // or via the proper character-select panel in Phase 4.2.
 let selectedChar = "rio";
 
+// Spawn list selector — currently the same encounter for any stage (Phase 3.2
+// will replace with per-stage configurations).
+function spawnEnemiesForStage(_stageIndex) {
+  return [
+    makeEnemy("runner", 440, 280),
+    makeEnemy("runner", 520, 320),
+  ];
+}
+
 function enterPlaying() {
   player = makePlayer(selectedChar, 120, 300);
-  enemies = [
-    makeRunner(440, 280),
-    makeRunner(520, 320),
-  ];
+  enemies = spawnEnemiesForStage(0);
   particles = [];
+  projectiles = [];
   hitstopFrames = 0;
   flashFrames = 0;
   shakeFrames = 0;
@@ -2953,6 +3740,7 @@ function updatePlaying(dt) {
     player = null;
     enemies = [];
     particles = [];
+    projectiles = [];
     hitstopFrames = 0;
     flashFrames = 0;
     shakeFrames = 0;
@@ -2963,9 +3751,10 @@ function updatePlaying(dt) {
   if (flashFrames > 0)  flashFrames--;
   if (shakeFrames > 0)  shakeFrames--;
   if (player) updatePlayer(player, dt);
-  for (const e of enemies) updateRunner(e, dt);
+  for (const e of enemies) updateEnemy(e, dt);
   resolveHits();
   cleanupEnemies();
+  updateProjectiles(dt);
   updateParticles(dt);
 }
 
@@ -3023,9 +3812,10 @@ function renderPlaying() {
   // Depth-sort: deeper (lower world Y) renders first so closer entities cover them.
   const drawables = [];
   if (player) drawables.push({ y: player.y, draw: () => drawCharacter(player) });
-  for (const e of enemies) drawables.push({ y: e.y, draw: () => drawRunner(e) });
+  for (const e of enemies) drawables.push({ y: e.y, draw: () => drawEnemy(e) });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
+  drawProjectiles();
   drawParticles();
   if (DEV && debugEl.classList.contains("on")) drawDebugBoxes();
 

@@ -513,6 +513,71 @@ function peek(expr) {
   console.log("milestone AWESOME: comboHits =", peek("player.comboHits"));
   snapshot("30_milestone_awesome");
 
+  // ---- ENEMY GALLERY: spawn each new type and snapshot ----
+  press("Escape"); step(2);
+  press("Digit1"); step(2);
+  press("Enter");  step(2);
+  // Replace the default spawn with one of each new type lined up across the stage.
+  window.eval(
+    "enemies = [" +
+    "  makeEnemy('tank',      180, 282)," +
+    "  makeEnemy('lamplight', 240, 322)," +
+    "  makeEnemy('slice',     300, 282)," +
+    "  makeEnemy('chains',    360, 322)," +
+    "  makeEnemy('shade',     420, 282)," +
+    "  makeEnemy('dojo',      480, 322)," +
+    "  makeEnemy('rig',       560, 282)" +
+    "];" +
+    "for (const e of enemies) e.aiCooldown = 999;"
+  );
+  step(8);
+  console.log("gallery: enemies =", peek("enemies.length"));
+  snapshot("31_enemy_gallery");
+
+  // ---- LAMPLIGHT projectile ----
+  window.eval(
+    "enemies = [makeEnemy('lamplight', 400, 300)];" +
+    "enemies[0].aiCooldown = 0;" +
+    "player.x = 320; player.y = 300;"
+  );
+  step(15);
+  console.log("lamplight projectiles:", peek("projectiles.length"),
+              "atkName=", peek("enemies[0].attackName"));
+  snapshot("32_lamplight_shoot");
+
+  // ---- TANK super-armor ----
+  window.eval(
+    "enemies = [makeEnemy('tank', player.x + 40, player.y)];" +
+    "enemies[0].aiCooldown = 999;"
+  );
+  hold("KeyD");
+  while (true) {
+    step(2);
+    if (Math.abs(peek("enemies[0].x") - peek("player.x")) < 24) break;
+  }
+  release("KeyD"); step(2);
+  press("KeyJ"); step(8);
+  const tankHpAfter1 = peek("enemies[0].hp");
+  const tankHitstunAfter1 = peek("enemies[0].hitstun");
+  console.log("tank hit 1: hp =", tankHpAfter1, "hitstun =", tankHitstunAfter1,
+              "(should not stun on first hit)");
+  snapshot("33_tank_armor");
+
+  // ---- DOJO deflect ----
+  press("Escape"); step(2);
+  press("Enter");  step(2);
+  window.eval(
+    "enemies = [makeEnemy('dojo', player.x + 22, player.y)];" +
+    "enemies[0].aiCooldown = 999;" +
+    "enemies[0].guardActive = true;" +
+    "enemies[0].guardTimer = 0;"
+  );
+  press("KeyJ"); step(8);
+  console.log("dojo deflect:",
+              "p.hitstun =", peek("player.hitstun"),
+              "dojo.attacking =", peek("enemies[0].attacking"));
+  snapshot("34_dojo_deflect");
+
   console.log("\nERRORS:", errors.length);
   for (const e of errors) console.log("  -", e);
   process.exit(errors.length ? 1 : 0);
