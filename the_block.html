@@ -5979,6 +5979,7 @@ function update(dt) {
   else if (STATE === "playing") updatePlaying(dt);
   else if (STATE === "paused") updatePaused(dt);
   else if (STATE === "cinematic") updateCinematic(dt);
+  else if (STATE === "bossIntro") updateBossIntro(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
@@ -6336,22 +6337,201 @@ function wrapText(text, maxChars) {
 }
 
 // ---------- Kane QTE cinematic (Stage 10 finale) ----------
+// ---------- Boss intro cutscenes ----------
+// Plays a short scene before each boss spawn: name banner, boss portrait
+// silhouette, dialog lines with typewriter reveal. Skippable with Enter /
+// Space / J. On complete, spawns the boss and resumes playing. Dialog from
+// STORY.md so the in-game beats track the narrative doc.
+const BOSS_INTRO = {
+  baron: {
+    title: "BARON",
+    subtitle: "KANE'S ENFORCER  /  EX-COP  /  STAGE 3",
+    lines: [
+      "You don't have to do this.",
+      "Walk away. I'll tell Kane it was nothing.",
+      "...This is the last time I ask.",
+    ],
+    color: "#cfa040",
+    duration: 6.0,
+  },
+  razor: {
+    title: "RAZOR",
+    subtitle: "WHITE-COLLAR SPECIALIST  /  STAGE 6",
+    lines: [
+      "We could have done this in your kitchen.",
+      "You're making this so much harder than it needs to be.",
+    ],
+    color: "#cfd0d6",
+    duration: 5.5,
+  },
+  volt: {
+    title: "VOLT",
+    subtitle: "KANE'S LIEUTENANT  /  STAGE 9",
+    lines: [
+      "Kane built me.",
+      "So I owe him a building.",
+    ],
+    color: "#4a8ad0",
+    duration: 5.0,
+  },
+};
+
+let bossIntroState = null;
+
+function beginBossIntro(bossKey) {
+  const def = BOSS_INTRO[bossKey];
+  if (!def) {
+    // No intro for this boss type — just spawn directly.
+    spawnStageBoss(bossKey);
+    return;
+  }
+  // Compute typewriter timing: each line gets a slice of the duration.
+  const lineSlots = [];
+  const lineDur = def.duration / (def.lines.length + 0.4);
+  let cur = 0.6;   // initial pause
+  for (const line of def.lines) {
+    lineSlots.push({ text: line, startAt: cur, charsAt: cur, fullAt: cur + lineDur * 0.7 });
+    cur += lineDur;
+  }
+  bossIntroState = {
+    bossKey,
+    def,
+    t: 0,
+    lineSlots,
+  };
+  // Pause music to add gravity. Restored when intro completes.
+  duckMusic(0.3, def.duration + 0.5);
+  setState("bossIntro");
+}
+
+function spawnStageBoss(bossKey) {
+  bossSpawnedFor[currentStage] = true;
+  const boss = makeEnemy(bossKey, 540, 300);
+  enemies = enemies.concat([boss]);
+  flashFrames = Math.max(flashFrames, 6);
+  spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
+}
+
+function updateBossIntro(dt) {
+  if (!bossIntroState) { setState("playing"); return; }
+  bossIntroState.t += dt;
+  // Skip on confirm.
+  if (consumePress("Enter") || consumePress("Space") || consumePress("KeyJ")) {
+    completeBossIntro();
+    return;
+  }
+  if (consumePress("Escape")) {
+    completeBossIntro();
+    return;
+  }
+  if (bossIntroState.t >= bossIntroState.def.duration) {
+    completeBossIntro();
+  }
+}
+
+function completeBossIntro() {
+  if (!bossIntroState) return;
+  const bossKey = bossIntroState.bossKey;
+  bossIntroState = null;
+  setState("playing");
+  spawnStageBoss(bossKey);
+}
+
+function renderBossIntro() {
+  if (!bossIntroState) return;
+  const { def, t, lineSlots, bossKey } = bossIntroState;
+  drawCurrentStage();
+  // Vignette.
+  X.fillStyle = "rgba(0,0,0,0.78)";
+  X.fillRect(0, 0, W, H);
+
+  // Boss portrait on the right — silhouetted reuse of the in-game renderer.
+  // We mock a stub entity at a fixed pose.
+  const portraitX = W - 130, portraitY = H - 60;
+  const stub = {
+    x: portraitX, y: portraitY, z: 0,
+    type: bossKey, isBoss: true, bossName: def.title,
+    facing: -1,   // facing the player on the left
+    animState: "idle", animTime: t * 0.6,
+    attacking: false, dodging: false,
+    hp: 100, hpMax: 100,
+    iframes: 0, hitstun: 0, knockdownFrames: 0,
+    vanishAlpha: 1, hitboxes: [], hurtboxes: [],
+  };
+  X.save();
+  X.globalAlpha = 0.85;
+  if (bossKey === "baron")    drawBaron(stub);
+  else if (bossKey === "razor") drawRazor(stub);
+  else if (bossKey === "volt")  drawVolt(stub);
+  else if (bossKey === "blackwell") drawBlackwell(stub);
+  X.globalAlpha = 1;
+  X.restore();
+
+  // Big title banner across the top.
+  X.fillStyle = "rgba(0,0,0,0.7)";
+  X.fillRect(0, 50, W, 70);
+  // Title text — large, colored per boss.
+  X.fillStyle = def.color;
+  X.font = "bold 36px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText(def.title, 40, 60);
+  // Subtitle.
+  X.fillStyle = "#aaa";
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillText(def.subtitle, 40, 100);
+
+  // Dialog lines with typewriter reveal at the bottom.
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  X.fillRect(0, H - 110, W, 90);
+  X.fillStyle = "#ffffff";
+  X.font = "bold 13px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  // Stack visible lines.
+  let y = H - 100;
+  for (const line of lineSlots) {
+    if (t < line.startAt) break;
+    const reveal = Math.min(1, (t - line.charsAt) / Math.max(0.3, line.fullAt - line.charsAt));
+    const visible = line.text.substring(0, Math.ceil(line.text.length * reveal));
+    X.fillText('"' + visible + '"', 40, y);
+    y += 22;
+  }
+
+  // Skip prompt.
+  X.fillStyle = "#666";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "right";
+  X.fillText("ENTER / J — CONTINUE", W - 12, H - 14);
+}
+
 let cineState = null;
 
 function beginKaneCinematic() {
+  // Five prompts, each refusing one of Kane's offers (per STORY.md).
+  // Dialog lines display as captions starting ~0.7s before each prompt
+  // so the player reads what they're refusing.
   cineState = {
     t: 0,
     prompts: [
-      { at: 1.6, key: "KeyJ", label: "J", hit: false, fired: false },
-      { at: 3.0, key: "KeyK", label: "K", hit: false, fired: false },
-      { at: 4.4, key: "KeyJ", label: "J", hit: false, fired: false },
-      { at: 5.8, key: "KeyK", label: "K", hit: false, fired: false },
+      { at: 2.4, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "I understand you're upset. I would be too. Let me make it right." },
+      { at: 4.6, key: "KeyK", label: "K", hit: false, fired: false,
+        line: "Three million. To you, today. Walk out of this building rich." },
+      { at: 6.8, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "Your friends in the gym? They get the next ten years rent-free. Marcus would have wanted that." },
+      { at: 9.0, key: "KeyK", label: "K", hit: false, fired: false,
+        line: "Sit down. Sign the paper. Or I'll find someone in your life who will." },
+      { at: 11.2, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "...I see." },
     ],
-    duration: 7.6,
+    duration: 13.0,
   };
   enemies = [];
   projectiles = [];
   particles = [];
+  // Strip music to bass-only for the duration so Kane's dialog has room.
+  duckMusic(0.4, 13.5);
   setState("cinematic");
 }
 
@@ -6410,6 +6590,42 @@ function renderCinematic() {
   X.textAlign = "center";
   X.textBaseline = "middle";
   X.fillText("VICTOR KANE", W / 2, 50);
+
+  // Kane's dialog caption — fades in 0.6s before each prompt and out 0.6s
+  // after. Typewriter reveal so the player reads what they're refusing.
+  let activeLine = null, lineProgress = 0;
+  for (const p of cineState.prompts) {
+    if (!p.line) continue;
+    const inWin = (cineState.t > p.at - 1.2) && (cineState.t < p.at + 1.0);
+    if (inWin) {
+      activeLine = p;
+      const start = p.at - 1.2;
+      lineProgress = Math.min(1, (cineState.t - start) / 0.9);
+      break;
+    }
+  }
+  if (activeLine) {
+    const visible = activeLine.line.substring(0,
+                     Math.ceil(activeLine.line.length * lineProgress));
+    const dialogY = H - 80;
+    X.fillStyle = "rgba(0,0,0,0.85)";
+    X.fillRect(40, dialogY - 4, W - 80, 38);
+    X.fillStyle = "#ffffff";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.textBaseline = "top";
+    // Wrap simply: split if too long.
+    const maxChars = 70;
+    if (visible.length <= maxChars) {
+      X.fillText('"' + visible + '"', W / 2, dialogY + 4);
+    } else {
+      // Crude two-line wrap on nearest space.
+      let split = visible.lastIndexOf(" ", maxChars);
+      if (split < 0) split = maxChars;
+      X.fillText('"' + visible.substring(0, split), W / 2, dialogY);
+      X.fillText(visible.substring(split + 1) + '"', W / 2, dialogY + 14);
+    }
+  }
 
   // Active prompt button.
   const now = cineState.t;
@@ -6744,12 +6960,11 @@ function updatePlaying(dt) {
       if (stage && stage.waves[currentWave]) {
         enemies = enemies.concat(spawnWave(currentStage, currentWave));
       } else if (stage && stage.boss && !bossSpawnedFor[currentStage]) {
-        // Spawn the stage boss with a brief warning flash.
-        bossSpawnedFor[currentStage] = true;
-        const boss = makeEnemy(stage.boss, 540, 300);
-        enemies = enemies.concat([boss]);
-        flashFrames = Math.max(flashFrames, 6);
-        spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
+        // Boss intro cutscene plays first, then spawns the boss when done.
+        // beginBossIntro sets bossSpawnedFor on completion so we don't
+        // re-trigger; if no intro is configured for this boss it falls
+        // through to a direct spawn.
+        beginBossIntro(stage.boss);
       } else if (stage && stage.finalQte) {
         beginKaneCinematic();
       } else {
@@ -7241,6 +7456,7 @@ function render() {
   else if (STATE === "playing") renderPlaying();
   else if (STATE === "paused") renderPaused();
   else if (STATE === "cinematic") renderCinematic();
+  else if (STATE === "bossIntro") renderBossIntro();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
