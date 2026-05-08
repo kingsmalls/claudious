@@ -1,0 +1,25 @@
+{
+  "_comment": "Duke sprite sheet layout. 825x1024 PNG, 10-col x 8-row grid, 82x128 per cell. 5 frames per anim except special (Rolling Thunder = 10).",
+  "sheet": "duke.png",
+  "cell_width": 82,
+  "cell_height": 128,
+  "fps": 8,
+  "anchor": { "x": 0.5, "y": 1.0 },
+  "anims": {
+    "idle":     { "row": 0, "col": 0, "count": 5 },
+    "walk":     { "row": 0, "col": 5, "count": 5 },
+    "run":      { "row": 1, "col": 0, "count": 5 },
+    "jump":     { "row": 1, "col": 5, "count": 5 },
+    "atk1":     { "row": 2, "col": 0, "count": 5 },
+    "atk2":     { "row": 2, "col": 5, "count": 5 },
+    "atk3":     { "row": 3, "col": 0, "count": 5 },
+    "heavy":    { "row": 3, "col": 5, "count": 5 },
+    "jump_atk": { "row": 4, "col": 0, "count": 5 },
+    "back_atk": { "row": 4, "col": 5, "count": 5 },
+    "special":  { "row": 5, "col": 0, "count": 10 },
+    "throw":    { "row": 6, "col": 0, "count": 5 },
+    "counter":  { "row": 6, "col": 5, "count": 5 },
+    "hurt":     { "row": 7, "col": 0, "count": 5 },
+    "dodge":    { "row": 7, "col": 5, "count": 5 }
+  }
+}

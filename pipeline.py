@@ -270,18 +270,25 @@ def cmd_build_atlas(args):
         print("[build-atlas] no anims defined in layout", file=sys.stderr)
         return 1
 
-    # Optional sheet width/height in cells, for overflow detection only.
+    # Optional sheet width/height in cells, for row-overflow wrapping.
     sheet_path = layout.get("sheet")
     sheet_cols = None
     if sheet_path:
         try:
             from PIL import Image
-            spath = layout_path.parent / sheet_path
-            if spath.exists():
-                with Image.open(spath) as im:
-                    sheet_cols = im.width // cw
+            # Search common locations: cwd, layout's dir, characters/
+            candidates = [
+                Path(sheet_path),
+                layout_path.parent / sheet_path,
+                Path("characters") / sheet_path,
+            ]
+            for spath in candidates:
+                if spath.exists():
+                    with Image.open(spath) as im:
+                        sheet_cols = im.width // cw
+                    break
         except ImportError:
-            pass  # overflow detection skipped without Pillow
+            pass  # overflow wrapping skipped without Pillow
 
     frames = {}
     anims_out = {}

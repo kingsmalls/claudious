@@ -1,0 +1,25 @@
+{
+  "_comment": "Rio sprite sheet layout. 1024x559 PNG, 16-col x 6-row grid, 64x93 per cell. Anims wrap rows: atk3/heavy/back_atk/throw span row boundaries.",
+  "sheet": "rio.png",
+  "cell_width": 64,
+  "cell_height": 93,
+  "fps": 8,
+  "anchor": { "x": 0.5, "y": 1.0 },
+  "anims": {
+    "idle":     { "row": 0, "col": 0,  "count": 4 },
+    "walk":     { "row": 0, "col": 4,  "count": 8 },
+    "run":      { "row": 0, "col": 12, "count": 4 },
+    "jump":     { "row": 1, "col": 0,  "count": 4 },
+    "atk1":     { "row": 1, "col": 4,  "count": 4 },
+    "atk2":     { "row": 1, "col": 8,  "count": 4 },
+    "atk3":     { "row": 1, "col": 12, "count": 12 },
+    "heavy":    { "row": 2, "col": 8,  "count": 12 },
+    "jump_atk": { "row": 3, "col": 4,  "count": 8 },
+    "back_atk": { "row": 3, "col": 12, "count": 8 },
+    "special":  { "row": 4, "col": 4,  "count": 8 },
+    "throw":    { "row": 4, "col": 12, "count": 8 },
+    "counter":  { "row": 5, "col": 4,  "count": 4 },
+    "hurt":     { "row": 5, "col": 8,  "count": 4 },
+    "dodge":    { "row": 5, "col": 12, "count": 4 }
+  }
+}
