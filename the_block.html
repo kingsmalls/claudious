@@ -3405,6 +3405,9 @@ function drawStageTop() {
 function drawCurrentStage() {
   const s = STAGES[currentStage];
   if (s && s.drawBg) s.drawBg(); else drawStageBlock();
+  // Hazards (taxi, train, falling lanterns/glass, spikes, wind indicators)
+  // render on top of the backdrop so they're visually consistent across states.
+  if (typeof drawStageHazards === "function") drawStageHazards();
 }
 
 // Backwards-compat — older calls render the first stage directly.
@@ -3472,6 +3475,37 @@ const ENEMY_ATK = {
     startup: 7, active: 4, recovery: 16,
     damage: 14, knockback: 130, hitstop: 6,
     hit: { fwd: 18, hw: 12, hd: 13, lo: 0, hi: 40 },
+  },
+  // Rig's signature AOE: ground-pound that radiates a shockwave on both sides.
+  // Heavily telegraphed (long startup) so players can punish if they read it.
+  rig_pound: {
+    startup: 18, active: 6, recovery: 22,
+    damage: 18, knockback: 160, hitstop: 8,
+    hit: { fwd: 0, hw: 26, hd: 16, lo: 0, hi: 28 },
+    shockwave: true,
+    superArmor: true,
+  },
+  // Chains' big move: 360-degree swing. Active hitbox covers both sides so
+  // players can't just step through; have to jump or back away.
+  chains_spin: {
+    startup: 12, active: 14, recovery: 22,
+    damage: 9, knockback: 80, hitstop: 4,
+    hit: { fwd: 0, hw: 26, hd: 13, lo: 8, hi: 38 },
+    multiHit: 18,   // hit window every 18 frames (3 hits over 14 active frames)
+  },
+  // Lamplight's charged shot. Long telegraphed wind-up + bigger projectile.
+  lamplight_charged: {
+    startup: 36, active: 1, recovery: 28,
+    damage: 0,
+    spawnsProjectile: "heavy_bullet",
+    chargedShot: true,
+  },
+  // Shade's quick backstab after reappear. Very short startup since it's
+  // already 'free' (player is facing the wrong way).
+  shade_backstab: {
+    startup: 3, active: 3, recovery: 12,
+    damage: 14, knockback: 120, hitstop: 6,
+    hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
   // BARON — methodical boxing patterns. Brass-knuckle hits land hard.
   baron_jab: {
@@ -3720,9 +3754,39 @@ function advanceEnemyAttack(e) {
     e.x += e.facing * d.pushSelf * STEP;
   }
 
+  // Charged-shot telegraph: glow particles around the wind-up.
+  if (d.chargedShot && e.attackFrame > 4 && e.attackFrame < d.startup &&
+      (e.attackFrame & 3) === 0) {
+    spawnSpark(e.x + (Math.random() - 0.5) * 14, e.y - 22 + (Math.random() - 0.5) * 12, "#ffd76a");
+  }
+
+  // Shockwave telegraph: ground rumble particles during startup.
+  if (d.shockwave && e.attackFrame > d.startup - 8 && e.attackFrame < d.startup &&
+      (e.attackFrame & 1) === 0) {
+    spawnSpark(e.x + (Math.random() - 0.5) * 30, e.y + 2, "#a08560");
+  }
+
+  // Multi-hit: clear the per-attack consumed-hits set every multiHit frames so
+  // the same target can be hit again as the active window continues (chains spin).
+  if (d.multiHit && e.attackFrame > d.startup &&
+      ((e.attackFrame - d.startup - 1) % d.multiHit) === 0 && e.attackHits) {
+    e.attackHits.clear();
+  }
+
   // Spawn projectile on first active frame.
   if (d.spawnsProjectile && e.attackFrame === d.startup + 1) {
     spawnProjectile(d.spawnsProjectile, e.x + e.facing * 12, e.y - 22, e.facing, e);
+  }
+
+  // Shockwave AOE: when active phase begins, emit a burst of particles on
+  // both sides of the attacker to read as a ground shake.
+  if (d.shockwave && e.attackFrame === d.startup + 1) {
+    for (let i = 0; i < 14; i++) {
+      const dx = (Math.random() * 2 - 1) * 32;
+      const dz = Math.random() * 6;
+      spawnSpark(e.x + dx, e.y + 2 - dz, "#a08560");
+    }
+    if (shakeFrames < 10) shakeFrames = 10;
   }
 
   if (d.hit && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
@@ -3740,6 +3804,8 @@ function advanceEnemyAttack(e) {
       });
     }
     const hb = e.hitboxes[0];
+    // Centered hitboxes (fwd === 0) sit on the attacker's body — chains_spin,
+    // rig_pound. Forward-facing hitboxes (fwd > 0) extend ahead like normal.
     hb.cx = e.x + e.facing * d.hit.fwd;
     hb.cy = e.y;
     hb.facing = e.facing;
@@ -3747,11 +3813,23 @@ function advanceEnemyAttack(e) {
     e.hitboxes.length = 0;
   }
   if (e.attackFrame >= d.startup + d.active + d.recovery) {
+    const finishedName = e.attackName;
     e.attacking = false;
     e.attackName = null;
     e.hitboxes.length = 0;
     e.attackHits = null;
     e.aiCooldown = 0.55 + Math.random() * 0.55;
+    // Post-attack behavior hooks: schedule retreat / next-move state.
+    if (e.type === "runner" && finishedName === "swipe") {
+      // Runner backpedals briefly so the next encounter resets — hit-and-run.
+      e.runnerRetreat = 0.45;
+    } else if (e.type === "slice" && finishedName === "lunge") {
+      // Slice always backs out after a lunge so it never sits in player range.
+      e.sliceRetreat = 0.35;
+    } else if (e.type === "shade" && finishedName === "strike") {
+      // Shade re-engages vanish sooner to keep the teleport pressure up.
+      e.vanishTimer = Math.min(e.vanishTimer, 1.1);
+    }
   }
 }
 
@@ -3770,26 +3848,13 @@ function runEnemyAI(e, dt) {
   if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
 
   switch (e.type) {
-    case "runner": {
-      if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
-      if (e.fleeing) {
-        const fleeDir = (player.x > e.x) ? -1 : 1;
-        e.facing = fleeDir;
-        e.vx = fleeDir * e.runSpeed;
-        e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
-        e.x += e.vx * dt; e.y += e.vy * dt;
-        e.animState = "walk";
-      } else {
-        approachOrAttack(e, dx, dy, dist, dt);
-      }
-      break;
-    }
-    case "tank":   approachOrAttack(e, dx, dy, dist, dt); break;
-    case "slice":  approachOrAttack(e, dx, dy, dist, dt); break;
-    case "rig":    approachOrAttack(e, dx, dy, dist, dt); break;
+    case "runner": runRunnerAI(e, dx, dy, dist, dt); break;
+    case "tank":   runTankAI(e, dx, dy, dist, dt); break;
+    case "slice":  runSliceAI(e, dx, dy, dist, dt); break;
+    case "rig":    runRigAI(e, dx, dy, dist, dt); break;
     case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
     case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
-    case "chains": approachOrAttack(e, dx, dy, dist, dt); break;
+    case "chains": runChainsAI(e, dx, dy, dist, dt); break;
     case "baron":     runBaronAI(e, dx, dy, dist, dt); break;
     case "razor":     runRazorAI(e, dx, dy, dist, dt); break;
     case "volt":      runVoltAI(e, dx, dy, dist, dt); break;
@@ -3811,7 +3876,10 @@ function runEnemyAI(e, dt) {
         e.vx = 0; e.vy = 0;
         e.animState = "idle";
         if (e.aiCooldown <= 0) {
-          startEnemyAttack(e, ENEMY_DEFAULT_ATTACK[e.type]);
+          // Every 4th shot is a heavy telegraphed charged shot. Tracked in lampShots.
+          e.lampShots = (e.lampShots || 0) + 1;
+          const atk = (e.lampShots % 4 === 0) ? "charged" : "shot";
+          startEnemyAttack(e, atk);
         }
       }
       break;
@@ -3838,6 +3906,121 @@ function approachOrAttack(e, dx, dy, dist, dt) {
   }
 }
 
+// ---------- Per-minion AI signatures ----------
+// Each function gives the minion a real fighting style instead of the generic
+// approach-and-swipe. Boss AIs already had this; minions now do too.
+
+// RUNNER: hit-and-run. Swipe, then back off ~30px, then re-approach. At low
+// HP, panicked flee (existing behavior).
+function runRunnerAI(e, dx, dy, dist, dt) {
+  if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
+  if (e.fleeing) {
+    const fleeDir = (player.x > e.x) ? -1 : 1;
+    e.facing = fleeDir;
+    e.vx = fleeDir * e.runSpeed;
+    e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  // Hit-and-run: after each attack, dash backward briefly. e.runnerRetreat counts
+  // down a backpedal window post-attack.
+  if (e.runnerRetreat > 0) {
+    e.runnerRetreat -= dt;
+    const back = -Math.sign(dx || 1);
+    e.facing = -back;
+    e.vx = back * e.runSpeed;
+    e.x += e.vx * dt;
+    e.animState = "walk";
+    return;
+  }
+  approachOrAttack(e, dx, dy, dist, dt);
+}
+
+// TANK: heavily telegraphed slam. Stops moving in range and charges 30 frames
+// before swinging. Super-armor through hits during charge so players have to
+// commit to dodging rather than flinching it.
+function runTankAI(e, dx, dy, dist, dt) {
+  // Approach steady; once in range hold ground and slam.
+  if (dist > e.range + 4) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    startEnemyAttack(e, "slam");
+    // Visual telegraph: ground dust during the slam's startup. No new attack
+    // needed — the existing tank_slam already has long startup; we just add
+    // particles via a tick hook below by setting a flag.
+    e.tankTelegraph = 14;
+  }
+  if (e.tankTelegraph > 0) {
+    e.tankTelegraph--;
+    if ((e.tankTelegraph & 1) === 0) {
+      spawnSpark(e.x + (Math.random() - 0.5) * 24, e.y + 2, "#5a4a36");
+    }
+  }
+}
+
+// SLICE: hit-and-run knife. Lunge in, then auto-dash back to ~70px, then
+// re-approach. Always in motion — players can't camp.
+function runSliceAI(e, dx, dy, dist, dt) {
+  if (e.sliceRetreat > 0) {
+    e.sliceRetreat -= dt;
+    const back = -Math.sign(dx || 1);
+    e.facing = -back;   // keep facing player while dashing back
+    e.vx = back * e.runSpeed * 1.1;
+    e.x += e.vx * dt;
+    e.animState = "walk";
+    return;
+  }
+  approachOrAttack(e, dx, dy, dist, dt);
+}
+
+// CHAINS: alternates a long-reach swing and a 360° spin. The spin covers both
+// sides — players can't sidestep through it; have to jump or back off.
+function runChainsAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    e.chainsStep = (e.chainsStep || 0) + 1;
+    // Every third attack is the spin; rest are regular swings.
+    const atk = (e.chainsStep % 3 === 0) ? "spin" : "swing";
+    startEnemyAttack(e, atk);
+  }
+}
+
+// RIG: alternates strike and AOE ground pound. Pound is heavily telegraphed
+// (rumble particles for ~8 frames before active), super-armored through it.
+function runRigAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    e.rigStep = (e.rigStep || 0) + 1;
+    // Every fourth attack is the pound.
+    const atk = (e.rigStep % 4 === 0) ? "pound" : "strike";
+    startEnemyAttack(e, atk);
+  }
+}
+
 // SHADE: pulse-vanish and reposition behind the player.
 function updateShadeVanish(e, dt) {
   e.vanishTimer -= dt;
@@ -3850,6 +4033,12 @@ function updateShadeVanish(e, dt) {
         const side = (player.x > W / 2) ? -1 : 1;
         e.x = clamp(player.x + side * 70, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
         e.y = clamp(player.y, STAGE_TOP, STAGE_BOT);
+        // Smoke trail at reappear point.
+        for (let i = 0; i < 6; i++) {
+          spawnSpark(e.x + (Math.random() - 0.5) * 14, e.y - 18 + (Math.random() - 0.5) * 12, "#3a3550");
+        }
+        // Backstab: queue an immediate strike so reappear-from-behind has bite.
+        e.shadeBackstabIn = 0.20;
       }
       e.vanishing = false;
       e.vanishAlpha = 0.05;
@@ -3859,6 +4048,13 @@ function updateShadeVanish(e, dt) {
     if (e.vanishTimer <= 0 && !e.attacking && e.hitstun === 0) {
       e.vanishing = true;
       e.vanishTimer = 2.0 + Math.random() * 1.4;
+    }
+  }
+  // If a backstab was scheduled, fire when window expires (and we're visible).
+  if (e.shadeBackstabIn > 0 && !e.vanishing) {
+    e.shadeBackstabIn -= dt;
+    if (e.shadeBackstabIn <= 0 && !e.attacking && e.hitstun === 0) {
+      startEnemyAttack(e, "backstab");
     }
   }
 }
@@ -4003,6 +4199,7 @@ function spawnProjectile(kind, x, y, dir, owner) {
     kind === "bottle" ? { speed: 180, damage: 6,  knockback: 40,  hitstop: 3, w: 4, h: 5, color: "#7fa8a4", arc: -160 } :
     kind === "knife"  ? { speed: 240, damage: 12, knockback: 80,  hitstop: 5, w: 8, h: 3, color: "#cfd0d6" } :
     kind === "shock"  ? { speed: 200, damage: 14, knockback: 120, hitstop: 6, w: 14, h: 10, color: "#a8d4ff" } :
+    kind === "heavy_bullet" ? { speed: 220, damage: 18, knockback: 140, hitstop: 7, w: 9, h: 4, color: "#ff8a40" } :
                         { speed: 200, damage: 5,  knockback: 40,  hitstop: 3, w: 4, h: 4, color: "#fff" };
   projectiles.push({
     kind, x, y, vx: dir * def.speed, vy: 0, vz: def.arc || 0, z: 0,
@@ -4084,6 +4281,14 @@ function drawProjectiles() {
       X.fillStyle = "rgba(168,212,255,0.7)";
       X.fillRect(sx - 11, sy - 1, 4, 1);
       X.fillRect(sx + 7,  sy - 1, 4, 1);
+    } else if (p.kind === "heavy_bullet") {
+      // Charged shot: chunky orange tracer with hot core and a flame trail.
+      X.fillStyle = "rgba(255,138,64,0.55)";
+      X.fillRect(sx - p.facing * 14, sy - 2, 14, 4);
+      X.fillStyle = p.color;
+      X.fillRect(sx - 4, sy - 2, p.w, p.h);
+      X.fillStyle = "rgba(255,240,180,1)";
+      X.fillRect(sx - 1, sy - 1, 3, 2);
     } else {
       X.fillStyle = p.color;
       X.fillRect(sx - p.w / 2, sy - p.h / 2, p.w, p.h);
@@ -5171,6 +5376,19 @@ let particles = [];
 function spawnSparkle(x, y) {
   particles.push({ kind: "sparkle", x, y, life: 0, max: 0.18 });
 }
+// Single colored spark used for telegraphs (chains spin, rig pound, lamplight charge).
+// Uses the petal renderer so it fades cleanly with no special draw code.
+function spawnSpark(x, y, color) {
+  const c = color || "#a08560";
+  const dx = (Math.random() - 0.5) * 6;
+  const dy = (Math.random() - 0.5) * 4;
+  particles.push({
+    kind: "petal", x: x + dx, y: y + dy,
+    vx: dx * 8, vy: dy * 8 - 4,
+    life: 0, max: 0.30,
+    core: c, edge: c,
+  });
+}
 function spawnDmgNumber(x, y, n) {
   particles.push({ kind: "dmg", x, y, vy: -28, life: 0, max: 0.55, text: String(n) });
 }
@@ -6187,6 +6405,7 @@ const STAGES = [
   { // 1
     name: "THE BLOCK",
     drawBg: function() { drawStageBlock(); },
+    hazard: "taxi",
     waves: [
       [["runner", 440, 280], ["runner", 520, 320]],
       [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
@@ -6197,6 +6416,7 @@ const STAGES = [
   { // 2
     name: "THE TUNNELS",
     drawBg: function() { drawStageTunnels(); },
+    hazard: "train",
     waves: [
       [["slice", 440, 280], ["runner", 520, 320]],
       [["slice", 460, 290], ["slice", 580, 310]],
@@ -6218,6 +6438,7 @@ const STAGES = [
   { // 4
     name: "LANTERN ROW",
     drawBg: function() { drawStageLantern(); },
+    hazard: "lanterns",
     waves: [
       [["chains", 440, 282], ["slice", 540, 320]],
       [["shade", 480, 298], ["chains", 600, 320]],
@@ -6228,6 +6449,7 @@ const STAGES = [
   { // 5
     name: "THE CAGE",
     drawBg: function() { drawStageCage(); },
+    hazard: "spikes",
     waves: [
       [["dojo", 460, 290], ["chains", 560, 318]],
       [["dojo", 460, 290], ["dojo", 560, 318]],
@@ -6238,6 +6460,7 @@ const STAGES = [
   { // 6
     name: "UPTOWN",
     drawBg: function() { drawStageUptown(); },
+    hazard: "glass",
     waves: [
       [["lamplight", 560, 300], ["dojo", 460, 320]],
       [["dojo", 480, 290], ["dojo", 580, 320]],
@@ -6270,6 +6493,7 @@ const STAGES = [
   { // 9
     name: "THE TOWER",
     drawBg: function() { drawStageTower(); },
+    hazard: "wind",
     waves: [
       [["dojo", 480, 295], ["lamplight", 580, 320]],
       [["rig", 460, 290], ["dojo", 580, 320]],
@@ -6445,6 +6669,13 @@ function advanceStage() {
   }
   // Swap music to the new stage's theme.
   if (typeof startMusic === "function") startMusic(themeForStage(currentStage));
+  // Reset hazard timers so they don't fire instantly on a fresh stage.
+  taxiState.car = null; taxiState.warnTimer = 0; taxiState.spawnTimer = 6;
+  trainState.car = null; trainState.warnTimer = 0; trainState.spawnTimer = 5;
+  fallingState.drops.length = 0; fallingState.spawnTimer = 2.5;
+  spikesState.phase = 0;
+  windState.phase = 0; windState.dir = 1;
+  freewayCars.length = 0; freewayCarSpawnTimer = 0;
   enemies = spawnWave(currentStage, 0);
   if (player) {
     player.x = 120;
@@ -6505,6 +6736,327 @@ function applyStageHazards(dt) {
     }
   } else if (stage.hazard === "cars") {
     updateFreewayHazard(dt);
+  } else if (stage.hazard === "taxi") {
+    updateTaxiHazard(dt);
+  } else if (stage.hazard === "train") {
+    updateTrainHazard(dt);
+  } else if (stage.hazard === "lanterns") {
+    updateFallingHazard(dt, "lantern");
+  } else if (stage.hazard === "glass") {
+    updateFallingHazard(dt, "glass");
+  } else if (stage.hazard === "spikes") {
+    updateSpikesHazard(dt);
+  } else if (stage.hazard === "wind") {
+    updateWindHazard(dt);
+  }
+}
+
+// ---------- Stage 1 hazard: a single taxi sweeps the curb strip ----------
+// The block has a road at the bottom edge. Every ~10 seconds a car blasts
+// past on the curb. Damages the player only if they're on the lowest sliver
+// of the play area. Telegraphed by headlights flashing 1 second ahead.
+let taxiState = { car: null, warnTimer: 0, spawnTimer: 8 };
+function updateTaxiHazard(dt) {
+  taxiState.spawnTimer -= dt;
+  if (taxiState.spawnTimer <= 0 && !taxiState.car && taxiState.warnTimer <= 0) {
+    taxiState.warnTimer = 1.0;   // 1s warning
+    taxiState.spawnDir = Math.random() < 0.5 ? 1 : -1;
+  }
+  if (taxiState.warnTimer > 0) {
+    taxiState.warnTimer -= dt;
+    if (taxiState.warnTimer <= 0) {
+      taxiState.car = {
+        x: taxiState.spawnDir > 0 ? -80 : W + 80,
+        y: STAGE_BOT + 6,
+        vx: taxiState.spawnDir * 360,
+        dir: taxiState.spawnDir,
+        color: ["#cfa040", "#a83040", "#3a4a64"][Math.floor(Math.random() * 3)],
+      };
+      taxiState.spawnTimer = 9 + Math.random() * 6;
+    }
+  }
+  if (taxiState.car) {
+    const c = taxiState.car;
+    c.x += c.vx * dt;
+    if (c.x < -160 || c.x > W + 160) { taxiState.car = null; return; }
+    // Hit if player is at the curb edge.
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging &&
+        player.y > STAGE_BOT - 8) {
+      if (Math.abs(player.x - (c.x + 30)) < 32) {
+        applyHit(player, {
+          cx: c.x + 30, cy: c.y,
+          hw: 30, hd: 8, damage: 16, knockback: 220, hitstop: 7,
+          hits: new Set(),
+        }, null);
+        shakeFrames = Math.max(shakeFrames, 12);
+      }
+    }
+  }
+}
+
+// ---------- Stage 2 hazard: a subway train roars through the middle lane ----
+// Heavy telegraph (rumble particles + warning honk SFX) for ~1.5s before the
+// train passes through. Hits anyone in the middle lane.
+let trainState = { car: null, warnTimer: 0, spawnTimer: 7 };
+function updateTrainHazard(dt) {
+  trainState.spawnTimer -= dt;
+  if (trainState.spawnTimer <= 0 && !trainState.car && trainState.warnTimer <= 0) {
+    trainState.warnTimer = 1.4;
+    trainState.spawnDir = Math.random() < 0.5 ? 1 : -1;
+    if (audioCtx) playSfx("menu_select");   // approximation of warning honk
+  }
+  if (trainState.warnTimer > 0) {
+    trainState.warnTimer -= dt;
+    // Rumble particles + small shake during warning.
+    if (Math.random() < 0.35) {
+      spawnSpark((Math.random() * W), STAGE_TOP + 30 + Math.random() * 30, "#3a4050");
+    }
+    if (shakeFrames < 2) shakeFrames = 2;
+    if (trainState.warnTimer <= 0) {
+      trainState.car = {
+        x: trainState.spawnDir > 0 ? -200 : W + 200,
+        y: (STAGE_TOP + STAGE_BOT) / 2 - 6,
+        vx: trainState.spawnDir * 540,
+        dir: trainState.spawnDir,
+      };
+      trainState.spawnTimer = 8 + Math.random() * 5;
+    }
+  }
+  if (trainState.car) {
+    const c = trainState.car;
+    c.x += c.vx * dt;
+    if (c.x < -260 || c.x > W + 260) { trainState.car = null; return; }
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+      const inLane = Math.abs(player.y - c.y) < 16;
+      const inX = player.x > c.x - 12 && player.x < c.x + 200;
+      if (inLane && inX) {
+        applyHit(player, {
+          cx: player.x, cy: player.y,
+          hw: 12, hd: 14, damage: 22, knockback: 260, hitstop: 8,
+          hits: new Set(),
+        }, null);
+        shakeFrames = Math.max(shakeFrames, 14);
+      }
+    }
+    if (shakeFrames < 4) shakeFrames = 4;
+  }
+}
+
+// ---------- Stage 4 + 6 hazard: falling objects (lanterns / glass) ----------
+// Spawns a target shadow on the ground; after 0.8s the object lands at that
+// spot dealing damage. Players see the shadow and can move out.
+let fallingState = { drops: [], spawnTimer: 2.5 };
+function updateFallingHazard(dt, kind) {
+  fallingState.spawnTimer -= dt;
+  if (fallingState.spawnTimer <= 0) {
+    fallingState.spawnTimer = (kind === "glass" ? 1.6 : 2.4) + Math.random() * 1.5;
+    fallingState.drops.push({
+      kind,
+      // Bias spawn near the player so it actually threatens.
+      x: player ? clamp(player.x + (Math.random() - 0.5) * 80, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD) : W / 2,
+      y: 0,
+      targetY: STAGE_TOP + 30 + Math.random() * (STAGE_BOT - STAGE_TOP - 30),
+      warn: 0.85,
+      damage: kind === "glass" ? 14 : 12,
+    });
+  }
+  for (let i = fallingState.drops.length - 1; i >= 0; i--) {
+    const d = fallingState.drops[i];
+    d.warn -= dt;
+    if (d.warn > 0) {
+      // Telegraph: sparkle on the ground spot.
+      if (Math.random() < 0.5) {
+        spawnSpark(d.x + (Math.random() - 0.5) * 12, d.targetY,
+                   d.kind === "glass" ? "#cfd0e8" : "#e8c04a");
+      }
+      continue;
+    }
+    // Hit window: 0.15 second active impact.
+    if (d.warn > -0.15) {
+      if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+        if (Math.abs(player.x - d.x) < 14 && Math.abs(player.y - d.targetY) < 14) {
+          applyHit(player, {
+            cx: d.x, cy: d.targetY,
+            hw: 14, hd: 14, damage: d.damage, knockback: 120, hitstop: 6,
+            hits: new Set(),
+          }, null);
+        }
+      }
+      // Burst.
+      if (Math.abs(d.warn + 0.0) < 0.05) {
+        for (let j = 0; j < 8; j++) {
+          spawnSpark(d.x + (Math.random() - 0.5) * 18, d.targetY + (Math.random() - 0.5) * 10,
+                     d.kind === "glass" ? "#cfd0e8" : "#ff8a40");
+        }
+        if (shakeFrames < 4) shakeFrames = 4;
+      }
+    } else {
+      fallingState.drops.splice(i, 1);
+    }
+  }
+}
+
+// ---------- Stage 5 hazard: spike walls pulse on/off near both edges --------
+// Both side edges (left and right) get spike strips that extend periodically.
+// Touch one while it's extended = damage + knockback inward.
+let spikesState = { phase: 0 };
+function updateSpikesHazard(dt) {
+  spikesState.phase += dt;
+  // 2.6s cycle: 1.4s armed, 1.2s safe.
+  const armed = (spikesState.phase % 2.6) < 1.4;
+  if (!armed) return;
+  // Edge zones.
+  const leftZone  = STAGE_LEFT_PAD + 24;
+  const rightZone = W - STAGE_RIGHT_PAD - 24;
+  if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+    if (player.x < leftZone || player.x > rightZone) {
+      applyHit(player, {
+        cx: player.x, cy: player.y,
+        hw: 6, hd: 6, damage: 6, knockback: 140, hitstop: 4,
+        hits: new Set(),
+      }, null);
+    }
+  }
+}
+
+// ---------- Stage 9 hazard: rooftop wind gusts push everyone horizontally ----
+// Wind direction reverses every ~4 seconds. Visible by drifting dust particles.
+// Mild force (~30 px/s) — annoying, not lethal.
+let windState = { phase: 0, dir: 1 };
+function updateWindHazard(dt) {
+  windState.phase += dt;
+  if (windState.phase > 4) { windState.phase = 0; windState.dir *= -1; }
+  const force = 30 * windState.dir;
+  if (player && !player.dead && !player.dodging) {
+    player.x += force * dt;
+    player.x = clamp(player.x, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
+  }
+  for (const e of enemies) {
+    if (!e.dead && !e.airborne) {
+      e.x += force * 0.5 * dt;
+      e.x = clamp(e.x, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
+    }
+  }
+  // Drifting dust particle once in a while.
+  if (Math.random() < 0.4) {
+    const py = STAGE_TOP + Math.random() * (STAGE_BOT - STAGE_TOP);
+    spawnSpark(windState.dir > 0 ? -4 : W + 4, py, "#9a9a9a");
+  }
+}
+
+// ---------- Stage hazard renderers ----------
+// Called by the per-stage drawBg or right after to draw the active hazard
+// world objects (taxi car, train body, falling drops shadow + body, spike strips).
+function drawStageHazards() {
+  const stage = STAGES[currentStage];
+  if (!stage || !stage.hazard) return;
+  if (stage.hazard === "taxi" && taxiState.car) {
+    const c = taxiState.car;
+    // Body.
+    X.fillStyle = c.color;
+    X.fillRect(c.x, c.y, 60, 12);
+    // Windows.
+    X.fillStyle = "#0a0a10";
+    X.fillRect(c.x + 8, c.y + 2, 10, 6);
+    X.fillRect(c.x + 36, c.y + 2, 14, 6);
+    // Headlights.
+    X.fillStyle = "#fff8c0";
+    if (c.dir > 0) X.fillRect(c.x + 56, c.y + 4, 4, 3);
+    else           X.fillRect(c.x,       c.y + 4, 4, 3);
+    // Wheels.
+    X.fillStyle = "#0a0a10";
+    X.fillRect(c.x + 8,  c.y + 11, 8, 3);
+    X.fillRect(c.x + 44, c.y + 11, 8, 3);
+  }
+  if (stage.hazard === "taxi" && taxiState.warnTimer > 0) {
+    // Headlight beam telegraph: a faint colored stripe at the curb edge.
+    const blink = Math.floor(taxiState.warnTimer * 6) & 1;
+    if (blink) {
+      X.fillStyle = "rgba(255,248,192,0.35)";
+      X.fillRect(0, STAGE_BOT + 6, W, 12);
+    }
+  }
+  if (stage.hazard === "train" && trainState.car) {
+    const c = trainState.car;
+    // Long train body.
+    X.fillStyle = "#3a3550";
+    X.fillRect(c.x, c.y, 200, 22);
+    // Window stripe.
+    X.fillStyle = "#7a8aa0";
+    for (let wx = c.x + 8; wx < c.x + 200; wx += 24) {
+      X.fillRect(wx, c.y + 6, 14, 6);
+    }
+    // Speedlines.
+    X.fillStyle = "rgba(180,200,220,0.4)";
+    for (let i = 0; i < 5; i++) {
+      X.fillRect(c.x - c.dir * (20 + i * 14), c.y + 4 + i * 4, 12, 1);
+    }
+  }
+  if (stage.hazard === "train" && trainState.warnTimer > 0) {
+    // Rumble flicker on the screen edges.
+    const blink = Math.floor(trainState.warnTimer * 8) & 1;
+    if (blink) {
+      X.fillStyle = "rgba(168,48,64,0.20)";
+      X.fillRect(0, (STAGE_TOP + STAGE_BOT) / 2 - 18, W, 36);
+    }
+  }
+  if (stage.hazard === "lanterns" || stage.hazard === "glass") {
+    for (const d of fallingState.drops) {
+      if (d.warn > 0) {
+        // Ground shadow telegraph — pulses based on warn timer.
+        const t = 1 - d.warn / 0.85;
+        const r = 6 + t * 8;
+        X.fillStyle = "rgba(0,0,0,0.45)";
+        X.beginPath(); X.ellipse(d.x, d.targetY, r, r * 0.4, 0, 0, Math.PI * 2); X.fill();
+      } else if (d.warn > -0.15) {
+        // Object body during impact frames.
+        if (d.kind === "lantern") {
+          X.fillStyle = "#a83040";
+          X.fillRect(d.x - 5, d.targetY - 8, 10, 12);
+          X.fillStyle = "#e8c04a";
+          X.fillRect(d.x - 3, d.targetY - 6, 6, 8);
+        } else {
+          // Glass.
+          X.fillStyle = "#cfd0e8";
+          X.fillRect(d.x - 4, d.targetY - 4, 8, 8);
+          X.fillStyle = "#fff";
+          X.fillRect(d.x - 1, d.targetY - 3, 2, 2);
+        }
+      }
+    }
+  }
+  if (stage.hazard === "spikes") {
+    const armed = (spikesState.phase % 2.6) < 1.4;
+    const t = (spikesState.phase % 2.6) / 1.4;
+    const ext = armed ? Math.min(1, t * 4) : Math.max(0, 1 - (t - 1) * 4);
+    if (ext > 0) {
+      X.fillStyle = "#7a3030";
+      // Left spikes.
+      for (let y = STAGE_TOP + 4; y < STAGE_BOT; y += 10) {
+        X.beginPath();
+        X.moveTo(STAGE_LEFT_PAD - 4,         y);
+        X.lineTo(STAGE_LEFT_PAD + 22 * ext,  y + 4);
+        X.lineTo(STAGE_LEFT_PAD - 4,         y + 8);
+        X.closePath(); X.fill();
+      }
+      // Right spikes.
+      for (let y = STAGE_TOP + 4; y < STAGE_BOT; y += 10) {
+        X.beginPath();
+        X.moveTo(W - STAGE_RIGHT_PAD + 4,         y);
+        X.lineTo(W - STAGE_RIGHT_PAD - 22 * ext,  y + 4);
+        X.lineTo(W - STAGE_RIGHT_PAD + 4,         y + 8);
+        X.closePath(); X.fill();
+      }
+    }
+  }
+  if (stage.hazard === "wind") {
+    // Indicator at top: arrow showing wind direction this cycle.
+    const arrowDir = windState.dir;
+    X.fillStyle = "rgba(168,180,200,0.55)";
+    X.font = "bold 14px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText(arrowDir > 0 ? "→ WIND →" : "← WIND ←", W / 2 - 36, 6);
   }
 }
 
