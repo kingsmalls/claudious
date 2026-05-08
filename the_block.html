@@ -130,8 +130,24 @@ let STATE = "title";
 let stateTime = 0;
 
 function setState(next) {
+  const prev = STATE;
   STATE = next;
   stateTime = 0;
+  // Music routing per state.
+  if (typeof startMusic === "function") {
+    if (next === "playing" || next === "cinematic") {
+      startMusic(themeForStage(typeof currentStage === "number" ? currentStage : 0));
+    } else if (next === "title" || next === "select" || next === "gameover" || next === "victory") {
+      // Title and end states use the block theme as a chill backing.
+      startMusic("block");
+    }
+    if (next === "paused") {
+      // Duck music while paused; restored on resume by the next setState call.
+      duckMusic(0.25, 999);
+    } else if (prev === "paused") {
+      duckMusic(1.0, 0);  // restore
+    }
+  }
 }
 
 // ---------- Input ----------
@@ -404,24 +420,34 @@ function ensureAudio() {
 
 function applyMasterVolume() {
   if (masterGain) masterGain.gain.value = save.audio.muted ? 0 : save.audio.master;
+  applyMusicVolume();
 }
 
 // Short procedural SFX. Each kind picks a frequency / type / decay envelope.
 const SFX_TABLE = {
-  hit:           { f0: 220, f1: 110, dur: 0.06, type: "square",   gain: 0.6 },
-  hit_heavy:     { f0: 140, f1:  60, dur: 0.10, type: "sawtooth", gain: 0.7 },
-  ko:            { f0:  90, f1:  30, dur: 0.18, type: "sawtooth", gain: 0.8 },
-  parry_perfect: { f0: 880, f1: 1320, dur: 0.18, type: "sine",    gain: 0.6 },
+  // Hits get a noise burst layer for meatier impact (bandpass-filtered noise
+  // tuned per kind: light hit = mid-high crack, heavy hit = low thud, ko = deep boom).
+  hit:           { f0: 220, f1: 110, dur: 0.06, type: "square",   gain: 0.6,
+                   layerNoise: 0.05, layerNoiseFreq: 1800 },
+  hit_heavy:     { f0: 140, f1:  60, dur: 0.10, type: "sawtooth", gain: 0.7,
+                   layerNoise: 0.10, layerNoiseFreq:  600 },
+  ko:            { f0:  90, f1:  30, dur: 0.18, type: "sawtooth", gain: 0.8,
+                   layerNoise: 0.18, layerNoiseFreq:  300 },
+  parry_perfect: { f0: 880, f1: 1320, dur: 0.18, type: "sine",    gain: 0.6,
+                   layerNoise: 0.04, layerNoiseFreq: 4500 },
   parry_good:    { f0: 520, f1:  640, dur: 0.10, type: "sine",    gain: 0.5 },
   parry_late:    { f0: 220, f1:  180, dur: 0.06, type: "square",  gain: 0.4 },
   jump:          { f0: 440, f1:  640, dur: 0.06, type: "sine",    gain: 0.4 },
-  dodge:         { f0: 600, f1:  300, dur: 0.06, type: "triangle",gain: 0.4 },
-  special:       { f0: 460, f1:  180, dur: 0.22, type: "sawtooth",gain: 0.5 },
+  dodge:         { f0: 600, f1:  300, dur: 0.06, type: "triangle",gain: 0.4,
+                   layerNoise: 0.06, layerNoiseFreq: 3200 },
+  special:       { f0: 460, f1:  180, dur: 0.22, type: "sawtooth",gain: 0.5,
+                   layerNoise: 0.18, layerNoiseFreq:  900 },
   menu:          { f0: 660, f1:  660, dur: 0.05, type: "square",  gain: 0.4 },
   menu_select:   { f0: 880, f1: 1100, dur: 0.10, type: "square",  gain: 0.5 },
   stage_clear:   { f0: 660, f1:  990, dur: 0.30, type: "square",  gain: 0.5 },
   victory:       { f0: 660, f1: 1320, dur: 0.50, type: "square",  gain: 0.6 },
-  game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5 },
+  game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5,
+                   layerNoise: 0.30, layerNoiseFreq:  200 },
   bullet:        { f0: 1200, f1: 200, dur: 0.06, type: "square",  gain: 0.4 },
 };
 
@@ -442,6 +468,282 @@ function playSfx(kind) {
   o.connect(g); g.connect(masterGain);
   o.start(t);
   o.stop(t + def.dur + 0.02);
+
+  // Layered punch: hit/ko sounds get a short noise burst on top of the tone
+  // for a meatier impact. Costs one extra node but transforms hit feel.
+  if (def.layerNoise && audioCtx) {
+    const dur = def.layerNoise;
+    const buf = audioCtx.createBuffer(1, Math.max(1, Math.floor(audioCtx.sampleRate * dur)), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = def.layerNoiseFreq || 1200;
+    filter.Q.value = 1.2;
+    const ng = audioCtx.createGain();
+    ng.gain.setValueAtTime(0.4 * save.audio.sfx, t);
+    ng.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    src.connect(filter); filter.connect(ng); ng.connect(masterGain);
+    src.start(t);
+    src.stop(t + dur);
+  }
+}
+
+// ---------- Procedural music ----------
+// Per-stage themes loop in the background, scheduled ahead of the audio clock
+// so timing is sample-accurate. No external audio files; everything synthesized
+// from oscillators + filtered noise. Each theme is a tiny pattern (16 steps,
+// one bar) that loops; variation comes from chord progression at bar level.
+//
+// Themes are intentionally minimal — bassline + drum + sparse lead — so
+// they sit under SFX without fighting them. Tone target: synthwave/hip-hop
+// hybrid that fits the social-realist block setting.
+
+let musicGain = null;     // Per-channel mixer node, branched off masterGain
+let musicTheme = null;
+let musicStep = 0;        // 0..15, current 16th-note position within bar
+let musicBar  = 0;        // current bar in the loop
+let musicNextStepTime = 0;
+let musicTimer = null;
+let musicTargetVolume = 1;
+
+// Note frequencies (A minor pentatonic ish, useful set for action backings)
+const NOTE = {
+  A1:  55.00, B1:  61.74, C2:  65.41, D2:  73.42, E2:  82.41, F2:  87.31, G2:  98.00,
+  A2: 110.00, B2: 123.47, C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00,
+  A3: 220.00, B3: 246.94, C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00,
+  A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.26, F5: 698.46, G5: 783.99,
+};
+
+// Each theme provides:
+//   bpm: tempo
+//   bass: 16-step array of note names ("A2") or null
+//   lead: 16-step array of note names or null
+//   drum: { kick: [...], snare: [...], hat: [...] } each 16 booleans
+//   chords: optional array of root-note offsets per bar (transpose by semitones)
+const MUSIC_THEMES = {
+  // Stage 1 — THE BLOCK. Mid tempo, urban night, heavy bass.
+  block: {
+    bpm: 96,
+    bass: ["A1", null, null, null, "A1", null, "C2", null, "A1", null, null, "G1" || "A1", "F2", null, "E2", null],
+    lead: [null, null, null, null, null, null, null, null, null, "A3", null, null, "G3", null, null, "E3"],
+    drum: {
+      kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1],
+    },
+    chords: [0, 0, -2, -2],   // bar-level transpose (Am → Am → G → G)
+  },
+  // Stage 2 — TUNNELS. Cold, sparse, bass-heavy.
+  tunnels: {
+    bpm: 92,
+    bass: ["E1" || "E2", null, null, "E1" || "E2", null, null, "G2", null, "E1" || "E2", null, null, null, "B2", null, "A2", null],
+    lead: [null, null, null, null, null, null, null, null, null, null, null, null, "E4", null, null, null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
+      hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    },
+    chords: [0, 0, 0, -2],
+  },
+  // Stage 3 — RIVER & boss BARON. Tense, more lead, faster.
+  river: {
+    bpm: 108,
+    bass: ["D2", null, "D2", null, "F2", null, "A2", null, "G2", null, "G2", null, "F2", null, "E2", null],
+    lead: [null, null, "A4", null, null, null, "C5", null, null, null, "B4", null, "G4", null, "E4", null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,1,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,1,1,0, 1,1,1,0, 1,1,1,0, 1,1,1,1],
+    },
+    chords: [0, -2, -4, -2],
+  },
+  // Stages 4-5: lantern + cage. Mood pieces.
+  lantern: {
+    bpm: 88,
+    bass: ["F2", null, null, null, "C3", null, null, null, "A2", null, null, null, "E2", null, null, null],
+    lead: [null, null, "F4", null, null, null, "G4", null, null, null, "A4", null, null, null, "E4", null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    },
+    chords: [0, -2, -4, -5],
+  },
+  // Stages 6-9 reuse themes; KANE final stage gets its own.
+  kane: {
+    bpm: 124,
+    bass: ["A1", "A1", null, "A1", "C2", null, "A1", null, "G2", null, "F2", null, "E2", null, "D2", null],
+    lead: ["A3", null, "A3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null],
+    drum: {
+      kick:  [1,0,1,0, 0,0,1,0, 1,0,1,0, 0,0,1,1],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+    },
+    chords: [0, 0, 0, 0],
+  },
+};
+
+// Map stage index → theme key. Bosses can override per encounter.
+function themeForStage(idx) {
+  if (idx <= 0) return "block";
+  if (idx === 1) return "tunnels";
+  if (idx === 2) return "river";
+  if (idx === 3) return "lantern";
+  if (idx === 4) return "tunnels";
+  if (idx === 5) return "block";
+  if (idx === 6) return "river";
+  if (idx === 7) return "lantern";
+  if (idx === 8) return "river";
+  if (idx === 9) return "kane";
+  return "block";
+}
+
+function ensureMusicGain() {
+  if (!audioCtx || musicGain) return;
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0;
+  musicGain.connect(masterGain);
+}
+
+function playMusicNote(freq, type, dur, gain, when) {
+  if (!audioCtx || !musicGain) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, when);
+  // Slight detune for analog warmth.
+  o.detune.setValueAtTime(((Math.random() - 0.5) * 6), when);
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(gain, when + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+  o.connect(g); g.connect(musicGain);
+  o.start(when);
+  o.stop(when + dur + 0.02);
+}
+
+function playDrum(kind, when) {
+  if (!audioCtx || !musicGain) return;
+  if (kind === "kick") {
+    // Sine sweep from ~120Hz down to 50Hz, very short.
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(120, when);
+    o.frequency.exponentialRampToValueAtTime(40, when + 0.12);
+    g.gain.setValueAtTime(0.6, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + 0.14);
+    o.connect(g); g.connect(musicGain);
+    o.start(when); o.stop(when + 0.16);
+  } else if (kind === "snare") {
+    // Filtered noise burst.
+    const dur = 0.10;
+    const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 0.8;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.35, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+    src.connect(f); f.connect(g); g.connect(musicGain);
+    src.start(when);
+  } else if (kind === "hat") {
+    // High-frequency noise blip.
+    const dur = 0.04;
+    const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "highpass"; f.frequency.value = 6000;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.18, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+    src.connect(f); f.connect(g); g.connect(musicGain);
+    src.start(when);
+  }
+}
+
+// Returns the frequency for a note name with semitone offset applied.
+function noteFreq(noteName, semitoneOffset) {
+  if (!noteName || !NOTE[noteName]) return 0;
+  const f = NOTE[noteName];
+  return f * Math.pow(2, (semitoneOffset || 0) / 12);
+}
+
+function tickMusicScheduler() {
+  if (!audioCtx || !musicTheme) return;
+  ensureMusicGain();
+  const theme = MUSIC_THEMES[musicTheme];
+  if (!theme) return;
+  const stepDur = 60 / theme.bpm / 4;     // 16th note duration in seconds
+  // Schedule notes at least 100ms ahead of audio clock.
+  while (musicNextStepTime < audioCtx.currentTime + 0.10) {
+    const stepIdx = musicStep % 16;
+    const barIdx  = musicBar;
+    const transpose = (theme.chords && theme.chords[barIdx % theme.chords.length]) || 0;
+    // Bass.
+    if (theme.bass && theme.bass[stepIdx]) {
+      const f = noteFreq(theme.bass[stepIdx], transpose);
+      if (f) playMusicNote(f, "sawtooth", stepDur * 2.0, 0.18, musicNextStepTime);
+    }
+    // Lead.
+    if (theme.lead && theme.lead[stepIdx]) {
+      const f = noteFreq(theme.lead[stepIdx], transpose);
+      if (f) playMusicNote(f, "triangle", stepDur * 1.5, 0.10, musicNextStepTime);
+    }
+    // Drums.
+    if (theme.drum) {
+      if (theme.drum.kick  && theme.drum.kick[stepIdx])  playDrum("kick",  musicNextStepTime);
+      if (theme.drum.snare && theme.drum.snare[stepIdx]) playDrum("snare", musicNextStepTime);
+      if (theme.drum.hat   && theme.drum.hat[stepIdx])   playDrum("hat",   musicNextStepTime);
+    }
+    musicNextStepTime += stepDur;
+    musicStep++;
+    if (musicStep % 16 === 0) musicBar++;
+  }
+}
+
+function startMusic(themeKey) {
+  if (!audioCtx) return;
+  ensureMusicGain();
+  if (musicTheme === themeKey) return;
+  musicTheme = themeKey;
+  musicStep = 0;
+  musicBar = 0;
+  musicNextStepTime = audioCtx.currentTime + 0.05;
+  if (!musicTimer) musicTimer = setInterval(tickMusicScheduler, 25);
+  applyMusicVolume();
+}
+
+function stopMusic() {
+  musicTheme = null;
+  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  if (musicGain) musicGain.gain.value = 0;
+}
+
+function applyMusicVolume() {
+  if (!musicGain) return;
+  const target = save.audio.muted ? 0 : (save.audio.music * musicTargetVolume * 0.55);
+  // Smooth over 80ms to avoid clicks on slider changes.
+  if (audioCtx) {
+    musicGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    musicGain.gain.setValueAtTime(musicGain.gain.value, audioCtx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 0.08);
+  } else {
+    musicGain.gain.value = target;
+  }
+}
+
+// Convenience: duck music briefly during big SFX (boss intros, KOs).
+function duckMusic(amount, durSec) {
+  musicTargetVolume = amount;
+  applyMusicVolume();
+  setTimeout(() => { musicTargetVolume = 1; applyMusicVolume(); }, durSec * 1000);
 }
 
 // Boot the audio context the first time the user interacts (browser autoplay).
@@ -2566,15 +2868,38 @@ function drawDebugBoxes() {
 
 // Stage 1: THE BLOCK — neighborhood, urban night.
 function drawStageBlock() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  // Sky.
   X.fillStyle = "#11131c";
   X.fillRect(0, 0, W, 230);
+  // Far skyline (slow parallax, ~8 px every 60s).
+  const skyOff = (t * 0.13) % 64;
+  X.fillStyle = "#191b27";
+  for (let bx = -64; bx < W + 64; bx += 64) {
+    const x = bx - skyOff;
+    // Tower silhouettes
+    X.fillRect(x +  4, 60, 18, 30);
+    X.fillRect(x + 28, 50, 22, 40);
+    X.fillRect(x + 56, 70, 12, 20);
+  }
   X.fillStyle = "#1a1d2a";
   X.fillRect(0, 90, W, 120);
+  // Apartment windows. Some flicker on/off slowly to feel alive.
   X.fillStyle = "#3b4360";
   for (let by = 110; by < 200; by += 14) {
     for (let bx = 20; bx < W; bx += 22) {
       if (((bx * 13 + by * 7) & 7) < 3) X.fillRect(bx, by, 3, 4);
     }
+  }
+  // A few warm lit windows that flicker.
+  X.fillStyle = "#e8c04a";
+  for (let i = 0; i < 8; i++) {
+    const wx = 70 + i * 84;
+    const wy = 124 + ((i * 13) & 1) * 28;
+    // Flicker: ~1Hz sine + per-window phase. Off some of the time.
+    const phase = i * 0.7;
+    const flick = 0.5 + 0.5 * Math.sin(t * 1.3 + phase);
+    if (flick > 0.55) X.fillRect(wx, wy, 3, 4);
   }
   // Sidewalk + seams.
   X.fillStyle = "#2a2a36";
@@ -2593,6 +2918,17 @@ function drawStageBlock() {
   X.fillStyle = "#0e0e15";
   X.fillRect(60,  240, 10, 1);
   X.fillRect(560, 234, 12, 1);
+  // Soft drizzle — sparse, fast-falling specks across the sky region only.
+  // Skipped under reduce-flash for accessibility.
+  if (!save.settings.reduceFlash) {
+    X.fillStyle = "rgba(150, 165, 200, 0.45)";
+    for (let i = 0; i < 14; i++) {
+      const seed = i * 73.13;
+      const px = ((seed + t * 22) % (W + 30)) - 10;
+      const py = ((seed * 1.7 + t * 180) % 230);
+      X.fillRect(px, py, 1, 3);
+    }
+  }
 }
 
 // Stage 2: THE TUNNELS — subway / storm drain. Cold dim concrete.
@@ -6107,6 +6443,8 @@ function advanceStage() {
     setState("victory");
     return;
   }
+  // Swap music to the new stage's theme.
+  if (typeof startMusic === "function") startMusic(themeForStage(currentStage));
   enemies = spawnWave(currentStage, 0);
   if (player) {
     player.x = 120;
