@@ -63,7 +63,11 @@ function step(frames) {
 // Always cycles through title and select so tests start from clean state
 // rather than reusing an in-progress run.
 function goToPlay() {
-  if (window.eval("STATE") !== "title") {
+  // Drive whatever state we're in back to title. Multiple presses needed if
+  // we're in a narrative beat state — Escape from beat lands in playing first
+  // (since beats absorb Escape as 'skip'), then a second Escape goes to title.
+  let safety = 5;
+  while (window.eval("STATE") !== "title" && safety-- > 0) {
     press("Escape"); step(4);
   }
   // From title press through select → playing.
@@ -71,6 +75,10 @@ function goToPlay() {
     press("Enter"); step(4);
   }
   if (window.eval("STATE") === "select") {
+    press("Enter"); step(4);
+  }
+  // enterPlaying triggers the opening cutscene (beat state). Skip it for tests.
+  if (window.eval("STATE") === "beat") {
     press("Enter"); step(4);
   }
 }

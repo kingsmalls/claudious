@@ -5980,6 +5980,7 @@ function update(dt) {
   else if (STATE === "paused") updatePaused(dt);
   else if (STATE === "cinematic") updateCinematic(dt);
   else if (STATE === "bossIntro") updateBossIntro(dt);
+  else if (STATE === "beat") updateBeat(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
@@ -6337,7 +6338,316 @@ function wrapText(text, maxChars) {
 }
 
 // ---------- Kane QTE cinematic (Stage 10 finale) ----------
-// ---------- Boss intro cutscenes ----------
+// ---------- Narrative beats ----------
+// A beat is a short scripted moment used for: the opening cutscene before
+// stage 1, the per-stage intro after each advanceStage, the stage-clear
+// scene after each stage's last enemy is down, and the ending cinematic
+// after the KANE QTE. All four use the same state machine and renderer.
+//
+// Each entry: { title, subtitle, lines, duration, background, onComplete }
+//   title:    big heading at top (e.g. "STAGE 3 — RIVER ROW")
+//   subtitle: smaller line under the title
+//   lines:    [{ speaker?, text }] — typewriter-revealed in order
+//   duration: total seconds; skippable with Enter / J / Space / Escape
+//   background: 'stage' (current stage backdrop dimmed) or 'black' (full black)
+//   onComplete: callback fired on completion or skip
+//
+// Lines are voiced lines from the protagonist by default. Add `speaker` to
+// override (e.g., for narrator beats).
+
+let beatState = null;
+
+function beginBeat(cfg) {
+  if (!cfg) return;
+  // Compute typewriter timing.
+  const lines = cfg.lines || [];
+  const lineSlots = [];
+  const intro = 0.5;
+  const lineDur = (cfg.duration - intro - 0.5) / Math.max(1, lines.length);
+  let cur = intro;
+  for (const ln of lines) {
+    lineSlots.push({
+      text: ln.text,
+      speaker: ln.speaker,
+      startAt: cur,
+      revealUntil: cur + lineDur * 0.7,
+    });
+    cur += lineDur;
+  }
+  beatState = {
+    cfg,
+    t: 0,
+    lineSlots,
+  };
+  duckMusic(0.35, cfg.duration + 0.4);
+  setState("beat");
+}
+
+function updateBeat(dt) {
+  if (!beatState) { setState("playing"); return; }
+  beatState.t += dt;
+  if (consumePress("Enter") || consumePress("Space") || consumePress("KeyJ") ||
+      consumePress("Escape")) {
+    completeBeat();
+    return;
+  }
+  if (beatState.t >= beatState.cfg.duration) {
+    completeBeat();
+  }
+}
+
+function completeBeat() {
+  if (!beatState) return;
+  const cb = beatState.cfg.onComplete;
+  beatState = null;
+  if (cb) cb();
+  // If onComplete didn't change state, default to playing.
+  if (STATE === "beat") setState("playing");
+}
+
+function renderBeat() {
+  if (!beatState) return;
+  const { cfg, t, lineSlots } = beatState;
+  // Background.
+  if (cfg.background === "black") {
+    X.fillStyle = "#000";
+    X.fillRect(0, 0, W, H);
+  } else {
+    drawCurrentStage();
+    // Heavy vignette so the beat reads.
+    X.fillStyle = "rgba(0,0,0,0.78)";
+    X.fillRect(0, 0, W, H);
+  }
+  // Title bar.
+  if (cfg.title) {
+    X.fillStyle = "rgba(0,0,0,0.7)";
+    X.fillRect(0, 50, W, 60);
+    X.fillStyle = cfg.titleColor || "#e8c04a";
+    X.font = "bold 26px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText(cfg.title, 40, 60);
+    if (cfg.subtitle) {
+      X.fillStyle = "#aaa";
+      X.font = "bold 10px ui-monospace, monospace";
+      X.fillText(cfg.subtitle, 40, 92);
+    }
+  }
+  // Dialog block.
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  const dialogH = 30 + lineSlots.length * 22;
+  X.fillRect(0, H - dialogH - 30, W, dialogH);
+  X.font = "bold 13px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  let y = H - dialogH - 18;
+  for (const line of lineSlots) {
+    if (t < line.startAt) break;
+    const reveal = Math.min(1, (t - line.startAt) / Math.max(0.15, line.revealUntil - line.startAt));
+    const visible = line.text.substring(0, Math.ceil(line.text.length * reveal));
+    if (line.speaker) {
+      X.fillStyle = "#aaa";
+      X.fillText(line.speaker + ":", 40, y);
+      X.fillStyle = "#fff";
+      X.fillText('"' + visible + '"', 40 + line.speaker.length * 8 + 16, y);
+    } else {
+      X.fillStyle = "#ffffff";
+      X.fillText('"' + visible + '"', 40, y);
+    }
+    y += 22;
+  }
+  // Skip prompt.
+  X.fillStyle = "#666";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "right";
+  X.fillText("ENTER / J — CONTINUE", W - 12, H - 14);
+}
+
+// ---------- Per-character per-stage dialog ----------
+// Spoken on the FIRST frame of each stage. Tone-tracks the characters' own
+// reasons for being on the Block per CHARACTER_BIBLE.md / STORY.md.
+const STAGE_INTRO_LINES = {
+  rio: [
+    "Marcus's gym. Padlocked. Kane's people are still on the street.",
+    "He owns the subway too.",
+    "Industrial district. Kane's been buying out the docks for years.",
+    "Market street. Half the lights are out.",
+    "He's using the old fight club as a holding pen.",
+    "Tower district. Glass and security guards.",
+    "Steel mill. Demolition starts next week.",
+    "He's clearing out the encampment under the overpass.",
+    "Kane's building. Top floor.",
+    "He's behind that door.",
+  ],
+  duke: [
+    "Three blocks from my place. They already started.",
+    "Quieter down here than the platform. They keep it that way.",
+    "I know this stretch. Cops don't come here.",
+    "The good food was here.",
+    "I fought here once. Lost. Bad night.",
+    "Out of my comfort zone.",
+    "Smells like burning.",
+    "Some of these people had names I knew.",
+    "Wind's bad up here.",
+    "Ready when you are.",
+  ],
+  atlas: [
+    "Twenty-three years on this street. Today they show up?",
+    "Used to take the kids on this line.",
+    "Used to deliver hardware to the warehouse on this corner.",
+    "Family ate at the noodle shop here. Gone last month.",
+    "Place was condemned ten years ago. Of course he's using it.",
+    "Lawyers' offices. Where they signed the papers on my street.",
+    "I bought half my inventory from the foundry across the way.",
+    "Can't drive through here without seeing the eviction notices.",
+    "I've sat in his lobby. Bring my own coffee.",
+    "Let's end this the right way.",
+  ],
+};
+
+// Per-stage clear beats — narrator-style observation about what just happened.
+const STAGE_CLEAR_LINES = [
+  "The Block is quiet for the first time in a week.",
+  "The tunnels are clear. Train rumble fades into the dark.",
+  "The cops won't come here. Baron used to be one of them.",
+  "Lanterns out. The market belongs to no one tonight.",
+  "The cage is empty. The walls stop closing.",
+  "Razor goes home. Tomorrow she'll send a different lawyer.",
+  "The foundry stays standing for one more night.",
+  "The freeway noise sounds like quiet now.",
+  "The tower's wind keeps blowing. Volt is down.",
+  null,   // stage 10 handled by Kane cinematic
+];
+
+const STAGE_NAMES_FORMAL = [
+  "STAGE 1 — THE BLOCK",
+  "STAGE 2 — THE TUNNELS",
+  "STAGE 3 — RIVER ROW",
+  "STAGE 4 — LANTERN ROW",
+  "STAGE 5 — THE CAGE",
+  "STAGE 6 — UPTOWN",
+  "STAGE 7 — THE WORKS",
+  "STAGE 8 — THE FREEWAY",
+  "STAGE 9 — THE TOWER",
+  "STAGE 10 — THE TOP",
+];
+
+function beginStageIntroBeat() {
+  if (!player) return;
+  const idx = currentStage;
+  const name = STAGE_NAMES_FORMAL[idx] || ("STAGE " + (idx + 1));
+  const charLines = STAGE_INTRO_LINES[player.char] || STAGE_INTRO_LINES.rio;
+  const line = charLines[idx] || charLines[0];
+  beginBeat({
+    title: name,
+    subtitle: ({ rio: "RIO", duke: "DUKE", atlas: "ATLAS" })[player.char] + " — INCOMING",
+    lines: [{ text: line }],
+    duration: 3.4,
+    background: "stage",
+    titleColor: "#e8c04a",
+  });
+}
+
+function beginStageClearBeat() {
+  const idx = currentStage;
+  const line = STAGE_CLEAR_LINES[idx];
+  if (!line) {
+    // No beat — fall through to legacy stage-clear text path.
+    const stage = STAGES[idx];
+    stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
+    stageClearTimer = 2.4;
+    return;
+  }
+  beginBeat({
+    title: "STAGE CLEAR",
+    subtitle: STAGE_NAMES_FORMAL[idx] || "",
+    lines: [{ speaker: "—", text: line }],
+    duration: 3.6,
+    background: "stage",
+    titleColor: "#7d8d4f",
+    onComplete: () => {
+      // After the beat, run the same advance-stage clock the legacy path used.
+      stageClearTimer = 0.4;
+      stageClearMessage = "";
+    },
+  });
+}
+
+// ---------- Opening cutscene (pre-Stage 1) ----------
+const OPENING_LINES = {
+  rio: [
+    { speaker: "RIO", text: "Marcus's gym. He's been gone six months." },
+    { speaker: "RIO", text: "They couldn't even wait." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+  duke: [
+    { speaker: "DUKE", text: "I knew this would happen. Just not this fast." },
+    { speaker: "DUKE", text: "Three blocks from my apartment, and they already started." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+  atlas: [
+    { speaker: "ATLAS", text: "Twenty-three years on this street." },
+    { speaker: "ATLAS", text: "I told them this would happen. Nobody listened. Now we're here." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+};
+
+function beginOpeningCutscene() {
+  if (!player) return;
+  const lines = OPENING_LINES[player.char] || OPENING_LINES.rio;
+  beginBeat({
+    title: "THE BLOCK",
+    subtitle: "A NEIGHBORHOOD KANE WANTS GONE",
+    lines,
+    duration: 7.5,
+    background: "stage",
+    titleColor: "#e8c04a",
+  });
+}
+
+// ---------- Ending cinematic (post-Kane) ----------
+const ENDING_LINES = {
+  rio: [
+    { speaker: "—",   text: "Kane's offer was three million dollars." },
+    { speaker: "—",   text: "The gym is still padlocked. The Block is still standing." },
+    { speaker: "RIO", text: "Marcus would tell me to be in the gym tomorrow." },
+    { speaker: "RIO", text: "So I'll be in the gym tomorrow." },
+  ],
+  duke: [
+    { speaker: "—",    text: "Kane's offer was three million dollars." },
+    { speaker: "—",    text: "The Block is still standing. For now." },
+    { speaker: "DUKE", text: "Twenty bucks says he comes back next month with a different envelope." },
+    { speaker: "DUKE", text: "I'll be here." },
+  ],
+  atlas: [
+    { speaker: "—",     text: "Kane's offer was three million dollars." },
+    { speaker: "—",     text: "Kane will be back. Of course he will." },
+    { speaker: "ATLAS", text: "And so will I." },
+    { speaker: "ATLAS", text: "Twenty-three years. Twenty-four next week." },
+  ],
+};
+
+function beginEndingCinematic() {
+  if (!player) {
+    setState("victory");
+    return;
+  }
+  const lines = ENDING_LINES[player.char] || ENDING_LINES.rio;
+  beginBeat({
+    title: "THE BLOCK STAYS",
+    subtitle: "VICTOR KANE WALKS AWAY",
+    lines,
+    duration: 9.0,
+    background: "black",
+    titleColor: "#e8c04a",
+    onComplete: () => {
+      finalizeRun(true);
+      setState("victory");
+    },
+  });
+}
+
+
 // Plays a short scene before each boss spawn: name banner, boss portrait
 // silhouette, dialog lines with typewriter reveal. Skippable with Enter /
 // Space / J. On complete, spawns the boss and resumes playing. Dialog from
@@ -6555,15 +6865,15 @@ function updateCinematic(dt) {
     }
   }
   if (consumePress("Escape")) {
-    finalizeRun(true);
-    setState("victory");
     cineState = null;
+    if (typeof beginEndingCinematic === "function") beginEndingCinematic();
+    else { finalizeRun(true); setState("victory"); }
     return;
   }
   if (cineState.t >= cineState.duration) {
-    finalizeRun(true);
     cineState = null;
-    setState("victory");
+    if (typeof beginEndingCinematic === "function") beginEndingCinematic();
+    else { finalizeRun(true); setState("victory"); }
   }
 }
 
@@ -6882,6 +7192,9 @@ function enterPlaying() {
   stageClearTimer = 0;
   bossSpawnedFor = {};
   setState("playing");
+  // Opening cutscene runs once at the start of every fresh run.
+  // Skippable; on completion the player is already in stage 1.
+  if (typeof beginOpeningCutscene === "function") beginOpeningCutscene();
 }
 
 function updatePlaying(dt) {
@@ -6981,9 +7294,6 @@ function updatePlaying(dt) {
 let bossSpawnedFor = {};
 
 function beginStageClear() {
-  const stage = STAGES[currentStage];
-  stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
-  stageClearTimer = 2.4;
   vibrate(40);
   playSfx("stage_clear");
   if (player) {
@@ -6998,6 +7308,15 @@ function beginStageClear() {
     // Atlas unlocks after clearing 3 stages in any run.
     if (player.stagesClearedThisRun >= 3) save.unlocks.atlas = true;
     saveSave();
+  }
+  // Show the narrative stage-clear beat instead of the legacy text overlay.
+  // The beat's onComplete sets a short stageClearTimer so advanceStage runs
+  // right after. If no narrative line is configured, falls back to legacy.
+  if (typeof beginStageClearBeat === "function") beginStageClearBeat();
+  else {
+    const stage = STAGES[currentStage];
+    stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
+    stageClearTimer = 2.4;
   }
 }
 
@@ -7017,6 +7336,8 @@ function advanceStage() {
   }
   // Swap music to the new stage's theme.
   if (typeof startMusic === "function") startMusic(themeForStage(currentStage));
+  // Stage intro beat: per-character line about the new location. Skippable.
+  if (typeof beginStageIntroBeat === "function") beginStageIntroBeat();
   // Reset hazard timers so they don't fire instantly on a fresh stage.
   taxiState.car = null; taxiState.warnTimer = 0; taxiState.spawnTimer = 6;
   trainState.car = null; trainState.warnTimer = 0; trainState.spawnTimer = 5;
@@ -7457,6 +7778,7 @@ function render() {
   else if (STATE === "paused") renderPaused();
   else if (STATE === "cinematic") renderCinematic();
   else if (STATE === "bossIntro") renderBossIntro();
+  else if (STATE === "beat") renderBeat();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
