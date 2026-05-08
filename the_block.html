@@ -3682,6 +3682,13 @@ const ENEMY_DEFAULT_ATTACK = {
 
 function makeEnemy(type, x, y) {
   const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
+  // Difficulty: scale enemy HP at spawn so the toughness curve matches the
+  // tier the player chose. Bosses scale slightly less so cinematic-feel HP
+  // bars stay readable across difficulty.
+  const cfg = (typeof difficultyConfig === "function") ? difficultyConfig() : null;
+  const hpMul = cfg ? (stats.isBoss ? Math.sqrt(cfg.enemyHpMul) : cfg.enemyHpMul) : 1;
+  const aggrMul = cfg ? cfg.enemyAggrMul : 1;
+  const scaledHp = Math.max(1, Math.round(stats.hp * hpMul));
   return {
     type, x, y, z: 0,
     isBoss: !!stats.isBoss,
@@ -3695,7 +3702,8 @@ function makeEnemy(type, x, y) {
     animTime: 0,
     walkSpeed: stats.walkSpeed,
     runSpeed:  stats.runSpeed,
-    hp: stats.hp, hpMax: stats.hp,
+    hp: scaledHp, hpMax: scaledHp,
+    aggrMul,
     range: stats.range,
     hurtHw: stats.hurtHw, hurtHd: stats.hurtHd, hurtHi: stats.hurtHi,
     staggerN: stats.staggerN || 1,
@@ -3911,7 +3919,7 @@ function advanceEnemyAttack(e) {
     e.attackName = null;
     e.hitboxes.length = 0;
     e.attackHits = null;
-    e.aiCooldown = 0.55 + Math.random() * 0.55;
+    e.aiCooldown = (0.55 + Math.random() * 0.55) * (e.aggrMul || 1);
     // Post-attack behavior hooks: schedule retreat / next-move state.
     if (e.type === "runner" && finishedName === "swipe") {
       // Runner backpedals briefly so the next encounter resets — hit-and-run.
@@ -5596,16 +5604,22 @@ function boxOverlap(a, b) {
          Math.abs(a.cy - b.cy) < a.hd + b.hd;
 }
 
-// Difficulty multiplier applied to damage *taken by player*. Story is forgiving;
-// Brutal makes every hit count. Other-targets unscaled — we don't make enemies
-// tougher per setting, only the player more or less squishy.
-function difficultyDamageMul() {
+// Per-difficulty config. Three independent dials:
+//   damageTakenMul: multiplier on damage the player takes per hit
+//   enemyHpMul:     multiplier on every enemy's max HP at spawn (boss HP
+//                   scales by sqrt of this so cinematic HP bars stay readable)
+//   enemyAggrMul:   multiplier on enemy aiCooldown after each attack
+//                   (lower = more aggressive, attacks cycle faster)
+function difficultyConfig() {
   switch (save.settings.difficulty) {
-    case "story":  return 0.5;
-    case "brutal": return 2.0;
-    default:       return 1.0;
+    case "story":  return { damageTakenMul: 0.5, enemyHpMul: 0.75, enemyAggrMul: 1.4 };
+    case "hard":   return { damageTakenMul: 1.5, enemyHpMul: 1.20, enemyAggrMul: 0.8 };
+    case "brutal": return { damageTakenMul: 2.0, enemyHpMul: 1.40, enemyAggrMul: 0.6 };
+    default:       return { damageTakenMul: 1.0, enemyHpMul: 1.00, enemyAggrMul: 1.0 };
   }
 }
+// Backwards-compat shim for callers still using the old name.
+function difficultyDamageMul() { return difficultyConfig().damageTakenMul; }
 
 function applyHit(target, hb, attacker) {
   if (target.dead) return;
@@ -6006,8 +6020,9 @@ function updatePaused(dt) {
     saveSave(); setState("title"); return;
   }
   if (opt.id === "diff" && (left || right || enter)) {
-    const list = ["story", "normal", "brutal"];
+    const list = ["story", "normal", "hard", "brutal"];
     let i = list.indexOf(save.settings.difficulty);
+    if (i < 0) i = 1;   // fall back to normal if save was set to a removed tier
     i = (i + (left ? -1 : 1) + list.length) % list.length;
     save.settings.difficulty = list[i];
     playSfx("menu_select");
