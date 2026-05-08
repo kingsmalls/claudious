@@ -1,0 +1,14 @@
+{
+  "name": "the-block",
+  "private": true,
+  "description": "Browser beat-em-up. Test harnesses for the canvas engine.",
+  "scripts": {
+    "smoke": "node smoke.js",
+    "smoke-sprites": "node smoke_sprites.js"
+  },
+  "devDependencies": {
+    "canvas": "^3.2.3",
+    "jsdom": "^29.1.1",
+    "node-fetch": "^2.7.0"
+  }
+}
