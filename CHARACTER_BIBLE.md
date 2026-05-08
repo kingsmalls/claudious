@@ -26,7 +26,7 @@ Voice direction (if/when VO is recorded): low effort, conversational, breath. No
 ### Visual
 
 - Dark brown skin (`#6b3f2a` / `#8a5235`)
-- Shaved sides with a low fade and short locs on top
+- Full afro, dark brown to black, ~3-4 inches deep
 - Cropped olive bomber jacket (`#5a6b3a` / `#7d8d4f`)
 - Black tank top under (`#0a0a10`)
 - Slim cargo pants (`#1a1a22`)

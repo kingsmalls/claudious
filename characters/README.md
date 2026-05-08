@@ -4,7 +4,7 @@ One file per character. Each file is **self-contained** — hand it to your AI g
 
 | File | Character | Length |
 |---|---|---|
-| `RIO.md` | Rio — 24, Black, locs, olive bomber jacket, **yellow bandana on left wrist** | 224 lines |
+| `RIO.md` | Rio — 24, Black, **full afro**, olive bomber jacket, **yellow bandana on left wrist** | 224 lines |
 | `DUKE.md` | Duke — 31, white, blonde messy hair, denim cut-off jacket, **never-lit cigarette behind one ear** | 220 lines |
 | `ATLAS.md` | Atlas — 47, mixed/Mediterranean, bald + full salt-pepper beard, sleeveless red flannel, **silver wedding band on chain + tribal forearm tattoos** | 234 lines |
 
@@ -38,3 +38,38 @@ One file per character. Each file is **self-contained** — hand it to your AI g
 ## Combined reference
 
 If you'd rather read all three side-by-side, `../CHARACTER_DESIGN.md` contains the same content in one document. The split files here exist to make copy-paste handoff easier.
+
+## v1 art status (2026-05-08)
+
+What landed in the current `<char>.png` sheets vs what the bible specifies. **Code-side integration is complete for all three** — these gaps are art tasks for v1.1.
+
+### RIO ✅ — ships v1
+
+- ✅ Yellow bandana on left wrist
+- ✅ Olive bomber jacket
+- ✅ Slim charcoal pants, ankle boxing boots
+- ✅ Hand wraps
+- ✅ All 15 anim slots labeled (idle / walk / run / jump / atk1–3 / heavy / jump_atk / back_atk / special / throw / counter / hurt / dodge)
+- ✅ Sunset Spin special with bandana arc
+
+### DUKE ✅ — ships v1
+
+- ✅ Cigarette behind one ear (visible across animations)
+- ✅ Blonde messy hair, denim cut-off vest, jeans
+- ✅ Combat boots
+- ✅ All 15 anim slots labeled
+- ✅ Rolling Thunder special (3 elbows + haymaker)
+
+### ATLAS ⚠️ — ships v1 with known gaps
+
+- ✅ Bald, large frame
+- ✅ Red plaid flannel (sleeveless)
+- ✅ Heavy work pants
+- ✅ All 15 anim slots labeled (atk3 trimmed to OVERHEAD CHOPPING SMASH, see commit `3abe39f`)
+- ✅ Foundation Stone special with charge → lift → slam beats
+- ❌ **Salt-and-pepper beard** — needs v1.1 art pass
+- ❌ **Silver wedding band on chain** — needs v1.1 art pass
+- ❌ **Tribal forearm tattoos** — needs v1.1 art pass
+- ❌ Visible belt with brass buckle — needs v1.1 art pass
+
+For v1.1 regen, hand `ATLAS.md` to the generator with explicit emphasis on the four `❌` items as REQUIRED-IN-EVERY-FRAME. Layout config (`layouts/atlas_layout.json`) and atlas JSON (`atlas_atlas.json`) stay valid as long as the new sheet matches the same 1024×559 / 16×6 grid.

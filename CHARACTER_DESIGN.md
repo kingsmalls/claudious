@@ -17,8 +17,8 @@ For each character: physical specs, costume layers, identity items, palette, per
 
 ## Hair
 
-- **Style:** Shaved at the temples and back of neck (low fade — short clipper line, not bare). Short locs on top, 2–3 inches long, framing the crown. Locs are dark brown to black, slightly uneven length, a few falling forward over the forehead.
-- **Movement:** Locs swing slightly with hard motion — visible bounce on jumps and the Sunset Spin spin. Not flowing dramatic hair; firm, weighty.
+- **Style:** Full afro, dark brown to black, ~3–4 inches deep. Round, soft silhouette around the head; not picked super-tall, not pressed down — natural shape. A few strands fall forward over the forehead.
+- **Movement:** The afro **bounces visibly with hard motion** — compresses on landings, rises with the Sunset Spin, lifts at the apex of jumps. Springy, not flowing.
 
 ## Costume (head to feet)
 
@@ -36,7 +36,7 @@ For each character: physical specs, costume layers, identity items, palette, per
 ```
 skin (light)        #8a5235
 skin (shadow)       #6b3f2a
-hair (locs)         #1a1410
+hair (afro)         #1a1410
 hair (highlight)    #2a201a
 jacket (mid)        #7d8d4f
 jacket (shadow)     #5a6b3a
@@ -66,14 +66,14 @@ eye whites          #ffffff
 
 ### `idle` (4 frames, loops, 6 fps)
 - Frames 1, 3: bounce-down — knees bent slightly, weight on the front foot, hands at chin level.
-- Frames 2, 4: bounce-up — slight rise, locs lift 1px.
+- Frames 2, 4: bounce-up — slight rise, afro lifts 1px.
 - Bandana visible on left wrist throughout, hanging slightly.
 - Eyes scanning forward. Mouth neutral.
 
 ### `walk` (6 frames, 8 fps)
 - 6-frame stride cycle. Forward foot strikes on frames 1 and 4.
 - Front arm swings opposite to leg.
-- Locs bounce subtly (1–2 px).
+- Afro bounces subtly (1–2 px).
 - Bandana sways with the wrist.
 - Hands stay roughly at hip level — not raised, not dropped.
 
@@ -81,7 +81,7 @@ eye whites          #ffffff
 - Lower torso, longer stride. Body leans forward 5–10°.
 - Arms pump hard. Bandana trails behind on the back-swing.
 - Frames 3 and 6 have horizontal speedlines behind the heel.
-- Locs bounce more visibly.
+- Afro bounces more visibly.
 
 ### `jump` (3 frames, 8 fps — non-looping)
 - F1: anticipation crouch — knees deep bend, arms drop.
@@ -172,7 +172,7 @@ The signature. Spinning leg sweep into rising double-fist uppercut.
 - Elemental effects (fire, lightning, ice) — she's a boxer, not a magic user
 - Cape/scarf/long flowing items — only the bandana
 - Modern combat boots (military style) — hers are sport boxing boots
-- Long hair flowing — locs are short and structured
+- Long hair flowing — afro is contained, not flowing
 - Open jacket flapping wildly — it's cropped and tight
 
 ## Sheet specs (same for all three characters)

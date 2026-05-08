@@ -59,7 +59,7 @@ Total: ~80 frames per character. At 8 columns wide that's 10 rows.
 
 > Pixel art sprite sheet, side-view 2D fighting game style, 64x96 frame size, 8 columns by 10 rows uniform grid, transparent background.
 >
-> **Character:** Rio. 24-year-old woman, dark brown skin (#8a5235), athletic build. Shaved sides with low fade, short locs on top, dark brown to black hair (#1a1410). Single small gold hoop earring. Cropped olive bomber jacket (#7d8d4f highlights, #5a6b3a shadow). Black tank top under (#0a0a10). Slim charcoal cargo pants (#1a1a22). Ankle boxing boots, black. White hand wraps on knuckles (#dcd6c4).
+> **Character:** Rio. 24-year-old woman, dark brown skin (#8a5235), athletic build. Full afro, dark brown to black hair (#1a1410). Single small gold hoop earring. Cropped olive bomber jacket (#7d8d4f highlights, #5a6b3a shadow). Black tank top under (#0a0a10). Slim charcoal cargo pants (#1a1a22). Ankle boxing boots, black. White hand wraps on knuckles (#dcd6c4).
 >
 > **Required identity item, must be visible in EVERY frame:** bright yellow bandana tied around her LEFT wrist (#e8c04a body, #ffd76a highlight, #b89426 shadow). The bandana is 7-8 pixels wide, has a small dangling tail, and TRAILS through punches and spins.
 >
