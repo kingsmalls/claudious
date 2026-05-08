@@ -1,5 +1,5 @@
 {
-  "_comment": "Atlas sprite sheet layout. Same grid as Rio (1024x559, 16x6 cells of 64x93). Atlas's atk3 spans HOOK then OVERHEAD CHOPPING SMASH variants — engine plays them as one 12-frame sequence.",
+  "_comment": "Atlas sprite sheet layout. Same grid as Rio (1024x559, 16x6 cells of 64x93). atk3 = OVERHEAD CHOPPING SMASH only (8 frames at row 2 cols 0-7). The 4 HOOK frames at row 1 col 12-15 are leftover from the Rio template and unreferenced.",
   "sheet": "atlas.png",
   "cell_width": 64,
   "cell_height": 93,
@@ -12,7 +12,7 @@
     "jump":     { "row": 1, "col": 0,  "count": 4 },
     "atk1":     { "row": 1, "col": 4,  "count": 4 },
     "atk2":     { "row": 1, "col": 8,  "count": 4 },
-    "atk3":     { "row": 1, "col": 12, "count": 12 },
+    "atk3":     { "row": 2, "col": 0,  "count": 8 },
     "heavy":    { "row": 2, "col": 8,  "count": 12 },
     "jump_atk": { "row": 3, "col": 4,  "count": 8 },
     "back_atk": { "row": 3, "col": 12, "count": 8 },
