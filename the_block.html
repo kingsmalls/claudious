@@ -371,6 +371,25 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
   loadAtlasFor("atlas");
 }
 
+// Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
+// a single global 8 fps — fast moves like jabs need 14-16 fps; heavy windups
+// hold longer at ~10 fps. Attack / hurt / dodge clamp to the last frame
+// instead of restarting so the sprite doesn't visually rewind during recovery.
+const ANIM_FPS = {
+  idle: 6, walk: 10, run: 14, jump: 10,
+  atk1: 16, atk2: 14, atk3: 12, heavy: 10,
+  jump_atk: 14, back_atk: 14, special: 12,
+  throw: 10, counter: 12, hurt: 12, dodge: 16,
+  grabbed: 6,
+};
+const ANIM_LOOPS = {
+  idle: true, walk: true, run: true, jump: false,
+  atk1: false, atk2: false, atk3: false, heavy: false,
+  jump_atk: false, back_atk: false, special: false,
+  throw: false, counter: false, hurt: false, dodge: false,
+  grabbed: true,
+};
+
 // Choose the right frame for an entity's anim state and draw it. Falls back
 // to the procedural renderer when the atlas is missing the requested anim.
 function drawSpriteCharacter(p) {
@@ -379,8 +398,12 @@ function drawSpriteCharacter(p) {
   const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
   const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
   if (!frames || frames.length === 0) return false;
-  const fps = sprite.atlas.fps || 8;
-  const idx = Math.max(0, Math.floor(p.animTime * fps)) % frames.length;
+  // Per-anim fps with sensible default. Atlas can override globally via
+  // sprite.atlas.fps; engine table provides per-anim tuning on top.
+  const fps = ANIM_FPS[animName] || sprite.atlas.fps || 12;
+  const raw = Math.max(0, Math.floor(p.animTime * fps));
+  const looping = ANIM_LOOPS[animName] !== false;
+  const idx = looping ? (raw % frames.length) : Math.min(raw, frames.length - 1);
   const frameName = frames[idx];
   const frame = sprite.atlas.frames[frameName];
   if (!frame) return false;
