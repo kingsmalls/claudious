@@ -2,11 +2,36 @@
 
 One file per character. Each file is **self-contained** — hand it to your AI generator (or artist) without any other docs and they have everything they need to build that character's full sprite sheet.
 
+## Playable protagonists
+
 | File | Character | Length |
 |---|---|---|
 | `RIO.md` | Rio — 24, Black, **full afro**, olive bomber jacket, **yellow bandana on left wrist** | 224 lines |
 | `DUKE.md` | Duke — 31, white, blonde messy hair, denim cut-off jacket, **never-lit cigarette behind one ear** | 220 lines |
 | `ATLAS.md` | Atlas — 47, mixed/Mediterranean, bald + full salt-pepper beard, sleeveless red flannel, **silver wedding band on chain + tribal forearm tattoos** | 234 lines |
+
+## Enemy minions (Kane's crews)
+
+| File | Character | Identity item |
+|---|---|---|
+| `RUNNER.md` | Bottom-tier neighborhood thug, hoodie, panicked at low HP | Red bandana on right bicep |
+| `TANK.md` | Heavy enforcer, tactical vest, super-armored | KANE PROPERTIES SECURITY badge |
+| `LAMPLIGHT.md` | Masked gunman, balaclava, holds 70-110 px range | Pistol always visible |
+| `SLICE.md` | Mesh-shirt knife specialist, hit-and-run | Bowie knife in reverse grip |
+| `CHAINS.md` | Leather-vest brawler, holds ground | Industrial chain wrapped on forearm |
+| `SHADE.md` | Hooded teleporter, almost all matte black | Purple-glow eyes + smoke trail |
+| `DOJO.md` | Black-gi martial artist, parries hits | White training belt with two tails |
+| `RIG.md` | Construction-worker AOE bruiser | Yellow hard hat with KANE logo |
+
+## Bosses
+
+| File | Character | Stage |
+|---|---|---|
+| `BARON.md` | Ex-cop boxer, brass knuckles, polite menace | Stage 3 |
+| `RAZOR.md` | Corporate dual-knife specialist, suit, blonde streaks | Stage 6 |
+| `VOLT.md` | Cybernetic enforcer, blue power-line glow | Stage 9 |
+| `BLACKWELL.md` | Kane's personal bodyguard | Optional, brutal-only mid-stage 7/8 |
+| `KANE.md` | The final boss — QTE cinematic, never throws a punch | Stage 10 |
 
 ## Each file contains
 

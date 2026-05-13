@@ -130,8 +130,24 @@ let STATE = "title";
 let stateTime = 0;
 
 function setState(next) {
+  const prev = STATE;
   STATE = next;
   stateTime = 0;
+  // Music routing per state.
+  if (typeof startMusic === "function") {
+    if (next === "playing" || next === "cinematic") {
+      startMusic(themeForStage(typeof currentStage === "number" ? currentStage : 0));
+    } else if (next === "title" || next === "select" || next === "gameover" || next === "victory") {
+      // Title and end states use the block theme as a chill backing.
+      startMusic("block");
+    }
+    if (next === "paused") {
+      // Duck music while paused; restored on resume by the next setState call.
+      duckMusic(0.25, 999);
+    } else if (prev === "paused") {
+      duckMusic(1.0, 0);  // restore
+    }
+  }
 }
 
 // ---------- Input ----------
@@ -355,6 +371,25 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
   loadAtlasFor("atlas");
 }
 
+// Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
+// a single global 8 fps — fast moves like jabs need 14-16 fps; heavy windups
+// hold longer at ~10 fps. Attack / hurt / dodge clamp to the last frame
+// instead of restarting so the sprite doesn't visually rewind during recovery.
+const ANIM_FPS = {
+  idle: 6, walk: 10, run: 14, jump: 10,
+  atk1: 16, atk2: 14, atk3: 12, heavy: 10,
+  jump_atk: 14, back_atk: 14, special: 12,
+  throw: 10, counter: 12, hurt: 12, dodge: 16,
+  grabbed: 6,
+};
+const ANIM_LOOPS = {
+  idle: true, walk: true, run: true, jump: false,
+  atk1: false, atk2: false, atk3: false, heavy: false,
+  jump_atk: false, back_atk: false, special: false,
+  throw: false, counter: false, hurt: false, dodge: false,
+  grabbed: true,
+};
+
 // Choose the right frame for an entity's anim state and draw it. Falls back
 // to the procedural renderer when the atlas is missing the requested anim.
 function drawSpriteCharacter(p) {
@@ -363,26 +398,100 @@ function drawSpriteCharacter(p) {
   const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
   const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
   if (!frames || frames.length === 0) return false;
-  const fps = sprite.atlas.fps || 8;
-  const idx = Math.max(0, Math.floor(p.animTime * fps)) % frames.length;
+  // Per-anim fps with sensible default. Atlas can override globally via
+  // sprite.atlas.fps; engine table provides per-anim tuning on top.
+  const fps = ANIM_FPS[animName] || sprite.atlas.fps || 12;
+  const raw = Math.max(0, Math.floor(p.animTime * fps));
+  const looping = ANIM_LOOPS[animName] !== false;
+  const idx = looping ? (raw % frames.length) : Math.min(raw, frames.length - 1);
   const frameName = frames[idx];
   const frame = sprite.atlas.frames[frameName];
   if (!frame) return false;
-  const sx = Math.round(p.x);
-  const sy = Math.round(p.y - p.z);
   const ax = sprite.atlas.anchor ? sprite.atlas.anchor.x : 0.5;
   const ay = sprite.atlas.anchor ? sprite.atlas.anchor.y : 1.0;
 
-  // Drop shadow (always visible).
+  // ---- Locomotion bob: walk/run cycles bob the body up and down 1-2 px
+  // following the foot-strike rhythm. Subtle but transforms the walk feel.
+  let bob = 0;
+  if (animName === "walk")      bob = -Math.abs(Math.sin(p.animTime * 10)) * 1.4;
+  else if (animName === "run")  bob = -Math.abs(Math.sin(p.animTime * 14)) * 2.2;
+
+  // ---- Squash / stretch on landing. Track airborne→grounded transition
+  // via p.landSquash (frames). Set to 4 when transitioning down to ground.
+  if (p._wasAirborne && p.z <= 0) {
+    p.landSquash = 4;
+  }
+  p._wasAirborne = p.z > 0;
+  if (p.landSquash === undefined) p.landSquash = 0;
+
+  const sx = Math.round(p.x);
+  const sy = Math.round(p.y - p.z + bob);
+
+  // Drop shadow (always visible). Scales down as character rises.
   X.fillStyle = "rgba(0,0,0,0.4)";
   X.beginPath(); X.ellipse(sx, p.y, 11 - p.z * 0.04, 3, 0, 0, Math.PI * 2); X.fill();
+
+  // ---- After-image trail: store the last few rendered frames during dodge
+  // and special. Drawn before the main sprite at low alpha for motion blur.
+  if (p.dodging || (p.attacking && p.attackName === "special")) {
+    p._trail = p._trail || [];
+    p._trail.push({ sx, sy, frame, facing: p.facing, life: 0 });
+    if (p._trail.length > 4) p._trail.shift();
+  }
+  if (p._trail && p._trail.length) {
+    for (let i = 0; i < p._trail.length; i++) {
+      const t = p._trail[i];
+      t.life += 0.020;
+      const a = Math.max(0, 0.45 - i * 0.10 - t.life * 1.2);
+      if (a <= 0.01) continue;
+      X.globalAlpha = a;
+      X.save();
+      X.translate(t.sx, t.sy);
+      if (t.facing === -1) X.scale(-1, 1);
+      X.drawImage(sprite.img,
+        t.frame.x, t.frame.y, t.frame.w, t.frame.h,
+        -t.frame.w * ax, -t.frame.h * ay, t.frame.w, t.frame.h);
+      X.restore();
+    }
+    X.globalAlpha = 1;
+    // Drop expired trail frames so they don't keep rendering after dodge ends.
+    if (!p.dodging && !(p.attacking && p.attackName === "special")) {
+      p._trail.length = 0;
+    }
+  }
 
   X.save();
   X.translate(sx, sy);
   if (p.facing === -1) X.scale(-1, 1);
+
+  // ---- Run lean: the body tilts forward 4° while running. Reads as urgency.
+  if (animName === "run") {
+    X.rotate(0.07);
+  }
+
+  // ---- Squash / stretch transform. landSquash counts down each frame; the
+  // first frame is the most squashed (Y * 0.8, X * 1.2), easing back to 1.
+  if (p.landSquash > 0) {
+    const t = p.landSquash / 4;
+    X.scale(1 + 0.2 * t, 1 - 0.2 * t);
+    p.landSquash--;
+  }
+
   X.drawImage(sprite.img,
     frame.x, frame.y, frame.w, frame.h,
     -frame.w * ax, -frame.h * ay, frame.w, frame.h);
+
+  // ---- Hit flash: re-draw the same frame in pure white at low alpha for
+  // 2-4 frames after taking damage. Reads as a clean impact pulse.
+  if (p.hitFlash > 0) {
+    X.globalCompositeOperation = "source-atop";
+    X.globalAlpha = 0.55;
+    X.fillStyle = "#ffffff";
+    X.fillRect(-frame.w * ax, -frame.h * ay, frame.w, frame.h);
+    X.globalCompositeOperation = "source-over";
+    X.globalAlpha = 1;
+    p.hitFlash--;
+  }
   X.restore();
   return true;
 }
@@ -404,24 +513,34 @@ function ensureAudio() {
 
 function applyMasterVolume() {
   if (masterGain) masterGain.gain.value = save.audio.muted ? 0 : save.audio.master;
+  applyMusicVolume();
 }
 
 // Short procedural SFX. Each kind picks a frequency / type / decay envelope.
 const SFX_TABLE = {
-  hit:           { f0: 220, f1: 110, dur: 0.06, type: "square",   gain: 0.6 },
-  hit_heavy:     { f0: 140, f1:  60, dur: 0.10, type: "sawtooth", gain: 0.7 },
-  ko:            { f0:  90, f1:  30, dur: 0.18, type: "sawtooth", gain: 0.8 },
-  parry_perfect: { f0: 880, f1: 1320, dur: 0.18, type: "sine",    gain: 0.6 },
+  // Hits get a noise burst layer for meatier impact (bandpass-filtered noise
+  // tuned per kind: light hit = mid-high crack, heavy hit = low thud, ko = deep boom).
+  hit:           { f0: 220, f1: 110, dur: 0.06, type: "square",   gain: 0.6,
+                   layerNoise: 0.05, layerNoiseFreq: 1800 },
+  hit_heavy:     { f0: 140, f1:  60, dur: 0.10, type: "sawtooth", gain: 0.7,
+                   layerNoise: 0.10, layerNoiseFreq:  600 },
+  ko:            { f0:  90, f1:  30, dur: 0.18, type: "sawtooth", gain: 0.8,
+                   layerNoise: 0.18, layerNoiseFreq:  300 },
+  parry_perfect: { f0: 880, f1: 1320, dur: 0.18, type: "sine",    gain: 0.6,
+                   layerNoise: 0.04, layerNoiseFreq: 4500 },
   parry_good:    { f0: 520, f1:  640, dur: 0.10, type: "sine",    gain: 0.5 },
   parry_late:    { f0: 220, f1:  180, dur: 0.06, type: "square",  gain: 0.4 },
   jump:          { f0: 440, f1:  640, dur: 0.06, type: "sine",    gain: 0.4 },
-  dodge:         { f0: 600, f1:  300, dur: 0.06, type: "triangle",gain: 0.4 },
-  special:       { f0: 460, f1:  180, dur: 0.22, type: "sawtooth",gain: 0.5 },
+  dodge:         { f0: 600, f1:  300, dur: 0.06, type: "triangle",gain: 0.4,
+                   layerNoise: 0.06, layerNoiseFreq: 3200 },
+  special:       { f0: 460, f1:  180, dur: 0.22, type: "sawtooth",gain: 0.5,
+                   layerNoise: 0.18, layerNoiseFreq:  900 },
   menu:          { f0: 660, f1:  660, dur: 0.05, type: "square",  gain: 0.4 },
   menu_select:   { f0: 880, f1: 1100, dur: 0.10, type: "square",  gain: 0.5 },
   stage_clear:   { f0: 660, f1:  990, dur: 0.30, type: "square",  gain: 0.5 },
   victory:       { f0: 660, f1: 1320, dur: 0.50, type: "square",  gain: 0.6 },
-  game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5 },
+  game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5,
+                   layerNoise: 0.30, layerNoiseFreq:  200 },
   bullet:        { f0: 1200, f1: 200, dur: 0.06, type: "square",  gain: 0.4 },
 };
 
@@ -442,6 +561,282 @@ function playSfx(kind) {
   o.connect(g); g.connect(masterGain);
   o.start(t);
   o.stop(t + def.dur + 0.02);
+
+  // Layered punch: hit/ko sounds get a short noise burst on top of the tone
+  // for a meatier impact. Costs one extra node but transforms hit feel.
+  if (def.layerNoise && audioCtx) {
+    const dur = def.layerNoise;
+    const buf = audioCtx.createBuffer(1, Math.max(1, Math.floor(audioCtx.sampleRate * dur)), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = def.layerNoiseFreq || 1200;
+    filter.Q.value = 1.2;
+    const ng = audioCtx.createGain();
+    ng.gain.setValueAtTime(0.4 * save.audio.sfx, t);
+    ng.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    src.connect(filter); filter.connect(ng); ng.connect(masterGain);
+    src.start(t);
+    src.stop(t + dur);
+  }
+}
+
+// ---------- Procedural music ----------
+// Per-stage themes loop in the background, scheduled ahead of the audio clock
+// so timing is sample-accurate. No external audio files; everything synthesized
+// from oscillators + filtered noise. Each theme is a tiny pattern (16 steps,
+// one bar) that loops; variation comes from chord progression at bar level.
+//
+// Themes are intentionally minimal — bassline + drum + sparse lead — so
+// they sit under SFX without fighting them. Tone target: synthwave/hip-hop
+// hybrid that fits the social-realist block setting.
+
+let musicGain = null;     // Per-channel mixer node, branched off masterGain
+let musicTheme = null;
+let musicStep = 0;        // 0..15, current 16th-note position within bar
+let musicBar  = 0;        // current bar in the loop
+let musicNextStepTime = 0;
+let musicTimer = null;
+let musicTargetVolume = 1;
+
+// Note frequencies (A minor pentatonic ish, useful set for action backings)
+const NOTE = {
+  A1:  55.00, B1:  61.74, C2:  65.41, D2:  73.42, E2:  82.41, F2:  87.31, G2:  98.00,
+  A2: 110.00, B2: 123.47, C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00,
+  A3: 220.00, B3: 246.94, C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00,
+  A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.26, F5: 698.46, G5: 783.99,
+};
+
+// Each theme provides:
+//   bpm: tempo
+//   bass: 16-step array of note names ("A2") or null
+//   lead: 16-step array of note names or null
+//   drum: { kick: [...], snare: [...], hat: [...] } each 16 booleans
+//   chords: optional array of root-note offsets per bar (transpose by semitones)
+const MUSIC_THEMES = {
+  // Stage 1 — THE BLOCK. Mid tempo, urban night, heavy bass.
+  block: {
+    bpm: 96,
+    bass: ["A1", null, null, null, "A1", null, "C2", null, "A1", null, null, "G1" || "A1", "F2", null, "E2", null],
+    lead: [null, null, null, null, null, null, null, null, null, "A3", null, null, "G3", null, null, "E3"],
+    drum: {
+      kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1],
+    },
+    chords: [0, 0, -2, -2],   // bar-level transpose (Am → Am → G → G)
+  },
+  // Stage 2 — TUNNELS. Cold, sparse, bass-heavy.
+  tunnels: {
+    bpm: 92,
+    bass: ["E1" || "E2", null, null, "E1" || "E2", null, null, "G2", null, "E1" || "E2", null, null, null, "B2", null, "A2", null],
+    lead: [null, null, null, null, null, null, null, null, null, null, null, null, "E4", null, null, null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
+      hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    },
+    chords: [0, 0, 0, -2],
+  },
+  // Stage 3 — RIVER & boss BARON. Tense, more lead, faster.
+  river: {
+    bpm: 108,
+    bass: ["D2", null, "D2", null, "F2", null, "A2", null, "G2", null, "G2", null, "F2", null, "E2", null],
+    lead: [null, null, "A4", null, null, null, "C5", null, null, null, "B4", null, "G4", null, "E4", null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,1,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,1,1,0, 1,1,1,0, 1,1,1,0, 1,1,1,1],
+    },
+    chords: [0, -2, -4, -2],
+  },
+  // Stages 4-5: lantern + cage. Mood pieces.
+  lantern: {
+    bpm: 88,
+    bass: ["F2", null, null, null, "C3", null, null, null, "A2", null, null, null, "E2", null, null, null],
+    lead: [null, null, "F4", null, null, null, "G4", null, null, null, "A4", null, null, null, "E4", null],
+    drum: {
+      kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    },
+    chords: [0, -2, -4, -5],
+  },
+  // Stages 6-9 reuse themes; KANE final stage gets its own.
+  kane: {
+    bpm: 124,
+    bass: ["A1", "A1", null, "A1", "C2", null, "A1", null, "G2", null, "F2", null, "E2", null, "D2", null],
+    lead: ["A3", null, "A3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null],
+    drum: {
+      kick:  [1,0,1,0, 0,0,1,0, 1,0,1,0, 0,0,1,1],
+      snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      hat:   [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+    },
+    chords: [0, 0, 0, 0],
+  },
+};
+
+// Map stage index → theme key. Bosses can override per encounter.
+function themeForStage(idx) {
+  if (idx <= 0) return "block";
+  if (idx === 1) return "tunnels";
+  if (idx === 2) return "river";
+  if (idx === 3) return "lantern";
+  if (idx === 4) return "tunnels";
+  if (idx === 5) return "block";
+  if (idx === 6) return "river";
+  if (idx === 7) return "lantern";
+  if (idx === 8) return "river";
+  if (idx === 9) return "kane";
+  return "block";
+}
+
+function ensureMusicGain() {
+  if (!audioCtx || musicGain) return;
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0;
+  musicGain.connect(masterGain);
+}
+
+function playMusicNote(freq, type, dur, gain, when) {
+  if (!audioCtx || !musicGain) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, when);
+  // Slight detune for analog warmth.
+  o.detune.setValueAtTime(((Math.random() - 0.5) * 6), when);
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(gain, when + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+  o.connect(g); g.connect(musicGain);
+  o.start(when);
+  o.stop(when + dur + 0.02);
+}
+
+function playDrum(kind, when) {
+  if (!audioCtx || !musicGain) return;
+  if (kind === "kick") {
+    // Sine sweep from ~120Hz down to 50Hz, very short.
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(120, when);
+    o.frequency.exponentialRampToValueAtTime(40, when + 0.12);
+    g.gain.setValueAtTime(0.6, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + 0.14);
+    o.connect(g); g.connect(musicGain);
+    o.start(when); o.stop(when + 0.16);
+  } else if (kind === "snare") {
+    // Filtered noise burst.
+    const dur = 0.10;
+    const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 0.8;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.35, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+    src.connect(f); f.connect(g); g.connect(musicGain);
+    src.start(when);
+  } else if (kind === "hat") {
+    // High-frequency noise blip.
+    const dur = 0.04;
+    const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter();
+    f.type = "highpass"; f.frequency.value = 6000;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.18, when);
+    g.gain.exponentialRampToValueAtTime(0.0005, when + dur);
+    src.connect(f); f.connect(g); g.connect(musicGain);
+    src.start(when);
+  }
+}
+
+// Returns the frequency for a note name with semitone offset applied.
+function noteFreq(noteName, semitoneOffset) {
+  if (!noteName || !NOTE[noteName]) return 0;
+  const f = NOTE[noteName];
+  return f * Math.pow(2, (semitoneOffset || 0) / 12);
+}
+
+function tickMusicScheduler() {
+  if (!audioCtx || !musicTheme) return;
+  ensureMusicGain();
+  const theme = MUSIC_THEMES[musicTheme];
+  if (!theme) return;
+  const stepDur = 60 / theme.bpm / 4;     // 16th note duration in seconds
+  // Schedule notes at least 100ms ahead of audio clock.
+  while (musicNextStepTime < audioCtx.currentTime + 0.10) {
+    const stepIdx = musicStep % 16;
+    const barIdx  = musicBar;
+    const transpose = (theme.chords && theme.chords[barIdx % theme.chords.length]) || 0;
+    // Bass.
+    if (theme.bass && theme.bass[stepIdx]) {
+      const f = noteFreq(theme.bass[stepIdx], transpose);
+      if (f) playMusicNote(f, "sawtooth", stepDur * 2.0, 0.18, musicNextStepTime);
+    }
+    // Lead.
+    if (theme.lead && theme.lead[stepIdx]) {
+      const f = noteFreq(theme.lead[stepIdx], transpose);
+      if (f) playMusicNote(f, "triangle", stepDur * 1.5, 0.10, musicNextStepTime);
+    }
+    // Drums.
+    if (theme.drum) {
+      if (theme.drum.kick  && theme.drum.kick[stepIdx])  playDrum("kick",  musicNextStepTime);
+      if (theme.drum.snare && theme.drum.snare[stepIdx]) playDrum("snare", musicNextStepTime);
+      if (theme.drum.hat   && theme.drum.hat[stepIdx])   playDrum("hat",   musicNextStepTime);
+    }
+    musicNextStepTime += stepDur;
+    musicStep++;
+    if (musicStep % 16 === 0) musicBar++;
+  }
+}
+
+function startMusic(themeKey) {
+  if (!audioCtx) return;
+  ensureMusicGain();
+  if (musicTheme === themeKey) return;
+  musicTheme = themeKey;
+  musicStep = 0;
+  musicBar = 0;
+  musicNextStepTime = audioCtx.currentTime + 0.05;
+  if (!musicTimer) musicTimer = setInterval(tickMusicScheduler, 25);
+  applyMusicVolume();
+}
+
+function stopMusic() {
+  musicTheme = null;
+  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  if (musicGain) musicGain.gain.value = 0;
+}
+
+function applyMusicVolume() {
+  if (!musicGain) return;
+  const target = save.audio.muted ? 0 : (save.audio.music * musicTargetVolume * 0.55);
+  // Smooth over 80ms to avoid clicks on slider changes.
+  if (audioCtx) {
+    musicGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    musicGain.gain.setValueAtTime(musicGain.gain.value, audioCtx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 0.08);
+  } else {
+    musicGain.gain.value = target;
+  }
+}
+
+// Convenience: duck music briefly during big SFX (boss intros, KOs).
+function duckMusic(amount, durSec) {
+  musicTargetVolume = amount;
+  applyMusicVolume();
+  setTimeout(() => { musicTargetVolume = 1; applyMusicVolume(); }, durSec * 1000);
 }
 
 // Boot the audio context the first time the user interacts (browser autoplay).
@@ -2566,15 +2961,38 @@ function drawDebugBoxes() {
 
 // Stage 1: THE BLOCK — neighborhood, urban night.
 function drawStageBlock() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  // Sky.
   X.fillStyle = "#11131c";
   X.fillRect(0, 0, W, 230);
+  // Far skyline (slow parallax, ~8 px every 60s).
+  const skyOff = (t * 0.13) % 64;
+  X.fillStyle = "#191b27";
+  for (let bx = -64; bx < W + 64; bx += 64) {
+    const x = bx - skyOff;
+    // Tower silhouettes
+    X.fillRect(x +  4, 60, 18, 30);
+    X.fillRect(x + 28, 50, 22, 40);
+    X.fillRect(x + 56, 70, 12, 20);
+  }
   X.fillStyle = "#1a1d2a";
   X.fillRect(0, 90, W, 120);
+  // Apartment windows. Some flicker on/off slowly to feel alive.
   X.fillStyle = "#3b4360";
   for (let by = 110; by < 200; by += 14) {
     for (let bx = 20; bx < W; bx += 22) {
       if (((bx * 13 + by * 7) & 7) < 3) X.fillRect(bx, by, 3, 4);
     }
+  }
+  // A few warm lit windows that flicker.
+  X.fillStyle = "#e8c04a";
+  for (let i = 0; i < 8; i++) {
+    const wx = 70 + i * 84;
+    const wy = 124 + ((i * 13) & 1) * 28;
+    // Flicker: ~1Hz sine + per-window phase. Off some of the time.
+    const phase = i * 0.7;
+    const flick = 0.5 + 0.5 * Math.sin(t * 1.3 + phase);
+    if (flick > 0.55) X.fillRect(wx, wy, 3, 4);
   }
   // Sidewalk + seams.
   X.fillStyle = "#2a2a36";
@@ -2593,6 +3011,17 @@ function drawStageBlock() {
   X.fillStyle = "#0e0e15";
   X.fillRect(60,  240, 10, 1);
   X.fillRect(560, 234, 12, 1);
+  // Soft drizzle — sparse, fast-falling specks across the sky region only.
+  // Skipped under reduce-flash for accessibility.
+  if (!save.settings.reduceFlash) {
+    X.fillStyle = "rgba(150, 165, 200, 0.45)";
+    for (let i = 0; i < 14; i++) {
+      const seed = i * 73.13;
+      const px = ((seed + t * 22) % (W + 30)) - 10;
+      const py = ((seed * 1.7 + t * 180) % 230);
+      X.fillRect(px, py, 1, 3);
+    }
+  }
 }
 
 // Stage 2: THE TUNNELS — subway / storm drain. Cold dim concrete.
@@ -3069,6 +3498,9 @@ function drawStageTop() {
 function drawCurrentStage() {
   const s = STAGES[currentStage];
   if (s && s.drawBg) s.drawBg(); else drawStageBlock();
+  // Hazards (taxi, train, falling lanterns/glass, spikes, wind indicators)
+  // render on top of the backdrop so they're visually consistent across states.
+  if (typeof drawStageHazards === "function") drawStageHazards();
 }
 
 // Backwards-compat — older calls render the first stage directly.
@@ -3136,6 +3568,37 @@ const ENEMY_ATK = {
     startup: 7, active: 4, recovery: 16,
     damage: 14, knockback: 130, hitstop: 6,
     hit: { fwd: 18, hw: 12, hd: 13, lo: 0, hi: 40 },
+  },
+  // Rig's signature AOE: ground-pound that radiates a shockwave on both sides.
+  // Heavily telegraphed (long startup) so players can punish if they read it.
+  rig_pound: {
+    startup: 18, active: 6, recovery: 22,
+    damage: 18, knockback: 160, hitstop: 8,
+    hit: { fwd: 0, hw: 26, hd: 16, lo: 0, hi: 28 },
+    shockwave: true,
+    superArmor: true,
+  },
+  // Chains' big move: 360-degree swing. Active hitbox covers both sides so
+  // players can't just step through; have to jump or back away.
+  chains_spin: {
+    startup: 12, active: 14, recovery: 22,
+    damage: 9, knockback: 80, hitstop: 4,
+    hit: { fwd: 0, hw: 26, hd: 13, lo: 8, hi: 38 },
+    multiHit: 18,   // hit window every 18 frames (3 hits over 14 active frames)
+  },
+  // Lamplight's charged shot. Long telegraphed wind-up + bigger projectile.
+  lamplight_charged: {
+    startup: 36, active: 1, recovery: 28,
+    damage: 0,
+    spawnsProjectile: "heavy_bullet",
+    chargedShot: true,
+  },
+  // Shade's quick backstab after reappear. Very short startup since it's
+  // already 'free' (player is facing the wrong way).
+  shade_backstab: {
+    startup: 3, active: 3, recovery: 12,
+    damage: 14, knockback: 120, hitstop: 6,
+    hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
   // BARON — methodical boxing patterns. Brass-knuckle hits land hard.
   baron_jab: {
@@ -3219,6 +3682,13 @@ const ENEMY_DEFAULT_ATTACK = {
 
 function makeEnemy(type, x, y) {
   const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
+  // Difficulty: scale enemy HP at spawn so the toughness curve matches the
+  // tier the player chose. Bosses scale slightly less so cinematic-feel HP
+  // bars stay readable across difficulty.
+  const cfg = (typeof difficultyConfig === "function") ? difficultyConfig() : null;
+  const hpMul = cfg ? (stats.isBoss ? Math.sqrt(cfg.enemyHpMul) : cfg.enemyHpMul) : 1;
+  const aggrMul = cfg ? cfg.enemyAggrMul : 1;
+  const scaledHp = Math.max(1, Math.round(stats.hp * hpMul));
   return {
     type, x, y, z: 0,
     isBoss: !!stats.isBoss,
@@ -3232,7 +3702,8 @@ function makeEnemy(type, x, y) {
     animTime: 0,
     walkSpeed: stats.walkSpeed,
     runSpeed:  stats.runSpeed,
-    hp: stats.hp, hpMax: stats.hp,
+    hp: scaledHp, hpMax: scaledHp,
+    aggrMul,
     range: stats.range,
     hurtHw: stats.hurtHw, hurtHd: stats.hurtHd, hurtHi: stats.hurtHi,
     staggerN: stats.staggerN || 1,
@@ -3384,9 +3855,39 @@ function advanceEnemyAttack(e) {
     e.x += e.facing * d.pushSelf * STEP;
   }
 
+  // Charged-shot telegraph: glow particles around the wind-up.
+  if (d.chargedShot && e.attackFrame > 4 && e.attackFrame < d.startup &&
+      (e.attackFrame & 3) === 0) {
+    spawnSpark(e.x + (Math.random() - 0.5) * 14, e.y - 22 + (Math.random() - 0.5) * 12, "#ffd76a");
+  }
+
+  // Shockwave telegraph: ground rumble particles during startup.
+  if (d.shockwave && e.attackFrame > d.startup - 8 && e.attackFrame < d.startup &&
+      (e.attackFrame & 1) === 0) {
+    spawnSpark(e.x + (Math.random() - 0.5) * 30, e.y + 2, "#a08560");
+  }
+
+  // Multi-hit: clear the per-attack consumed-hits set every multiHit frames so
+  // the same target can be hit again as the active window continues (chains spin).
+  if (d.multiHit && e.attackFrame > d.startup &&
+      ((e.attackFrame - d.startup - 1) % d.multiHit) === 0 && e.attackHits) {
+    e.attackHits.clear();
+  }
+
   // Spawn projectile on first active frame.
   if (d.spawnsProjectile && e.attackFrame === d.startup + 1) {
     spawnProjectile(d.spawnsProjectile, e.x + e.facing * 12, e.y - 22, e.facing, e);
+  }
+
+  // Shockwave AOE: when active phase begins, emit a burst of particles on
+  // both sides of the attacker to read as a ground shake.
+  if (d.shockwave && e.attackFrame === d.startup + 1) {
+    for (let i = 0; i < 14; i++) {
+      const dx = (Math.random() * 2 - 1) * 32;
+      const dz = Math.random() * 6;
+      spawnSpark(e.x + dx, e.y + 2 - dz, "#a08560");
+    }
+    if (shakeFrames < 10) shakeFrames = 10;
   }
 
   if (d.hit && e.attackFrame > d.startup && e.attackFrame <= d.startup + d.active) {
@@ -3404,6 +3905,8 @@ function advanceEnemyAttack(e) {
       });
     }
     const hb = e.hitboxes[0];
+    // Centered hitboxes (fwd === 0) sit on the attacker's body — chains_spin,
+    // rig_pound. Forward-facing hitboxes (fwd > 0) extend ahead like normal.
     hb.cx = e.x + e.facing * d.hit.fwd;
     hb.cy = e.y;
     hb.facing = e.facing;
@@ -3411,11 +3914,23 @@ function advanceEnemyAttack(e) {
     e.hitboxes.length = 0;
   }
   if (e.attackFrame >= d.startup + d.active + d.recovery) {
+    const finishedName = e.attackName;
     e.attacking = false;
     e.attackName = null;
     e.hitboxes.length = 0;
     e.attackHits = null;
-    e.aiCooldown = 0.55 + Math.random() * 0.55;
+    e.aiCooldown = (0.55 + Math.random() * 0.55) * (e.aggrMul || 1);
+    // Post-attack behavior hooks: schedule retreat / next-move state.
+    if (e.type === "runner" && finishedName === "swipe") {
+      // Runner backpedals briefly so the next encounter resets — hit-and-run.
+      e.runnerRetreat = 0.45;
+    } else if (e.type === "slice" && finishedName === "lunge") {
+      // Slice always backs out after a lunge so it never sits in player range.
+      e.sliceRetreat = 0.35;
+    } else if (e.type === "shade" && finishedName === "strike") {
+      // Shade re-engages vanish sooner to keep the teleport pressure up.
+      e.vanishTimer = Math.min(e.vanishTimer, 1.1);
+    }
   }
 }
 
@@ -3434,26 +3949,13 @@ function runEnemyAI(e, dt) {
   if (Math.abs(dx) > 1) e.facing = dx > 0 ? 1 : -1;
 
   switch (e.type) {
-    case "runner": {
-      if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
-      if (e.fleeing) {
-        const fleeDir = (player.x > e.x) ? -1 : 1;
-        e.facing = fleeDir;
-        e.vx = fleeDir * e.runSpeed;
-        e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
-        e.x += e.vx * dt; e.y += e.vy * dt;
-        e.animState = "walk";
-      } else {
-        approachOrAttack(e, dx, dy, dist, dt);
-      }
-      break;
-    }
-    case "tank":   approachOrAttack(e, dx, dy, dist, dt); break;
-    case "slice":  approachOrAttack(e, dx, dy, dist, dt); break;
-    case "rig":    approachOrAttack(e, dx, dy, dist, dt); break;
+    case "runner": runRunnerAI(e, dx, dy, dist, dt); break;
+    case "tank":   runTankAI(e, dx, dy, dist, dt); break;
+    case "slice":  runSliceAI(e, dx, dy, dist, dt); break;
+    case "rig":    runRigAI(e, dx, dy, dist, dt); break;
     case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
     case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
-    case "chains": approachOrAttack(e, dx, dy, dist, dt); break;
+    case "chains": runChainsAI(e, dx, dy, dist, dt); break;
     case "baron":     runBaronAI(e, dx, dy, dist, dt); break;
     case "razor":     runRazorAI(e, dx, dy, dist, dt); break;
     case "volt":      runVoltAI(e, dx, dy, dist, dt); break;
@@ -3475,7 +3977,10 @@ function runEnemyAI(e, dt) {
         e.vx = 0; e.vy = 0;
         e.animState = "idle";
         if (e.aiCooldown <= 0) {
-          startEnemyAttack(e, ENEMY_DEFAULT_ATTACK[e.type]);
+          // Every 4th shot is a heavy telegraphed charged shot. Tracked in lampShots.
+          e.lampShots = (e.lampShots || 0) + 1;
+          const atk = (e.lampShots % 4 === 0) ? "charged" : "shot";
+          startEnemyAttack(e, atk);
         }
       }
       break;
@@ -3502,6 +4007,121 @@ function approachOrAttack(e, dx, dy, dist, dt) {
   }
 }
 
+// ---------- Per-minion AI signatures ----------
+// Each function gives the minion a real fighting style instead of the generic
+// approach-and-swipe. Boss AIs already had this; minions now do too.
+
+// RUNNER: hit-and-run. Swipe, then back off ~30px, then re-approach. At low
+// HP, panicked flee (existing behavior).
+function runRunnerAI(e, dx, dy, dist, dt) {
+  if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
+  if (e.fleeing) {
+    const fleeDir = (player.x > e.x) ? -1 : 1;
+    e.facing = fleeDir;
+    e.vx = fleeDir * e.runSpeed;
+    e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  // Hit-and-run: after each attack, dash backward briefly. e.runnerRetreat counts
+  // down a backpedal window post-attack.
+  if (e.runnerRetreat > 0) {
+    e.runnerRetreat -= dt;
+    const back = -Math.sign(dx || 1);
+    e.facing = -back;
+    e.vx = back * e.runSpeed;
+    e.x += e.vx * dt;
+    e.animState = "walk";
+    return;
+  }
+  approachOrAttack(e, dx, dy, dist, dt);
+}
+
+// TANK: heavily telegraphed slam. Stops moving in range and charges 30 frames
+// before swinging. Super-armor through hits during charge so players have to
+// commit to dodging rather than flinching it.
+function runTankAI(e, dx, dy, dist, dt) {
+  // Approach steady; once in range hold ground and slam.
+  if (dist > e.range + 4) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    startEnemyAttack(e, "slam");
+    // Visual telegraph: ground dust during the slam's startup. No new attack
+    // needed — the existing tank_slam already has long startup; we just add
+    // particles via a tick hook below by setting a flag.
+    e.tankTelegraph = 14;
+  }
+  if (e.tankTelegraph > 0) {
+    e.tankTelegraph--;
+    if ((e.tankTelegraph & 1) === 0) {
+      spawnSpark(e.x + (Math.random() - 0.5) * 24, e.y + 2, "#5a4a36");
+    }
+  }
+}
+
+// SLICE: hit-and-run knife. Lunge in, then auto-dash back to ~70px, then
+// re-approach. Always in motion — players can't camp.
+function runSliceAI(e, dx, dy, dist, dt) {
+  if (e.sliceRetreat > 0) {
+    e.sliceRetreat -= dt;
+    const back = -Math.sign(dx || 1);
+    e.facing = -back;   // keep facing player while dashing back
+    e.vx = back * e.runSpeed * 1.1;
+    e.x += e.vx * dt;
+    e.animState = "walk";
+    return;
+  }
+  approachOrAttack(e, dx, dy, dist, dt);
+}
+
+// CHAINS: alternates a long-reach swing and a 360° spin. The spin covers both
+// sides — players can't sidestep through it; have to jump or back off.
+function runChainsAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    e.chainsStep = (e.chainsStep || 0) + 1;
+    // Every third attack is the spin; rest are regular swings.
+    const atk = (e.chainsStep % 3 === 0) ? "spin" : "swing";
+    startEnemyAttack(e, atk);
+  }
+}
+
+// RIG: alternates strike and AOE ground pound. Pound is heavily telegraphed
+// (rumble particles for ~8 frames before active), super-armored through it.
+function runRigAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    e.rigStep = (e.rigStep || 0) + 1;
+    // Every fourth attack is the pound.
+    const atk = (e.rigStep % 4 === 0) ? "pound" : "strike";
+    startEnemyAttack(e, atk);
+  }
+}
+
 // SHADE: pulse-vanish and reposition behind the player.
 function updateShadeVanish(e, dt) {
   e.vanishTimer -= dt;
@@ -3514,6 +4134,12 @@ function updateShadeVanish(e, dt) {
         const side = (player.x > W / 2) ? -1 : 1;
         e.x = clamp(player.x + side * 70, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
         e.y = clamp(player.y, STAGE_TOP, STAGE_BOT);
+        // Smoke trail at reappear point.
+        for (let i = 0; i < 6; i++) {
+          spawnSpark(e.x + (Math.random() - 0.5) * 14, e.y - 18 + (Math.random() - 0.5) * 12, "#3a3550");
+        }
+        // Backstab: queue an immediate strike so reappear-from-behind has bite.
+        e.shadeBackstabIn = 0.20;
       }
       e.vanishing = false;
       e.vanishAlpha = 0.05;
@@ -3523,6 +4149,13 @@ function updateShadeVanish(e, dt) {
     if (e.vanishTimer <= 0 && !e.attacking && e.hitstun === 0) {
       e.vanishing = true;
       e.vanishTimer = 2.0 + Math.random() * 1.4;
+    }
+  }
+  // If a backstab was scheduled, fire when window expires (and we're visible).
+  if (e.shadeBackstabIn > 0 && !e.vanishing) {
+    e.shadeBackstabIn -= dt;
+    if (e.shadeBackstabIn <= 0 && !e.attacking && e.hitstun === 0) {
+      startEnemyAttack(e, "backstab");
     }
   }
 }
@@ -3667,6 +4300,7 @@ function spawnProjectile(kind, x, y, dir, owner) {
     kind === "bottle" ? { speed: 180, damage: 6,  knockback: 40,  hitstop: 3, w: 4, h: 5, color: "#7fa8a4", arc: -160 } :
     kind === "knife"  ? { speed: 240, damage: 12, knockback: 80,  hitstop: 5, w: 8, h: 3, color: "#cfd0d6" } :
     kind === "shock"  ? { speed: 200, damage: 14, knockback: 120, hitstop: 6, w: 14, h: 10, color: "#a8d4ff" } :
+    kind === "heavy_bullet" ? { speed: 220, damage: 18, knockback: 140, hitstop: 7, w: 9, h: 4, color: "#ff8a40" } :
                         { speed: 200, damage: 5,  knockback: 40,  hitstop: 3, w: 4, h: 4, color: "#fff" };
   projectiles.push({
     kind, x, y, vx: dir * def.speed, vy: 0, vz: def.arc || 0, z: 0,
@@ -3748,6 +4382,14 @@ function drawProjectiles() {
       X.fillStyle = "rgba(168,212,255,0.7)";
       X.fillRect(sx - 11, sy - 1, 4, 1);
       X.fillRect(sx + 7,  sy - 1, 4, 1);
+    } else if (p.kind === "heavy_bullet") {
+      // Charged shot: chunky orange tracer with hot core and a flame trail.
+      X.fillStyle = "rgba(255,138,64,0.55)";
+      X.fillRect(sx - p.facing * 14, sy - 2, 14, 4);
+      X.fillStyle = p.color;
+      X.fillRect(sx - 4, sy - 2, p.w, p.h);
+      X.fillStyle = "rgba(255,240,180,1)";
+      X.fillRect(sx - 1, sy - 1, 3, 2);
     } else {
       X.fillStyle = p.color;
       X.fillRect(sx - p.w / 2, sy - p.h / 2, p.w, p.h);
@@ -4835,6 +5477,19 @@ let particles = [];
 function spawnSparkle(x, y) {
   particles.push({ kind: "sparkle", x, y, life: 0, max: 0.18 });
 }
+// Single colored spark used for telegraphs (chains spin, rig pound, lamplight charge).
+// Uses the petal renderer so it fades cleanly with no special draw code.
+function spawnSpark(x, y, color) {
+  const c = color || "#a08560";
+  const dx = (Math.random() - 0.5) * 6;
+  const dy = (Math.random() - 0.5) * 4;
+  particles.push({
+    kind: "petal", x: x + dx, y: y + dy,
+    vx: dx * 8, vy: dy * 8 - 4,
+    life: 0, max: 0.30,
+    core: c, edge: c,
+  });
+}
 function spawnDmgNumber(x, y, n) {
   particles.push({ kind: "dmg", x, y, vy: -28, life: 0, max: 0.55, text: String(n) });
 }
@@ -4937,22 +5592,34 @@ let flashFrames = 0;
 let flashColor = "rgba(255,255,255,0.85)";
 let shakeFrames = 0;
 let shakeMag = 0;
+// Slow-motion state: while slowmoFrames > 0, updatePlaying() multiplies dt
+// by SLOWMO_RATE so action plays back at ~40% speed for impact reads (KO,
+// big special hits). Tied to wall-clock frames, not slowed dt, so duration
+// stays consistent regardless of how slow it's playing.
+let slowmoFrames = 0;
+const SLOWMO_RATE = 0.4;
 
 function boxOverlap(a, b) {
   return Math.abs(a.cx - b.cx) < a.hw + b.hw &&
          Math.abs(a.cy - b.cy) < a.hd + b.hd;
 }
 
-// Difficulty multiplier applied to damage *taken by player*. Story is forgiving;
-// Brutal makes every hit count. Other-targets unscaled — we don't make enemies
-// tougher per setting, only the player more or less squishy.
-function difficultyDamageMul() {
+// Per-difficulty config. Three independent dials:
+//   damageTakenMul: multiplier on damage the player takes per hit
+//   enemyHpMul:     multiplier on every enemy's max HP at spawn (boss HP
+//                   scales by sqrt of this so cinematic HP bars stay readable)
+//   enemyAggrMul:   multiplier on enemy aiCooldown after each attack
+//                   (lower = more aggressive, attacks cycle faster)
+function difficultyConfig() {
   switch (save.settings.difficulty) {
-    case "story":  return 0.5;
-    case "brutal": return 2.0;
-    default:       return 1.0;
+    case "story":  return { damageTakenMul: 0.5, enemyHpMul: 0.75, enemyAggrMul: 1.4 };
+    case "hard":   return { damageTakenMul: 1.5, enemyHpMul: 1.20, enemyAggrMul: 0.8 };
+    case "brutal": return { damageTakenMul: 2.0, enemyHpMul: 1.40, enemyAggrMul: 0.6 };
+    default:       return { damageTakenMul: 1.0, enemyHpMul: 1.00, enemyAggrMul: 1.0 };
   }
 }
+// Backwards-compat shim for callers still using the old name.
+function difficultyDamageMul() { return difficultyConfig().damageTakenMul; }
 
 function applyHit(target, hb, attacker) {
   if (target.dead) return;
@@ -5026,9 +5693,20 @@ function applyHit(target, hb, attacker) {
     if (target === player) { vibrate(120); playSfx("ko"); }
     else if (target.isBoss) { vibrate([30, 30, 60]); playSfx("ko"); }
     else { vibrate(20); playSfx("ko"); }
+    // Brief slow-motion on KO for impact feel. Boss KO gets longer drag.
+    // dt is multiplied by SLOWMO_RATE while slowmoFrames > 0; uses the same
+    // unscaled-hitstop-style global counter so it doesn't pile up.
+    if (target.isBoss) slowmoFrames = Math.max(slowmoFrames, 18);
+    else if (target === player) slowmoFrames = Math.max(slowmoFrames, 14);
+    else slowmoFrames = Math.max(slowmoFrames, 9);
+    // Music ducks during slow-mo so the SFX punch lands clean.
+    duckMusic(0.35, slowmoFrames / 60 + 0.1);
   } else {
     playSfx(hb.damage >= 14 ? "hit_heavy" : "hit");
   }
+  // Hit flash: target's sprite renders white-silhouette overlay for a few
+  // frames so impacts read clearly even on a busy screen.
+  target.hitFlash = absorbHitstun ? 2 : 4;
   // Scaled hit feel: hitstop and shake grow with damage and combo count, capped
   // at +50%% by 10 hits. Heavy single hits already feel punchier (high base hitstop)
   // and 10+ hit combos add noticeable rumble.
@@ -5301,6 +5979,8 @@ function update(dt) {
   else if (STATE === "playing") updatePlaying(dt);
   else if (STATE === "paused") updatePaused(dt);
   else if (STATE === "cinematic") updateCinematic(dt);
+  else if (STATE === "bossIntro") updateBossIntro(dt);
+  else if (STATE === "beat") updateBeat(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
@@ -5342,8 +6022,9 @@ function updatePaused(dt) {
     saveSave(); setState("title"); return;
   }
   if (opt.id === "diff" && (left || right || enter)) {
-    const list = ["story", "normal", "brutal"];
+    const list = ["story", "normal", "hard", "brutal"];
     let i = list.indexOf(save.settings.difficulty);
+    if (i < 0) i = 1;   // fall back to normal if save was set to a removed tier
     i = (i + (left ? -1 : 1) + list.length) % list.length;
     save.settings.difficulty = list[i];
     playSfx("menu_select");
@@ -5657,22 +6338,510 @@ function wrapText(text, maxChars) {
 }
 
 // ---------- Kane QTE cinematic (Stage 10 finale) ----------
+// ---------- Narrative beats ----------
+// A beat is a short scripted moment used for: the opening cutscene before
+// stage 1, the per-stage intro after each advanceStage, the stage-clear
+// scene after each stage's last enemy is down, and the ending cinematic
+// after the KANE QTE. All four use the same state machine and renderer.
+//
+// Each entry: { title, subtitle, lines, duration, background, onComplete }
+//   title:    big heading at top (e.g. "STAGE 3 — RIVER ROW")
+//   subtitle: smaller line under the title
+//   lines:    [{ speaker?, text }] — typewriter-revealed in order
+//   duration: total seconds; skippable with Enter / J / Space / Escape
+//   background: 'stage' (current stage backdrop dimmed) or 'black' (full black)
+//   onComplete: callback fired on completion or skip
+//
+// Lines are voiced lines from the protagonist by default. Add `speaker` to
+// override (e.g., for narrator beats).
+
+let beatState = null;
+
+function beginBeat(cfg) {
+  if (!cfg) return;
+  // Compute typewriter timing.
+  const lines = cfg.lines || [];
+  const lineSlots = [];
+  const intro = 0.5;
+  const lineDur = (cfg.duration - intro - 0.5) / Math.max(1, lines.length);
+  let cur = intro;
+  for (const ln of lines) {
+    lineSlots.push({
+      text: ln.text,
+      speaker: ln.speaker,
+      startAt: cur,
+      revealUntil: cur + lineDur * 0.7,
+    });
+    cur += lineDur;
+  }
+  beatState = {
+    cfg,
+    t: 0,
+    lineSlots,
+  };
+  duckMusic(0.35, cfg.duration + 0.4);
+  setState("beat");
+}
+
+function updateBeat(dt) {
+  if (!beatState) { setState("playing"); return; }
+  beatState.t += dt;
+  if (consumePress("Enter") || consumePress("Space") || consumePress("KeyJ") ||
+      consumePress("Escape")) {
+    completeBeat();
+    return;
+  }
+  if (beatState.t >= beatState.cfg.duration) {
+    completeBeat();
+  }
+}
+
+function completeBeat() {
+  if (!beatState) return;
+  const cb = beatState.cfg.onComplete;
+  beatState = null;
+  if (cb) cb();
+  // If onComplete didn't change state, default to playing.
+  if (STATE === "beat") setState("playing");
+}
+
+function renderBeat() {
+  if (!beatState) return;
+  const { cfg, t, lineSlots } = beatState;
+  // Background.
+  if (cfg.background === "black") {
+    X.fillStyle = "#000";
+    X.fillRect(0, 0, W, H);
+  } else {
+    drawCurrentStage();
+    // Heavy vignette so the beat reads.
+    X.fillStyle = "rgba(0,0,0,0.78)";
+    X.fillRect(0, 0, W, H);
+  }
+  // Title bar.
+  if (cfg.title) {
+    X.fillStyle = "rgba(0,0,0,0.7)";
+    X.fillRect(0, 50, W, 60);
+    X.fillStyle = cfg.titleColor || "#e8c04a";
+    X.font = "bold 26px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText(cfg.title, 40, 60);
+    if (cfg.subtitle) {
+      X.fillStyle = "#aaa";
+      X.font = "bold 10px ui-monospace, monospace";
+      X.fillText(cfg.subtitle, 40, 92);
+    }
+  }
+  // Dialog block.
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  const dialogH = 30 + lineSlots.length * 22;
+  X.fillRect(0, H - dialogH - 30, W, dialogH);
+  X.font = "bold 13px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  let y = H - dialogH - 18;
+  for (const line of lineSlots) {
+    if (t < line.startAt) break;
+    const reveal = Math.min(1, (t - line.startAt) / Math.max(0.15, line.revealUntil - line.startAt));
+    const visible = line.text.substring(0, Math.ceil(line.text.length * reveal));
+    if (line.speaker) {
+      X.fillStyle = "#aaa";
+      X.fillText(line.speaker + ":", 40, y);
+      X.fillStyle = "#fff";
+      X.fillText('"' + visible + '"', 40 + line.speaker.length * 8 + 16, y);
+    } else {
+      X.fillStyle = "#ffffff";
+      X.fillText('"' + visible + '"', 40, y);
+    }
+    y += 22;
+  }
+  // Skip prompt.
+  X.fillStyle = "#666";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "right";
+  X.fillText("ENTER / J — CONTINUE", W - 12, H - 14);
+}
+
+// ---------- Per-character per-stage dialog ----------
+// Spoken on the FIRST frame of each stage. Tone-tracks the characters' own
+// reasons for being on the Block per CHARACTER_BIBLE.md / STORY.md.
+const STAGE_INTRO_LINES = {
+  rio: [
+    "Marcus's gym. Padlocked. Kane's people are still on the street.",
+    "He owns the subway too.",
+    "Industrial district. Kane's been buying out the docks for years.",
+    "Market street. Half the lights are out.",
+    "He's using the old fight club as a holding pen.",
+    "Tower district. Glass and security guards.",
+    "Steel mill. Demolition starts next week.",
+    "He's clearing out the encampment under the overpass.",
+    "Kane's building. Top floor.",
+    "He's behind that door.",
+  ],
+  duke: [
+    "Three blocks from my place. They already started.",
+    "Quieter down here than the platform. They keep it that way.",
+    "I know this stretch. Cops don't come here.",
+    "The good food was here.",
+    "I fought here once. Lost. Bad night.",
+    "Out of my comfort zone.",
+    "Smells like burning.",
+    "Some of these people had names I knew.",
+    "Wind's bad up here.",
+    "Ready when you are.",
+  ],
+  atlas: [
+    "Twenty-three years on this street. Today they show up?",
+    "Used to take the kids on this line.",
+    "Used to deliver hardware to the warehouse on this corner.",
+    "Family ate at the noodle shop here. Gone last month.",
+    "Place was condemned ten years ago. Of course he's using it.",
+    "Lawyers' offices. Where they signed the papers on my street.",
+    "I bought half my inventory from the foundry across the way.",
+    "Can't drive through here without seeing the eviction notices.",
+    "I've sat in his lobby. Bring my own coffee.",
+    "Let's end this the right way.",
+  ],
+};
+
+// Per-stage clear beats — narrator-style observation about what just happened.
+const STAGE_CLEAR_LINES = [
+  "The Block is quiet for the first time in a week.",
+  "The tunnels are clear. Train rumble fades into the dark.",
+  "The cops won't come here. Baron used to be one of them.",
+  "Lanterns out. The market belongs to no one tonight.",
+  "The cage is empty. The walls stop closing.",
+  "Razor goes home. Tomorrow she'll send a different lawyer.",
+  "The foundry stays standing for one more night.",
+  "The freeway noise sounds like quiet now.",
+  "The tower's wind keeps blowing. Volt is down.",
+  null,   // stage 10 handled by Kane cinematic
+];
+
+const STAGE_NAMES_FORMAL = [
+  "STAGE 1 — THE BLOCK",
+  "STAGE 2 — THE TUNNELS",
+  "STAGE 3 — RIVER ROW",
+  "STAGE 4 — LANTERN ROW",
+  "STAGE 5 — THE CAGE",
+  "STAGE 6 — UPTOWN",
+  "STAGE 7 — THE WORKS",
+  "STAGE 8 — THE FREEWAY",
+  "STAGE 9 — THE TOWER",
+  "STAGE 10 — THE TOP",
+];
+
+function beginStageIntroBeat() {
+  if (!player) return;
+  const idx = currentStage;
+  const name = STAGE_NAMES_FORMAL[idx] || ("STAGE " + (idx + 1));
+  const charLines = STAGE_INTRO_LINES[player.char] || STAGE_INTRO_LINES.rio;
+  const line = charLines[idx] || charLines[0];
+  beginBeat({
+    title: name,
+    subtitle: ({ rio: "RIO", duke: "DUKE", atlas: "ATLAS" })[player.char] + " — INCOMING",
+    lines: [{ text: line }],
+    duration: 3.4,
+    background: "stage",
+    titleColor: "#e8c04a",
+  });
+}
+
+function beginStageClearBeat() {
+  const idx = currentStage;
+  const line = STAGE_CLEAR_LINES[idx];
+  if (!line) {
+    // No beat — fall through to legacy stage-clear text path.
+    const stage = STAGES[idx];
+    stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
+    stageClearTimer = 2.4;
+    return;
+  }
+  beginBeat({
+    title: "STAGE CLEAR",
+    subtitle: STAGE_NAMES_FORMAL[idx] || "",
+    lines: [{ speaker: "—", text: line }],
+    duration: 3.6,
+    background: "stage",
+    titleColor: "#7d8d4f",
+    onComplete: () => {
+      // After the beat, run the same advance-stage clock the legacy path used.
+      stageClearTimer = 0.4;
+      stageClearMessage = "";
+    },
+  });
+}
+
+// ---------- Opening cutscene (pre-Stage 1) ----------
+const OPENING_LINES = {
+  rio: [
+    { speaker: "RIO", text: "Marcus's gym. He's been gone six months." },
+    { speaker: "RIO", text: "They couldn't even wait." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+  duke: [
+    { speaker: "DUKE", text: "I knew this would happen. Just not this fast." },
+    { speaker: "DUKE", text: "Three blocks from my apartment, and they already started." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+  atlas: [
+    { speaker: "ATLAS", text: "Twenty-three years on this street." },
+    { speaker: "ATLAS", text: "I told them this would happen. Nobody listened. Now we're here." },
+    { speaker: "—", text: "Three of Kane's people walk up. They don't stop." },
+  ],
+};
+
+function beginOpeningCutscene() {
+  if (!player) return;
+  const lines = OPENING_LINES[player.char] || OPENING_LINES.rio;
+  beginBeat({
+    title: "THE BLOCK",
+    subtitle: "A NEIGHBORHOOD KANE WANTS GONE",
+    lines,
+    duration: 7.5,
+    background: "stage",
+    titleColor: "#e8c04a",
+  });
+}
+
+// ---------- Ending cinematic (post-Kane) ----------
+const ENDING_LINES = {
+  rio: [
+    { speaker: "—",   text: "Kane's offer was three million dollars." },
+    { speaker: "—",   text: "The gym is still padlocked. The Block is still standing." },
+    { speaker: "RIO", text: "Marcus would tell me to be in the gym tomorrow." },
+    { speaker: "RIO", text: "So I'll be in the gym tomorrow." },
+  ],
+  duke: [
+    { speaker: "—",    text: "Kane's offer was three million dollars." },
+    { speaker: "—",    text: "The Block is still standing. For now." },
+    { speaker: "DUKE", text: "Twenty bucks says he comes back next month with a different envelope." },
+    { speaker: "DUKE", text: "I'll be here." },
+  ],
+  atlas: [
+    { speaker: "—",     text: "Kane's offer was three million dollars." },
+    { speaker: "—",     text: "Kane will be back. Of course he will." },
+    { speaker: "ATLAS", text: "And so will I." },
+    { speaker: "ATLAS", text: "Twenty-three years. Twenty-four next week." },
+  ],
+};
+
+function beginEndingCinematic() {
+  if (!player) {
+    setState("victory");
+    return;
+  }
+  const lines = ENDING_LINES[player.char] || ENDING_LINES.rio;
+  beginBeat({
+    title: "THE BLOCK STAYS",
+    subtitle: "VICTOR KANE WALKS AWAY",
+    lines,
+    duration: 9.0,
+    background: "black",
+    titleColor: "#e8c04a",
+    onComplete: () => {
+      finalizeRun(true);
+      setState("victory");
+    },
+  });
+}
+
+
+// Plays a short scene before each boss spawn: name banner, boss portrait
+// silhouette, dialog lines with typewriter reveal. Skippable with Enter /
+// Space / J. On complete, spawns the boss and resumes playing. Dialog from
+// STORY.md so the in-game beats track the narrative doc.
+const BOSS_INTRO = {
+  baron: {
+    title: "BARON",
+    subtitle: "KANE'S ENFORCER  /  EX-COP  /  STAGE 3",
+    lines: [
+      "You don't have to do this.",
+      "Walk away. I'll tell Kane it was nothing.",
+      "...This is the last time I ask.",
+    ],
+    color: "#cfa040",
+    duration: 6.0,
+  },
+  razor: {
+    title: "RAZOR",
+    subtitle: "WHITE-COLLAR SPECIALIST  /  STAGE 6",
+    lines: [
+      "We could have done this in your kitchen.",
+      "You're making this so much harder than it needs to be.",
+    ],
+    color: "#cfd0d6",
+    duration: 5.5,
+  },
+  volt: {
+    title: "VOLT",
+    subtitle: "KANE'S LIEUTENANT  /  STAGE 9",
+    lines: [
+      "Kane built me.",
+      "So I owe him a building.",
+    ],
+    color: "#4a8ad0",
+    duration: 5.0,
+  },
+};
+
+let bossIntroState = null;
+
+function beginBossIntro(bossKey) {
+  const def = BOSS_INTRO[bossKey];
+  if (!def) {
+    // No intro for this boss type — just spawn directly.
+    spawnStageBoss(bossKey);
+    return;
+  }
+  // Compute typewriter timing: each line gets a slice of the duration.
+  const lineSlots = [];
+  const lineDur = def.duration / (def.lines.length + 0.4);
+  let cur = 0.6;   // initial pause
+  for (const line of def.lines) {
+    lineSlots.push({ text: line, startAt: cur, charsAt: cur, fullAt: cur + lineDur * 0.7 });
+    cur += lineDur;
+  }
+  bossIntroState = {
+    bossKey,
+    def,
+    t: 0,
+    lineSlots,
+  };
+  // Pause music to add gravity. Restored when intro completes.
+  duckMusic(0.3, def.duration + 0.5);
+  setState("bossIntro");
+}
+
+function spawnStageBoss(bossKey) {
+  bossSpawnedFor[currentStage] = true;
+  const boss = makeEnemy(bossKey, 540, 300);
+  enemies = enemies.concat([boss]);
+  flashFrames = Math.max(flashFrames, 6);
+  spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
+}
+
+function updateBossIntro(dt) {
+  if (!bossIntroState) { setState("playing"); return; }
+  bossIntroState.t += dt;
+  // Skip on confirm.
+  if (consumePress("Enter") || consumePress("Space") || consumePress("KeyJ")) {
+    completeBossIntro();
+    return;
+  }
+  if (consumePress("Escape")) {
+    completeBossIntro();
+    return;
+  }
+  if (bossIntroState.t >= bossIntroState.def.duration) {
+    completeBossIntro();
+  }
+}
+
+function completeBossIntro() {
+  if (!bossIntroState) return;
+  const bossKey = bossIntroState.bossKey;
+  bossIntroState = null;
+  setState("playing");
+  spawnStageBoss(bossKey);
+}
+
+function renderBossIntro() {
+  if (!bossIntroState) return;
+  const { def, t, lineSlots, bossKey } = bossIntroState;
+  drawCurrentStage();
+  // Vignette.
+  X.fillStyle = "rgba(0,0,0,0.78)";
+  X.fillRect(0, 0, W, H);
+
+  // Boss portrait on the right — silhouetted reuse of the in-game renderer.
+  // We mock a stub entity at a fixed pose.
+  const portraitX = W - 130, portraitY = H - 60;
+  const stub = {
+    x: portraitX, y: portraitY, z: 0,
+    type: bossKey, isBoss: true, bossName: def.title,
+    facing: -1,   // facing the player on the left
+    animState: "idle", animTime: t * 0.6,
+    attacking: false, dodging: false,
+    hp: 100, hpMax: 100,
+    iframes: 0, hitstun: 0, knockdownFrames: 0,
+    vanishAlpha: 1, hitboxes: [], hurtboxes: [],
+  };
+  X.save();
+  X.globalAlpha = 0.85;
+  if (bossKey === "baron")    drawBaron(stub);
+  else if (bossKey === "razor") drawRazor(stub);
+  else if (bossKey === "volt")  drawVolt(stub);
+  else if (bossKey === "blackwell") drawBlackwell(stub);
+  X.globalAlpha = 1;
+  X.restore();
+
+  // Big title banner across the top.
+  X.fillStyle = "rgba(0,0,0,0.7)";
+  X.fillRect(0, 50, W, 70);
+  // Title text — large, colored per boss.
+  X.fillStyle = def.color;
+  X.font = "bold 36px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText(def.title, 40, 60);
+  // Subtitle.
+  X.fillStyle = "#aaa";
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillText(def.subtitle, 40, 100);
+
+  // Dialog lines with typewriter reveal at the bottom.
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  X.fillRect(0, H - 110, W, 90);
+  X.fillStyle = "#ffffff";
+  X.font = "bold 13px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  // Stack visible lines.
+  let y = H - 100;
+  for (const line of lineSlots) {
+    if (t < line.startAt) break;
+    const reveal = Math.min(1, (t - line.charsAt) / Math.max(0.3, line.fullAt - line.charsAt));
+    const visible = line.text.substring(0, Math.ceil(line.text.length * reveal));
+    X.fillText('"' + visible + '"', 40, y);
+    y += 22;
+  }
+
+  // Skip prompt.
+  X.fillStyle = "#666";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "right";
+  X.fillText("ENTER / J — CONTINUE", W - 12, H - 14);
+}
+
 let cineState = null;
 
 function beginKaneCinematic() {
+  // Five prompts, each refusing one of Kane's offers (per STORY.md).
+  // Dialog lines display as captions starting ~0.7s before each prompt
+  // so the player reads what they're refusing.
   cineState = {
     t: 0,
     prompts: [
-      { at: 1.6, key: "KeyJ", label: "J", hit: false, fired: false },
-      { at: 3.0, key: "KeyK", label: "K", hit: false, fired: false },
-      { at: 4.4, key: "KeyJ", label: "J", hit: false, fired: false },
-      { at: 5.8, key: "KeyK", label: "K", hit: false, fired: false },
+      { at: 2.4, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "I understand you're upset. I would be too. Let me make it right." },
+      { at: 4.6, key: "KeyK", label: "K", hit: false, fired: false,
+        line: "Three million. To you, today. Walk out of this building rich." },
+      { at: 6.8, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "Your friends in the gym? They get the next ten years rent-free. Marcus would have wanted that." },
+      { at: 9.0, key: "KeyK", label: "K", hit: false, fired: false,
+        line: "Sit down. Sign the paper. Or I'll find someone in your life who will." },
+      { at: 11.2, key: "KeyJ", label: "J", hit: false, fired: false,
+        line: "...I see." },
     ],
-    duration: 7.6,
+    duration: 13.0,
   };
   enemies = [];
   projectiles = [];
   particles = [];
+  // Strip music to bass-only for the duration so Kane's dialog has room.
+  duckMusic(0.4, 13.5);
   setState("cinematic");
 }
 
@@ -5696,15 +6865,15 @@ function updateCinematic(dt) {
     }
   }
   if (consumePress("Escape")) {
-    finalizeRun(true);
-    setState("victory");
     cineState = null;
+    if (typeof beginEndingCinematic === "function") beginEndingCinematic();
+    else { finalizeRun(true); setState("victory"); }
     return;
   }
   if (cineState.t >= cineState.duration) {
-    finalizeRun(true);
     cineState = null;
-    setState("victory");
+    if (typeof beginEndingCinematic === "function") beginEndingCinematic();
+    else { finalizeRun(true); setState("victory"); }
   }
 }
 
@@ -5731,6 +6900,42 @@ function renderCinematic() {
   X.textAlign = "center";
   X.textBaseline = "middle";
   X.fillText("VICTOR KANE", W / 2, 50);
+
+  // Kane's dialog caption — fades in 0.6s before each prompt and out 0.6s
+  // after. Typewriter reveal so the player reads what they're refusing.
+  let activeLine = null, lineProgress = 0;
+  for (const p of cineState.prompts) {
+    if (!p.line) continue;
+    const inWin = (cineState.t > p.at - 1.2) && (cineState.t < p.at + 1.0);
+    if (inWin) {
+      activeLine = p;
+      const start = p.at - 1.2;
+      lineProgress = Math.min(1, (cineState.t - start) / 0.9);
+      break;
+    }
+  }
+  if (activeLine) {
+    const visible = activeLine.line.substring(0,
+                     Math.ceil(activeLine.line.length * lineProgress));
+    const dialogY = H - 80;
+    X.fillStyle = "rgba(0,0,0,0.85)";
+    X.fillRect(40, dialogY - 4, W - 80, 38);
+    X.fillStyle = "#ffffff";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.textBaseline = "top";
+    // Wrap simply: split if too long.
+    const maxChars = 70;
+    if (visible.length <= maxChars) {
+      X.fillText('"' + visible + '"', W / 2, dialogY + 4);
+    } else {
+      // Crude two-line wrap on nearest space.
+      let split = visible.lastIndexOf(" ", maxChars);
+      if (split < 0) split = maxChars;
+      X.fillText('"' + visible.substring(0, split), W / 2, dialogY);
+      X.fillText(visible.substring(split + 1) + '"', W / 2, dialogY + 14);
+    }
+  }
 
   // Active prompt button.
   const now = cineState.t;
@@ -5851,6 +7056,7 @@ const STAGES = [
   { // 1
     name: "THE BLOCK",
     drawBg: function() { drawStageBlock(); },
+    hazard: "taxi",
     waves: [
       [["runner", 440, 280], ["runner", 520, 320]],
       [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
@@ -5861,6 +7067,7 @@ const STAGES = [
   { // 2
     name: "THE TUNNELS",
     drawBg: function() { drawStageTunnels(); },
+    hazard: "train",
     waves: [
       [["slice", 440, 280], ["runner", 520, 320]],
       [["slice", 460, 290], ["slice", 580, 310]],
@@ -5882,6 +7089,7 @@ const STAGES = [
   { // 4
     name: "LANTERN ROW",
     drawBg: function() { drawStageLantern(); },
+    hazard: "lanterns",
     waves: [
       [["chains", 440, 282], ["slice", 540, 320]],
       [["shade", 480, 298], ["chains", 600, 320]],
@@ -5892,6 +7100,7 @@ const STAGES = [
   { // 5
     name: "THE CAGE",
     drawBg: function() { drawStageCage(); },
+    hazard: "spikes",
     waves: [
       [["dojo", 460, 290], ["chains", 560, 318]],
       [["dojo", 460, 290], ["dojo", 560, 318]],
@@ -5902,6 +7111,7 @@ const STAGES = [
   { // 6
     name: "UPTOWN",
     drawBg: function() { drawStageUptown(); },
+    hazard: "glass",
     waves: [
       [["lamplight", 560, 300], ["dojo", 460, 320]],
       [["dojo", 480, 290], ["dojo", 580, 320]],
@@ -5934,6 +7144,7 @@ const STAGES = [
   { // 9
     name: "THE TOWER",
     drawBg: function() { drawStageTower(); },
+    hazard: "wind",
     waves: [
       [["dojo", 480, 295], ["lamplight", 580, 320]],
       [["rig", 460, 290], ["dojo", 580, 320]],
@@ -5981,6 +7192,9 @@ function enterPlaying() {
   stageClearTimer = 0;
   bossSpawnedFor = {};
   setState("playing");
+  // Opening cutscene runs once at the start of every fresh run.
+  // Skippable; on completion the player is already in stage 1.
+  if (typeof beginOpeningCutscene === "function") beginOpeningCutscene();
 }
 
 function updatePlaying(dt) {
@@ -5992,9 +7206,17 @@ function updatePlaying(dt) {
     hitstopFrames = 0;
     flashFrames = 0;
     shakeFrames = 0;
+    slowmoFrames = 0;
     stageClearTimer = 0;
     setState("title");
     return;
+  }
+  // Slow-motion: drag dt while a KO is being savored. Counter still ticks
+  // in real wall-clock frames (decremented inside hitstop branch later) so
+  // duration is stable regardless of the time-drag.
+  if (slowmoFrames > 0) {
+    dt *= SLOWMO_RATE;
+    slowmoFrames--;
   }
   // P (or gamepad Start) toggles in-game pause. The pause menu opens with it.
   if (consumePress("KeyP") || consumePress("Pause")) {
@@ -6051,12 +7273,11 @@ function updatePlaying(dt) {
       if (stage && stage.waves[currentWave]) {
         enemies = enemies.concat(spawnWave(currentStage, currentWave));
       } else if (stage && stage.boss && !bossSpawnedFor[currentStage]) {
-        // Spawn the stage boss with a brief warning flash.
-        bossSpawnedFor[currentStage] = true;
-        const boss = makeEnemy(stage.boss, 540, 300);
-        enemies = enemies.concat([boss]);
-        flashFrames = Math.max(flashFrames, 6);
-        spawnParryWord(W / 2, H / 2 - 8, "BOSS", "#a83040");
+        // Boss intro cutscene plays first, then spawns the boss when done.
+        // beginBossIntro sets bossSpawnedFor on completion so we don't
+        // re-trigger; if no intro is configured for this boss it falls
+        // through to a direct spawn.
+        beginBossIntro(stage.boss);
       } else if (stage && stage.finalQte) {
         beginKaneCinematic();
       } else {
@@ -6073,9 +7294,6 @@ function updatePlaying(dt) {
 let bossSpawnedFor = {};
 
 function beginStageClear() {
-  const stage = STAGES[currentStage];
-  stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
-  stageClearTimer = 2.4;
   vibrate(40);
   playSfx("stage_clear");
   if (player) {
@@ -6090,6 +7308,15 @@ function beginStageClear() {
     // Atlas unlocks after clearing 3 stages in any run.
     if (player.stagesClearedThisRun >= 3) save.unlocks.atlas = true;
     saveSave();
+  }
+  // Show the narrative stage-clear beat instead of the legacy text overlay.
+  // The beat's onComplete sets a short stageClearTimer so advanceStage runs
+  // right after. If no narrative line is configured, falls back to legacy.
+  if (typeof beginStageClearBeat === "function") beginStageClearBeat();
+  else {
+    const stage = STAGES[currentStage];
+    stageClearMessage = stage ? "STAGE CLEAR — " + stage.name : "STAGE CLEAR";
+    stageClearTimer = 2.4;
   }
 }
 
@@ -6107,6 +7334,17 @@ function advanceStage() {
     setState("victory");
     return;
   }
+  // Swap music to the new stage's theme.
+  if (typeof startMusic === "function") startMusic(themeForStage(currentStage));
+  // Stage intro beat: per-character line about the new location. Skippable.
+  if (typeof beginStageIntroBeat === "function") beginStageIntroBeat();
+  // Reset hazard timers so they don't fire instantly on a fresh stage.
+  taxiState.car = null; taxiState.warnTimer = 0; taxiState.spawnTimer = 6;
+  trainState.car = null; trainState.warnTimer = 0; trainState.spawnTimer = 5;
+  fallingState.drops.length = 0; fallingState.spawnTimer = 2.5;
+  spikesState.phase = 0;
+  windState.phase = 0; windState.dir = 1;
+  freewayCars.length = 0; freewayCarSpawnTimer = 0;
   enemies = spawnWave(currentStage, 0);
   if (player) {
     player.x = 120;
@@ -6167,6 +7405,327 @@ function applyStageHazards(dt) {
     }
   } else if (stage.hazard === "cars") {
     updateFreewayHazard(dt);
+  } else if (stage.hazard === "taxi") {
+    updateTaxiHazard(dt);
+  } else if (stage.hazard === "train") {
+    updateTrainHazard(dt);
+  } else if (stage.hazard === "lanterns") {
+    updateFallingHazard(dt, "lantern");
+  } else if (stage.hazard === "glass") {
+    updateFallingHazard(dt, "glass");
+  } else if (stage.hazard === "spikes") {
+    updateSpikesHazard(dt);
+  } else if (stage.hazard === "wind") {
+    updateWindHazard(dt);
+  }
+}
+
+// ---------- Stage 1 hazard: a single taxi sweeps the curb strip ----------
+// The block has a road at the bottom edge. Every ~10 seconds a car blasts
+// past on the curb. Damages the player only if they're on the lowest sliver
+// of the play area. Telegraphed by headlights flashing 1 second ahead.
+let taxiState = { car: null, warnTimer: 0, spawnTimer: 8 };
+function updateTaxiHazard(dt) {
+  taxiState.spawnTimer -= dt;
+  if (taxiState.spawnTimer <= 0 && !taxiState.car && taxiState.warnTimer <= 0) {
+    taxiState.warnTimer = 1.0;   // 1s warning
+    taxiState.spawnDir = Math.random() < 0.5 ? 1 : -1;
+  }
+  if (taxiState.warnTimer > 0) {
+    taxiState.warnTimer -= dt;
+    if (taxiState.warnTimer <= 0) {
+      taxiState.car = {
+        x: taxiState.spawnDir > 0 ? -80 : W + 80,
+        y: STAGE_BOT + 6,
+        vx: taxiState.spawnDir * 360,
+        dir: taxiState.spawnDir,
+        color: ["#cfa040", "#a83040", "#3a4a64"][Math.floor(Math.random() * 3)],
+      };
+      taxiState.spawnTimer = 9 + Math.random() * 6;
+    }
+  }
+  if (taxiState.car) {
+    const c = taxiState.car;
+    c.x += c.vx * dt;
+    if (c.x < -160 || c.x > W + 160) { taxiState.car = null; return; }
+    // Hit if player is at the curb edge.
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging &&
+        player.y > STAGE_BOT - 8) {
+      if (Math.abs(player.x - (c.x + 30)) < 32) {
+        applyHit(player, {
+          cx: c.x + 30, cy: c.y,
+          hw: 30, hd: 8, damage: 16, knockback: 220, hitstop: 7,
+          hits: new Set(),
+        }, null);
+        shakeFrames = Math.max(shakeFrames, 12);
+      }
+    }
+  }
+}
+
+// ---------- Stage 2 hazard: a subway train roars through the middle lane ----
+// Heavy telegraph (rumble particles + warning honk SFX) for ~1.5s before the
+// train passes through. Hits anyone in the middle lane.
+let trainState = { car: null, warnTimer: 0, spawnTimer: 7 };
+function updateTrainHazard(dt) {
+  trainState.spawnTimer -= dt;
+  if (trainState.spawnTimer <= 0 && !trainState.car && trainState.warnTimer <= 0) {
+    trainState.warnTimer = 1.4;
+    trainState.spawnDir = Math.random() < 0.5 ? 1 : -1;
+    if (audioCtx) playSfx("menu_select");   // approximation of warning honk
+  }
+  if (trainState.warnTimer > 0) {
+    trainState.warnTimer -= dt;
+    // Rumble particles + small shake during warning.
+    if (Math.random() < 0.35) {
+      spawnSpark((Math.random() * W), STAGE_TOP + 30 + Math.random() * 30, "#3a4050");
+    }
+    if (shakeFrames < 2) shakeFrames = 2;
+    if (trainState.warnTimer <= 0) {
+      trainState.car = {
+        x: trainState.spawnDir > 0 ? -200 : W + 200,
+        y: (STAGE_TOP + STAGE_BOT) / 2 - 6,
+        vx: trainState.spawnDir * 540,
+        dir: trainState.spawnDir,
+      };
+      trainState.spawnTimer = 8 + Math.random() * 5;
+    }
+  }
+  if (trainState.car) {
+    const c = trainState.car;
+    c.x += c.vx * dt;
+    if (c.x < -260 || c.x > W + 260) { trainState.car = null; return; }
+    if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+      const inLane = Math.abs(player.y - c.y) < 16;
+      const inX = player.x > c.x - 12 && player.x < c.x + 200;
+      if (inLane && inX) {
+        applyHit(player, {
+          cx: player.x, cy: player.y,
+          hw: 12, hd: 14, damage: 22, knockback: 260, hitstop: 8,
+          hits: new Set(),
+        }, null);
+        shakeFrames = Math.max(shakeFrames, 14);
+      }
+    }
+    if (shakeFrames < 4) shakeFrames = 4;
+  }
+}
+
+// ---------- Stage 4 + 6 hazard: falling objects (lanterns / glass) ----------
+// Spawns a target shadow on the ground; after 0.8s the object lands at that
+// spot dealing damage. Players see the shadow and can move out.
+let fallingState = { drops: [], spawnTimer: 2.5 };
+function updateFallingHazard(dt, kind) {
+  fallingState.spawnTimer -= dt;
+  if (fallingState.spawnTimer <= 0) {
+    fallingState.spawnTimer = (kind === "glass" ? 1.6 : 2.4) + Math.random() * 1.5;
+    fallingState.drops.push({
+      kind,
+      // Bias spawn near the player so it actually threatens.
+      x: player ? clamp(player.x + (Math.random() - 0.5) * 80, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD) : W / 2,
+      y: 0,
+      targetY: STAGE_TOP + 30 + Math.random() * (STAGE_BOT - STAGE_TOP - 30),
+      warn: 0.85,
+      damage: kind === "glass" ? 14 : 12,
+    });
+  }
+  for (let i = fallingState.drops.length - 1; i >= 0; i--) {
+    const d = fallingState.drops[i];
+    d.warn -= dt;
+    if (d.warn > 0) {
+      // Telegraph: sparkle on the ground spot.
+      if (Math.random() < 0.5) {
+        spawnSpark(d.x + (Math.random() - 0.5) * 12, d.targetY,
+                   d.kind === "glass" ? "#cfd0e8" : "#e8c04a");
+      }
+      continue;
+    }
+    // Hit window: 0.15 second active impact.
+    if (d.warn > -0.15) {
+      if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+        if (Math.abs(player.x - d.x) < 14 && Math.abs(player.y - d.targetY) < 14) {
+          applyHit(player, {
+            cx: d.x, cy: d.targetY,
+            hw: 14, hd: 14, damage: d.damage, knockback: 120, hitstop: 6,
+            hits: new Set(),
+          }, null);
+        }
+      }
+      // Burst.
+      if (Math.abs(d.warn + 0.0) < 0.05) {
+        for (let j = 0; j < 8; j++) {
+          spawnSpark(d.x + (Math.random() - 0.5) * 18, d.targetY + (Math.random() - 0.5) * 10,
+                     d.kind === "glass" ? "#cfd0e8" : "#ff8a40");
+        }
+        if (shakeFrames < 4) shakeFrames = 4;
+      }
+    } else {
+      fallingState.drops.splice(i, 1);
+    }
+  }
+}
+
+// ---------- Stage 5 hazard: spike walls pulse on/off near both edges --------
+// Both side edges (left and right) get spike strips that extend periodically.
+// Touch one while it's extended = damage + knockback inward.
+let spikesState = { phase: 0 };
+function updateSpikesHazard(dt) {
+  spikesState.phase += dt;
+  // 2.6s cycle: 1.4s armed, 1.2s safe.
+  const armed = (spikesState.phase % 2.6) < 1.4;
+  if (!armed) return;
+  // Edge zones.
+  const leftZone  = STAGE_LEFT_PAD + 24;
+  const rightZone = W - STAGE_RIGHT_PAD - 24;
+  if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
+    if (player.x < leftZone || player.x > rightZone) {
+      applyHit(player, {
+        cx: player.x, cy: player.y,
+        hw: 6, hd: 6, damage: 6, knockback: 140, hitstop: 4,
+        hits: new Set(),
+      }, null);
+    }
+  }
+}
+
+// ---------- Stage 9 hazard: rooftop wind gusts push everyone horizontally ----
+// Wind direction reverses every ~4 seconds. Visible by drifting dust particles.
+// Mild force (~30 px/s) — annoying, not lethal.
+let windState = { phase: 0, dir: 1 };
+function updateWindHazard(dt) {
+  windState.phase += dt;
+  if (windState.phase > 4) { windState.phase = 0; windState.dir *= -1; }
+  const force = 30 * windState.dir;
+  if (player && !player.dead && !player.dodging) {
+    player.x += force * dt;
+    player.x = clamp(player.x, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
+  }
+  for (const e of enemies) {
+    if (!e.dead && !e.airborne) {
+      e.x += force * 0.5 * dt;
+      e.x = clamp(e.x, STAGE_LEFT_PAD, W - STAGE_RIGHT_PAD);
+    }
+  }
+  // Drifting dust particle once in a while.
+  if (Math.random() < 0.4) {
+    const py = STAGE_TOP + Math.random() * (STAGE_BOT - STAGE_TOP);
+    spawnSpark(windState.dir > 0 ? -4 : W + 4, py, "#9a9a9a");
+  }
+}
+
+// ---------- Stage hazard renderers ----------
+// Called by the per-stage drawBg or right after to draw the active hazard
+// world objects (taxi car, train body, falling drops shadow + body, spike strips).
+function drawStageHazards() {
+  const stage = STAGES[currentStage];
+  if (!stage || !stage.hazard) return;
+  if (stage.hazard === "taxi" && taxiState.car) {
+    const c = taxiState.car;
+    // Body.
+    X.fillStyle = c.color;
+    X.fillRect(c.x, c.y, 60, 12);
+    // Windows.
+    X.fillStyle = "#0a0a10";
+    X.fillRect(c.x + 8, c.y + 2, 10, 6);
+    X.fillRect(c.x + 36, c.y + 2, 14, 6);
+    // Headlights.
+    X.fillStyle = "#fff8c0";
+    if (c.dir > 0) X.fillRect(c.x + 56, c.y + 4, 4, 3);
+    else           X.fillRect(c.x,       c.y + 4, 4, 3);
+    // Wheels.
+    X.fillStyle = "#0a0a10";
+    X.fillRect(c.x + 8,  c.y + 11, 8, 3);
+    X.fillRect(c.x + 44, c.y + 11, 8, 3);
+  }
+  if (stage.hazard === "taxi" && taxiState.warnTimer > 0) {
+    // Headlight beam telegraph: a faint colored stripe at the curb edge.
+    const blink = Math.floor(taxiState.warnTimer * 6) & 1;
+    if (blink) {
+      X.fillStyle = "rgba(255,248,192,0.35)";
+      X.fillRect(0, STAGE_BOT + 6, W, 12);
+    }
+  }
+  if (stage.hazard === "train" && trainState.car) {
+    const c = trainState.car;
+    // Long train body.
+    X.fillStyle = "#3a3550";
+    X.fillRect(c.x, c.y, 200, 22);
+    // Window stripe.
+    X.fillStyle = "#7a8aa0";
+    for (let wx = c.x + 8; wx < c.x + 200; wx += 24) {
+      X.fillRect(wx, c.y + 6, 14, 6);
+    }
+    // Speedlines.
+    X.fillStyle = "rgba(180,200,220,0.4)";
+    for (let i = 0; i < 5; i++) {
+      X.fillRect(c.x - c.dir * (20 + i * 14), c.y + 4 + i * 4, 12, 1);
+    }
+  }
+  if (stage.hazard === "train" && trainState.warnTimer > 0) {
+    // Rumble flicker on the screen edges.
+    const blink = Math.floor(trainState.warnTimer * 8) & 1;
+    if (blink) {
+      X.fillStyle = "rgba(168,48,64,0.20)";
+      X.fillRect(0, (STAGE_TOP + STAGE_BOT) / 2 - 18, W, 36);
+    }
+  }
+  if (stage.hazard === "lanterns" || stage.hazard === "glass") {
+    for (const d of fallingState.drops) {
+      if (d.warn > 0) {
+        // Ground shadow telegraph — pulses based on warn timer.
+        const t = 1 - d.warn / 0.85;
+        const r = 6 + t * 8;
+        X.fillStyle = "rgba(0,0,0,0.45)";
+        X.beginPath(); X.ellipse(d.x, d.targetY, r, r * 0.4, 0, 0, Math.PI * 2); X.fill();
+      } else if (d.warn > -0.15) {
+        // Object body during impact frames.
+        if (d.kind === "lantern") {
+          X.fillStyle = "#a83040";
+          X.fillRect(d.x - 5, d.targetY - 8, 10, 12);
+          X.fillStyle = "#e8c04a";
+          X.fillRect(d.x - 3, d.targetY - 6, 6, 8);
+        } else {
+          // Glass.
+          X.fillStyle = "#cfd0e8";
+          X.fillRect(d.x - 4, d.targetY - 4, 8, 8);
+          X.fillStyle = "#fff";
+          X.fillRect(d.x - 1, d.targetY - 3, 2, 2);
+        }
+      }
+    }
+  }
+  if (stage.hazard === "spikes") {
+    const armed = (spikesState.phase % 2.6) < 1.4;
+    const t = (spikesState.phase % 2.6) / 1.4;
+    const ext = armed ? Math.min(1, t * 4) : Math.max(0, 1 - (t - 1) * 4);
+    if (ext > 0) {
+      X.fillStyle = "#7a3030";
+      // Left spikes.
+      for (let y = STAGE_TOP + 4; y < STAGE_BOT; y += 10) {
+        X.beginPath();
+        X.moveTo(STAGE_LEFT_PAD - 4,         y);
+        X.lineTo(STAGE_LEFT_PAD + 22 * ext,  y + 4);
+        X.lineTo(STAGE_LEFT_PAD - 4,         y + 8);
+        X.closePath(); X.fill();
+      }
+      // Right spikes.
+      for (let y = STAGE_TOP + 4; y < STAGE_BOT; y += 10) {
+        X.beginPath();
+        X.moveTo(W - STAGE_RIGHT_PAD + 4,         y);
+        X.lineTo(W - STAGE_RIGHT_PAD - 22 * ext,  y + 4);
+        X.lineTo(W - STAGE_RIGHT_PAD + 4,         y + 8);
+        X.closePath(); X.fill();
+      }
+    }
+  }
+  if (stage.hazard === "wind") {
+    // Indicator at top: arrow showing wind direction this cycle.
+    const arrowDir = windState.dir;
+    X.fillStyle = "rgba(168,180,200,0.55)";
+    X.font = "bold 14px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText(arrowDir > 0 ? "→ WIND →" : "← WIND ←", W / 2 - 36, 6);
   }
 }
 
@@ -6218,6 +7777,8 @@ function render() {
   else if (STATE === "playing") renderPlaying();
   else if (STATE === "paused") renderPaused();
   else if (STATE === "cinematic") renderCinematic();
+  else if (STATE === "bossIntro") renderBossIntro();
+  else if (STATE === "beat") renderBeat();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
