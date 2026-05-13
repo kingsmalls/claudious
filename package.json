@@ -3,7 +3,8 @@
   "private": true,
   "description": "Browser beat-em-up. Test harnesses for the canvas engine.",
   "scripts": {
-    "smoke": "node smoke.js",
+    "play":          "node serve.js",
+    "smoke":         "node smoke.js",
     "smoke-sprites": "node smoke_sprites.js"
   },
   "devDependencies": {
