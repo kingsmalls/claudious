@@ -79,7 +79,7 @@ const DEV = true;
 // silently misload.
 const SAVE_KEY = "the_block.save.v1";
 const DEFAULT_SAVE = {
-  unlocks:    { rio: true, duke: true, atlas: false },
+  unlocks:    { rio: true, duke: true, atlas: true },
   highScores: { rio: 0, duke: 0, atlas: 0 },
   bestCombo:  0,
   bestComboPerStage: {},
@@ -98,6 +98,12 @@ function loadSave() {
     const merged = deepClone(DEFAULT_SAVE);
     Object.assign(merged, data);
     merged.unlocks    = Object.assign({}, DEFAULT_SAVE.unlocks,    data.unlocks    || {});
+    // v1 launch: all three protagonists available from the start. Existing
+    // saves that locked atlas behind the 3-stages-clear unlock get upgraded
+    // here so returning players see the full roster on load.
+    merged.unlocks.rio = true;
+    merged.unlocks.duke = true;
+    merged.unlocks.atlas = true;
     merged.highScores = Object.assign({}, DEFAULT_SAVE.highScores, data.highScores || {});
     merged.audio      = Object.assign({}, DEFAULT_SAVE.audio,      data.audio      || {});
     merged.settings   = Object.assign({}, DEFAULT_SAVE.settings,   data.settings   || {});
@@ -3026,6 +3032,7 @@ function drawStageBlock() {
 
 // Stage 2: THE TUNNELS — subway / storm drain. Cold dim concrete.
 function drawStageTunnels() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Dark backwall.
   X.fillStyle = "#0a0c10";
   X.fillRect(0, 0, W, 230);
@@ -3039,44 +3046,91 @@ function drawStageTunnels() {
     X.fillRect(0, py, 22 + i * 4, 1);
     X.fillRect(W - 22 - i * 4, py, 22 + i * 4, 1);
   }
-  // Bare bulbs along the ceiling (procedural pattern).
+  // Approaching subway light: a far-back glow that grows then fades on a
+  // 12s cycle, like a train coming and going through the next tunnel over.
+  const trainCycle = (t * 0.083) % 1;          // 12 s loop
+  const trainGlow = trainCycle < 0.6 ? trainCycle / 0.6 : (1 - (trainCycle - 0.6) / 0.4);
+  if (trainGlow > 0.05) {
+    const tg = Math.min(1, trainGlow * 1.4);
+    X.fillStyle = "rgba(255,210,150," + (tg * 0.30).toFixed(2) + ")";
+    X.beginPath(); X.ellipse(W - 44, 138, 70 + tg * 60, 36 + tg * 26, 0, 0, Math.PI * 2); X.fill();
+    X.fillStyle = "rgba(255,235,180," + (tg * 0.6).toFixed(2) + ")";
+    X.fillRect(W - 50, 134, 14, 8);
+  }
+  // Bare bulbs along the ceiling with subtle flicker.
   for (let bx = 60; bx < W; bx += 110) {
-    X.fillStyle = "rgba(255,210,150,0.65)";
+    const phase = bx * 0.07;
+    const flick = 0.85 + 0.15 * Math.sin(t * 6 + phase);
+    X.fillStyle = "rgba(255,210,150," + (0.65 * flick).toFixed(2) + ")";
     X.fillRect(bx - 4, 60, 8, 2);
-    X.fillStyle = "rgba(255,180,90,0.95)";
+    X.fillStyle = "rgba(255,180,90," + (0.95 * flick).toFixed(2) + ")";
     X.fillRect(bx - 1, 61, 2, 1);
     // Glow ellipse.
-    X.fillStyle = "rgba(255,210,150,0.10)";
+    X.fillStyle = "rgba(255,210,150," + (0.10 * flick).toFixed(2) + ")";
     X.beginPath(); X.ellipse(bx, 60, 24, 12, 0, 0, Math.PI*2); X.fill();
   }
   // Tile bands on the back wall.
   X.fillStyle = "#1a1f28";
   for (let ty = 100; ty < 220; ty += 18) X.fillRect(40, ty, W - 80, 2);
+  // Distant tunnel mouth.
+  X.fillStyle = "#040408";
+  X.fillRect(W - 80, 100, 70, 80);
   // Subway track running along the depth strip.
   X.fillStyle = "#1a1a22";
   X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
-  // Two rails.
+  // Two rails — catch a thin highlight from the bulbs.
   X.fillStyle = "#2a2a36";
   X.fillRect(0, STAGE_TOP + 30, W, 2);
   X.fillRect(0, STAGE_BOT - 24, W, 2);
+  X.fillStyle = "rgba(255,210,150,0.10)";
+  X.fillRect(0, STAGE_TOP + 30, W, 1);
   // Sleepers.
   X.fillStyle = "#0c0c10";
   for (let sx = 0; sx < W; sx += 28) X.fillRect(sx, STAGE_TOP + 36, 14, 2);
   X.fillStyle = "#0a0a0e";
   X.fillRect(0, STAGE_BOT, W, H - STAGE_BOT);
-  // Distant tunnel mouth.
-  X.fillStyle = "#040408";
-  X.fillRect(W - 80, 100, 70, 80);
+  // Dripping water: 5 slow drips falling from ceiling at fixed columns.
+  if (!save.settings.reduceFlash) {
+    X.fillStyle = "rgba(140,180,220,0.5)";
+    for (let i = 0; i < 5; i++) {
+      const dx = 80 + i * 110;
+      const period = 2.4 + i * 0.31;
+      const dt = (t + i * 0.7) % period;
+      const dy = 72 + (dt / period) * 100;
+      if (dy < 180) X.fillRect(dx, dy, 1, 3);
+      // Tiny puddle ripple when it lands.
+      if (dt > period * 0.92) {
+        X.fillStyle = "rgba(140,180,220,0.30)";
+        X.fillRect(dx - 2, 180, 5, 1);
+        X.fillStyle = "rgba(140,180,220,0.5)";
+      }
+    }
+  }
+  // Steam wafts from a vent on the floor.
+  if (!save.settings.reduceFlash) {
+    for (let i = 0; i < 4; i++) {
+      const seed = i * 41.7;
+      const sx = 110 + ((seed + t * 8) % 30);
+      const sy = STAGE_BOT - 4 - ((t * 24 + seed) % 60);
+      X.fillStyle = "rgba(180,190,200," + (0.25 - i * 0.05).toFixed(2) + ")";
+      X.fillRect(sx, sy, 4, 4);
+    }
+  }
 }
 
 // Stage 3: RIVER ROW — docks, shipping containers, water hazard at bottom.
 const RIVER_WATER_TOP = STAGE_BOT - 14;
 function drawStageRiver() {
-  // Pale dawn sky.
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  // Pale dawn sky with a soft horizon glow.
   X.fillStyle = "#1a2438";
   X.fillRect(0, 0, W, 100);
   X.fillStyle = "#262e44";
   X.fillRect(0, 100, W, 60);
+  // Horizon glow band — slowly pulses warmer.
+  const dawnPulse = 0.55 + 0.20 * Math.sin(t * 0.5);
+  X.fillStyle = "rgba(200,120,90," + (dawnPulse * 0.35).toFixed(2) + ")";
+  X.fillRect(0, 120, W, 14);
   // Distant industrial silhouettes.
   X.fillStyle = "#0e1320";
   X.fillRect(0, 130, W, 40);
@@ -3084,6 +3138,29 @@ function drawStageRiver() {
   for (let bx = 0; bx < W; bx += 70) {
     X.fillRect(bx, 142, 30, 28);
     X.fillRect(bx + 12, 134, 4, 20); // smokestack
+    // Smoke plume — slow vertical drift from each stack.
+    const off = ((t * 8 + bx * 0.3) % 24);
+    X.fillStyle = "rgba(180,180,180," + (0.20 - off / 240).toFixed(2) + ")";
+    X.fillRect(bx + 11, 130 - off, 6, 4);
+    X.fillStyle = "#101522";
+  }
+  // Distant warehouse window lights blinking on the back row.
+  X.fillStyle = "#e8c04a";
+  for (let i = 0; i < 7; i++) {
+    const wx = 60 + i * 80;
+    const wy = 152 + ((i * 7) & 1) * 10;
+    if ((Math.sin(t * 1.1 + i * 0.9) > 0.4)) X.fillRect(wx, wy, 2, 2);
+  }
+  // Two seagull silhouettes drifting across slowly.
+  if (!save.settings.reduceFlash) {
+    for (let g = 0; g < 2; g++) {
+      const gx = ((t * 12 + g * 320) % (W + 60)) - 30;
+      const gy = 70 + g * 22 + Math.sin(t * 1.5 + g) * 3;
+      X.fillStyle = "rgba(180,190,200,0.85)";
+      X.fillRect(gx,     gy,     3, 1);
+      X.fillRect(gx - 2, gy - 1, 2, 1);
+      X.fillRect(gx + 3, gy - 1, 2, 1);
+    }
   }
   // Shipping containers stacked along the back of the dock.
   const containers = [
@@ -3134,6 +3211,7 @@ function drawStageRiver() {
 
 // Stage 4: LANTERN ROW — warm market street lit by paper lanterns.
 function drawStageLantern() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Sky.
   X.fillStyle = "#1a0a1a";
   X.fillRect(0, 0, W, 100);
@@ -3142,6 +3220,35 @@ function drawStageLantern() {
   X.fillRect(0, 100, W, 130);
   X.fillStyle = "#5a2418";
   for (let bx = 0; bx < W; bx += 90) X.fillRect(bx, 110, 70, 110);
+  // Back-row warm window lights, flickering like candles.
+  X.fillStyle = "#ffba60";
+  for (let bx = 0; bx < W; bx += 18) {
+    const phase = bx * 0.11;
+    if (Math.sin(t * 4 + phase) > 0.3) {
+      const wy = 130 + ((bx * 5) & 1) * 24;
+      X.fillRect(bx + 6, wy, 3, 4);
+    }
+  }
+  // Distant fireworks: occasional bright burst high in the sky.
+  if (!save.settings.reduceFlash) {
+    const burstCycle = (t * 0.12) % 1;
+    if (burstCycle < 0.08) {
+      const a = 1 - burstCycle / 0.08;
+      const fx = 80 + ((Math.floor(t * 0.12) * 73) % (W - 160));
+      const fy = 30 + ((Math.floor(t * 0.12) * 31) % 30);
+      X.fillStyle = "rgba(255,200,120," + (a * 0.7).toFixed(2) + ")";
+      X.beginPath(); X.ellipse(fx, fy, 14, 8, 0, 0, Math.PI * 2); X.fill();
+      X.fillStyle = "rgba(255,240,180," + a.toFixed(2) + ")";
+      X.fillRect(fx - 1, fy, 2, 1);
+      // Petals.
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2;
+        const r = 8 + a * 6;
+        X.fillStyle = "rgba(255,180,90," + (a * 0.8).toFixed(2) + ")";
+        X.fillRect(Math.round(fx + Math.cos(ang) * r), Math.round(fy + Math.sin(ang) * r * 0.5), 2, 1);
+      }
+    }
+  }
   // Lanterns hanging across the top — yellow/orange paper bulbs.
   for (let lx = 50; lx < W; lx += 70) {
     const bob = Math.sin(stateTime * 1.2 + lx * 0.05) * 1.5;
@@ -3185,9 +3292,19 @@ function drawStageLantern() {
 
 // Stage 5: THE CAGE — underground fight club, chain-link fence with crowd.
 function drawStageCage() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Smoky low-light.
   X.fillStyle = "#0a0a0c";
   X.fillRect(0, 0, W, 230);
+  // Drifting haze layer.
+  if (!save.settings.reduceFlash) {
+    for (let i = 0; i < 6; i++) {
+      const hx = ((t * 14 + i * 110) % (W + 60)) - 30;
+      const hy = 40 + (i & 1) * 24;
+      X.fillStyle = "rgba(120,90,90,0.07)";
+      X.beginPath(); X.ellipse(hx, hy, 60, 14, 0, 0, Math.PI * 2); X.fill();
+    }
+  }
   // Crowd silhouette band.
   X.fillStyle = "#1a1410";
   X.fillRect(0, 130, W, 100);
@@ -3197,17 +3314,31 @@ function drawStageCage() {
     const ch = ((cx * 7) ^ 0x55) & 7;
     X.fillRect(cx, 200 - ch * 2, 6, 6 + ch);
   }
-  // A few scattered phone screens (white dots) in the crowd.
-  X.fillStyle = "rgba(255,255,255,0.55)";
+  // A few scattered phone screens (white dots) in the crowd that strobe.
   for (let i = 0; i < 14; i++) {
     const px = ((i * 47) % W);
     const py = 180 + ((i * 13) % 26);
+    const strobe = 0.5 + 0.5 * Math.sin(t * 6 + i * 1.3);
+    X.fillStyle = "rgba(255,255,255," + (0.40 + 0.30 * strobe).toFixed(2) + ")";
     X.fillRect(px, py, 1, 1);
   }
-  // Spotlight glow above the ring.
+  // Sweeping spotlight — rotates back and forth across the ring.
   const spotPulse = 0.65 + 0.15 * Math.sin(stateTime * 2.4);
+  const spotX = W / 2 + Math.sin(t * 0.7) * 140;
   X.fillStyle = "rgba(255,210,90," + (spotPulse * 0.18).toFixed(2) + ")";
-  X.beginPath(); X.ellipse(W / 2, 60, 240, 60, 0, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.ellipse(spotX, 60, 200, 56, 0, 0, Math.PI*2); X.fill();
+  // Second spotlight, counter-swinging.
+  const spotX2 = W / 2 - Math.sin(t * 0.7) * 140;
+  X.fillStyle = "rgba(180,200,255," + (spotPulse * 0.13).toFixed(2) + ")";
+  X.beginPath(); X.ellipse(spotX2, 70, 160, 40, 0, 0, Math.PI*2); X.fill();
+  // Occasional camera flash from the crowd.
+  if (!save.settings.reduceFlash && ((t * 0.6) % 1) < 0.05) {
+    const flashIdx = Math.floor(t * 0.6);
+    const fx = (flashIdx * 113) % W;
+    const fy = 175 + (flashIdx * 7) % 25;
+    X.fillStyle = "rgba(255,255,255,0.85)";
+    X.fillRect(fx - 1, fy - 1, 3, 3);
+  }
   // Chain-link fence — diamond pattern across the front foreground.
   X.fillStyle = "#3a3030";
   X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
@@ -3230,6 +3361,7 @@ function drawStageCage() {
 
 // Stage 6: UPTOWN — wealthy, well-lit. Cream marble buildings, gold accents.
 function drawStageUptown() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Soft dusk sky.
   X.fillStyle = "#1c2438";
   X.fillRect(0, 0, W, 80);
@@ -3237,12 +3369,19 @@ function drawStageUptown() {
   X.fillRect(0, 60, W, 30);
   X.fillStyle = "#6a5040";
   X.fillRect(0, 80, W, 12);
+  // First star points blinking in the dusk band.
+  X.fillStyle = "rgba(255,250,220,0.85)";
+  for (let i = 0; i < 8; i++) {
+    const sx = 60 + i * 70;
+    const sy = 20 + ((i * 13) & 1) * 14;
+    if (Math.sin(t * 1.3 + i * 0.8) > 0.6) X.fillRect(sx, sy, 1, 1);
+  }
   // Marble building facade.
   X.fillStyle = "#dcd0b0";
   X.fillRect(0, 92, W, 138);
   X.fillStyle = "#c8b890";
   X.fillRect(0, 92, W, 6);
-  // Tall windows.
+  // Tall windows with scrolling office-light silhouettes (people walking past).
   for (let bx = 24; bx < W - 14; bx += 56) {
     X.fillStyle = "#1c2438";
     X.fillRect(bx, 110, 16, 70);
@@ -3251,6 +3390,14 @@ function drawStageUptown() {
     // Warm window light.
     X.fillStyle = "rgba(255,210,140,0.7)";
     X.fillRect(bx + 2, 116, 12, 6);
+    // Silhouette of someone walking past — slow horizontal scroll within window.
+    const silSeed = bx * 0.13;
+    const silPhase = (t * 0.18 + silSeed) % 1.6;
+    if (silPhase < 1) {
+      const silX = bx + 2 + Math.round(silPhase * 12);
+      X.fillStyle = "rgba(40,30,30,0.55)";
+      X.fillRect(silX, 117, 2, 5);
+    }
     X.fillStyle = "#1c2438";
     X.fillRect(bx + 7, 110, 2, 70);
   }
@@ -3289,8 +3436,11 @@ function drawStageUptown() {
 // Stage 7: THE WORKS — industrial foundry with molten metal at the back.
 const WORKS_MOLTEN_TOP = STAGE_TOP - 8;
 function drawStageWorks() {
-  // Dark smoky background.
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  // Dark smoky background with hot-glow undertone from the molten line.
   X.fillStyle = "#0a0608";
+  X.fillRect(0, 0, W, 230);
+  X.fillStyle = "rgba(160,40,20,0.15)";
   X.fillRect(0, 0, W, 230);
   X.fillStyle = "#1a1410";
   X.fillRect(0, 100, W, 130);
@@ -3300,6 +3450,13 @@ function drawStageWorks() {
   X.fillRect(0, 168, W, 4);
   X.fillStyle = "#1a0a06";
   for (let cx = 0; cx < W; cx += 12) X.fillRect(cx, 134, 1, 6);
+  // A slow-moving crane / hook silhouette on the upper catwalk.
+  const craneX = ((t * 18) % (W + 80)) - 40;
+  X.fillStyle = "#1a1208";
+  X.fillRect(craneX, 132, 20, 4);
+  X.fillRect(craneX + 8, 132, 4, 16);
+  X.fillStyle = "#3a2418";
+  X.fillRect(craneX + 8, 148, 4, 4);  // hook
   // Smoky pipes.
   X.fillStyle = "#3a2418";
   X.fillRect(40,  130, 10, 60);
@@ -3307,6 +3464,19 @@ function drawStageWorks() {
   X.fillStyle = "#5a3a20";
   X.fillRect(40, 130, 10, 2);
   X.fillRect(540, 130, 10, 2);
+  // Smoke puffs from both pipes.
+  if (!save.settings.reduceFlash) {
+    for (let p = 0; p < 4; p++) {
+      const sy1 = 120 - ((t * 30 + p * 18) % 110);
+      const sy2 = 120 - ((t * 30 + p * 18 + 11) % 110);
+      const alpha1 = Math.max(0, 0.28 - (120 - sy1) / 400);
+      const alpha2 = Math.max(0, 0.28 - (120 - sy2) / 400);
+      X.fillStyle = "rgba(120,80,60," + alpha1.toFixed(2) + ")";
+      X.fillRect(44, sy1, 6, 4);
+      X.fillStyle = "rgba(120,80,60," + alpha2.toFixed(2) + ")";
+      X.fillRect(544, sy2, 6, 4);
+    }
+  }
   // Hot molten pool — back band.
   const pulse = 0.65 + 0.35 * Math.sin(stateTime * 1.6);
   X.fillStyle = "rgba(255,90,30," + (pulse * 0.18).toFixed(2) + ")";
@@ -3340,14 +3510,48 @@ function drawStageWorks() {
 // Stage 8: THE FREEWAY — overpass at night with passing cars as hazards.
 let freewayCars = [];   // managed by hazard hook
 function drawStageFreeway() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Night sky and silhouettes.
   X.fillStyle = "#0c0a18";
   X.fillRect(0, 0, W, 110);
   X.fillStyle = "#1a1828";
   X.fillRect(0, 90, W, 50);
+  // Stars — distant, fixed-position, twinkling.
+  for (let i = 0; i < 26; i++) {
+    const sx = (i * 47) % W;
+    const sy = (i * 13) % 80;
+    const tw = 0.5 + 0.5 * Math.sin(t * 2 + i * 1.7);
+    X.fillStyle = "rgba(220,225,255," + (0.30 + tw * 0.40).toFixed(2) + ")";
+    X.fillRect(sx, sy, 1, 1);
+  }
   // Skyline.
   X.fillStyle = "#080610";
   for (let bx = 0; bx < W; bx += 32) X.fillRect(bx, 100 + ((bx * 13) & 14), 24, 40);
+  // Skyline window dots — some lit, slow twinkle.
+  for (let bx = 0; bx < W; bx += 32) {
+    const baseY = 100 + ((bx * 13) & 14);
+    for (let wy = baseY + 6; wy < baseY + 38; wy += 6) {
+      if (((bx + wy * 7) & 15) === 0 && Math.sin(t * 0.9 + bx * 0.1 + wy * 0.3) > 0.4) {
+        X.fillStyle = "rgba(255,210,140,0.85)";
+        X.fillRect(bx + 4 + ((wy * 3) % 16), wy, 2, 2);
+      }
+    }
+  }
+  // Distant headlight streaks moving along the back lane.
+  if (!save.settings.reduceFlash) {
+    for (let i = 0; i < 3; i++) {
+      const dir = (i & 1) ? 1 : -1;
+      const speed = 60 + i * 20;
+      const period = (W + 80) / speed;
+      const phase = (t / period + i * 0.4) % 1;
+      const dx = dir > 0 ? (phase * (W + 80) - 40) : ((1 - phase) * (W + 80) - 40);
+      const dy = 124 + i * 4;
+      X.fillStyle = "rgba(255,240,180,0.65)";
+      X.fillRect(dx, dy, 6, 1);
+      X.fillStyle = "rgba(255,200,120,0.30)";
+      X.fillRect(dx - dir * 12, dy, 10, 1);
+    }
+  }
   // Car-light haloes streaking horizontally on a guardrail band.
   X.fillStyle = "#241a30";
   X.fillRect(0, 150, W, 70);
@@ -3399,42 +3603,82 @@ function drawStageFreeway() {
   }
 }
 
-// Stage 9: THE TOWER — Kane's lobby. Marble + steel + the elevator at the back.
+// Stage 9: THE TOWER — Kane's tower upper floor. Floor-to-ceiling windows
+// over the city, wind blowing through where the glass broke.
 function drawStageTower() {
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   // Dark interior.
   X.fillStyle = "#0e0e16";
   X.fillRect(0, 0, W, 230);
-  // Marble back wall.
-  X.fillStyle = "#22202c";
+  // Large window panes showing the city below — slow parallax of distant
+  // skyline silhouettes scrolling because we're high up and the building sways.
+  const parallaxOff = (t * 4) % 16;
+  X.fillStyle = "#070612";
   X.fillRect(0, 60, W, 170);
-  // Vein lines.
-  X.fillStyle = "#3a384a";
-  for (let mx = 0; mx < W; mx += 16) {
-    const off = ((mx * 13) ^ 0x33) & 7;
-    X.fillRect(mx, 80 + off, 2, 1);
-    X.fillRect(mx + 4, 120 + off, 1, 1);
+  // City lights far below — twinkling.
+  for (let i = 0; i < 60; i++) {
+    const lx = ((i * 41 - parallaxOff) % W + W) % W;
+    const ly = 90 + (i * 13) % 130;
+    const tw = 0.5 + 0.5 * Math.sin(t * 1.4 + i * 0.5);
+    X.fillStyle = "rgba(255,220,150," + (0.35 + tw * 0.45).toFixed(2) + ")";
+    X.fillRect(lx, ly, 1, 1);
   }
-  // Recessed ceiling lights.
-  for (let cx = 60; cx < W; cx += 100) {
-    X.fillStyle = "rgba(220,200,160,0.18)";
-    X.beginPath(); X.ellipse(cx, 70, 32, 14, 0, 0, Math.PI*2); X.fill();
-    X.fillStyle = "rgba(255,235,180,0.8)";
-    X.fillRect(cx - 4, 60, 8, 2);
+  // Distant blinking aircraft warning lights atop towers.
+  for (let i = 0; i < 4; i++) {
+    const tx = 80 + i * 140;
+    const ty = 84;
+    if (((t * 0.7 + i * 0.3) % 1) > 0.5) {
+      X.fillStyle = "rgba(255,80,80,0.85)";
+      X.fillRect(tx, ty, 2, 2);
+    }
+  }
+  // Window-frame divider mullions (vertical pillars at fixed positions).
+  X.fillStyle = "#22202c";
+  for (let mx = 70; mx < W; mx += 140) X.fillRect(mx, 60, 6, 170);
+  // Window top / bottom rails.
+  X.fillStyle = "#22202c";
+  X.fillRect(0, 60, W, 6);
+  X.fillRect(0, 224, W, 4);
+  // One pane is broken — jagged edge, paper documents fluttering through it.
+  X.fillStyle = "#3a384a";
+  X.beginPath();
+  X.moveTo(380, 66);
+  X.lineTo(386, 84);
+  X.lineTo(394, 70);
+  X.lineTo(402, 92);
+  X.lineTo(414, 72);
+  X.closePath(); X.fill();
+  if (!save.settings.reduceFlash) {
+    for (let i = 0; i < 4; i++) {
+      const px = 390 + ((t * 36 + i * 80) % 240);
+      const py = 92 + Math.sin(t * 4 + i * 1.3) * 10;
+      X.fillStyle = "rgba(220,210,180,0.85)";
+      X.fillRect(px, py, 4, 3);
+      X.fillStyle = "rgba(180,170,150,0.5)";
+      X.fillRect(px - 3, py + 1, 3, 1);
+    }
   }
   // Reception desk silhouette.
   X.fillStyle = "#1a1620";
   X.fillRect(80, 180, 200, 40);
   X.fillStyle = "#2a2434";
   X.fillRect(80, 180, 200, 2);
-  // Elevator at far back.
+  // Elevator at far back (right side, since the broken window's at center).
   X.fillStyle = "#0a0a12";
-  X.fillRect(W / 2 - 30, 80, 60, 120);
+  X.fillRect(W - 110, 80, 60, 120);
   X.fillStyle = "#5a4030";
-  X.fillRect(W / 2 - 30, 78, 60, 3);
+  X.fillRect(W - 110, 78, 60, 3);
   X.fillStyle = "#cfa040";
-  X.fillRect(W / 2 - 1, 80, 2, 120); // door seam
+  X.fillRect(W - 79, 80, 2, 120); // door seam
+  // Elevator floor display — counts down/up over time.
+  X.fillStyle = "rgba(255,80,80,0.95)";
+  const floorNum = ((Math.floor(t * 2)) % 30) + 70;
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "top";
+  X.fillText(String(floorNum), W - 80, 72);
   X.fillStyle = "rgba(255,210,140,0.85)";
-  X.fillRect(W / 2 - 14, 70, 28, 4);
+  X.fillRect(W - 94, 70, 28, 4);
   // Polished marble floor.
   X.fillStyle = "#161620";
   X.fillRect(0, STAGE_TOP, W, STAGE_BOT - STAGE_TOP);
@@ -3450,13 +3694,39 @@ function drawStageTower() {
 
 // Stage 10: THE TOP — penthouse rooftop, skyline panorama.
 function drawStageTop() {
-  // Deep night sky to a dawn band.
+  const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  // Deep night sky to a dawn band — dawn slowly brightens over the encounter.
+  const dawnT = Math.min(1, (stateTime || 0) / 24);
   X.fillStyle = "#100618";
   X.fillRect(0, 0, W, 60);
   X.fillStyle = "#2a1830";
   X.fillRect(0, 60, W, 40);
-  X.fillStyle = "#5a3030";
+  X.fillStyle = "rgba(140,60,60," + (0.35 + dawnT * 0.45).toFixed(2) + ")";
   X.fillRect(0, 100, W, 20);
+  // Stars in the upper band, fading as dawn rises.
+  for (let i = 0; i < 22; i++) {
+    const sx = (i * 53) % W;
+    const sy = (i * 11) % 60;
+    const tw = 0.4 + 0.4 * Math.sin(t * 1.6 + i * 0.7);
+    const a = (0.5 + tw * 0.4) * (1 - dawnT);
+    if (a > 0.05) {
+      X.fillStyle = "rgba(220,225,255," + a.toFixed(2) + ")";
+      X.fillRect(sx, sy, 1, 1);
+    }
+  }
+  // Slow searchlight beams sweeping across the sky from far buildings.
+  if (!save.settings.reduceFlash) {
+    for (let i = 0; i < 2; i++) {
+      const cx = i ? W - 80 : 80;
+      const ang = (Math.sin(t * 0.4 + i * 1.7) * 0.6) - Math.PI / 2;
+      X.save();
+      X.translate(cx, 100);
+      X.rotate(ang);
+      X.fillStyle = "rgba(255,230,180,0.10)";
+      X.fillRect(0, -2, 180, 4);
+      X.restore();
+    }
+  }
   // Far skyline.
   X.fillStyle = "#1a0a14";
   for (let bx = 0; bx < W; bx += 22) {
@@ -3468,6 +3738,15 @@ function drawStageTop() {
   for (let bx = 4; bx < W; bx += 22) {
     for (let by = 130 - 30; by < 130; by += 6) {
       if (((bx * 7 + by * 13) & 7) === 0) X.fillRect(bx + 2, by, 2, 2);
+    }
+  }
+  // Aircraft warning blinks on the tallest distant towers.
+  for (let i = 0; i < 3; i++) {
+    const tx = 100 + i * 200;
+    const ty = 96;
+    if (((t * 0.6 + i * 0.3) % 1) > 0.5) {
+      X.fillStyle = "rgba(255,90,90,0.9)";
+      X.fillRect(tx, ty, 2, 2);
     }
   }
   // Helipad-style circle on the rooftop.
