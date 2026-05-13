@@ -87,6 +87,13 @@ const DEFAULT_SAVE = {
   settings:   { difficulty: "normal", reduceFlash: false, reduceShake: false },
   runs: 0,
   stagesCleared: 0,
+  // Persisted set of stage indices the player has finished at least once.
+  // Used by the stage-select option on the title screen so you can replay
+  // any cleared stage without grinding from stage 1.
+  stageBests: {},
+  // Tutorial flag — flips true after stage 1 first-completion so the
+  // onboarding overlay doesn't appear again.
+  tutorialDone: false,
 };
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 function loadSave() {
@@ -108,6 +115,8 @@ function loadSave() {
     merged.audio      = Object.assign({}, DEFAULT_SAVE.audio,      data.audio      || {});
     merged.settings   = Object.assign({}, DEFAULT_SAVE.settings,   data.settings   || {});
     merged.bestComboPerStage = Object.assign({}, DEFAULT_SAVE.bestComboPerStage, data.bestComboPerStage || {});
+    merged.stageBests       = Object.assign({}, DEFAULT_SAVE.stageBests,       data.stageBests || {});
+    if (typeof data.tutorialDone === "boolean") merged.tutorialDone = data.tutorialDone;
     return merged;
   } catch (e) {
     return deepClone(DEFAULT_SAVE);
@@ -6260,6 +6269,7 @@ function update(dt) {
   else if (STATE === "cinematic") updateCinematic(dt);
   else if (STATE === "bossIntro") updateBossIntro(dt);
   else if (STATE === "beat") updateBeat(dt);
+  else if (STATE === "stageSelect") updateStageSelect(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
@@ -7318,9 +7328,136 @@ function updateTitle(dt) {
   if (consumePress("Digit2") && save.unlocks.duke)  { selectedChar = "duke";  setState("select"); return; }
   if (consumePress("Digit3") && save.unlocks.atlas) { selectedChar = "atlas"; setState("select"); return; }
   if (!save.unlocks[selectedChar]) selectedChar = "rio";
+  // TAB or S opens stage select (if at least one stage has been cleared).
+  const anyCleared = Object.keys(save.stageBests || {}).length > 0;
+  if (anyCleared && (consumePress("Tab") || consumePress("KeyS"))) {
+    setState("stageSelect");
+    return;
+  }
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
     setState("select");
   }
+}
+
+// ---------- Stage select ----------
+// Title-screen sub-mode: pick any stage you've cleared at least once and
+// jump into it with your last selectedChar. The full run from there
+// continues normally (boss intros, stage clears, final Kane fight).
+let stageSelectIdx = 0;
+
+function updateStageSelect(dt) {
+  const anyCleared = Object.keys(save.stageBests || {}).length > 0;
+  if (!anyCleared) { setState("title"); return; }
+  if (consumePress("Escape")) { setState("title"); return; }
+  // Find cleared stages.
+  const cleared = [];
+  for (let i = 0; i < STAGES.length; i++) {
+    if (save.stageBests[i]) cleared.push(i);
+  }
+  if (cleared.length === 0) { setState("title"); return; }
+  stageSelectIdx = Math.max(0, Math.min(stageSelectIdx, cleared.length - 1));
+  if (consumePress("ArrowLeft")  || consumePress("KeyA")) {
+    stageSelectIdx = (stageSelectIdx - 1 + cleared.length) % cleared.length;
+    playSfx("menu");
+  }
+  if (consumePress("ArrowRight") || consumePress("KeyD")) {
+    stageSelectIdx = (stageSelectIdx + 1) % cleared.length;
+    playSfx("menu");
+  }
+  if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter") || consumePress("KeyJ")) {
+    const startStage = cleared[stageSelectIdx];
+    enterPlayingAtStage(startStage);
+    playSfx("menu_select");
+  }
+}
+
+function renderStageSelect() {
+  // Drawn over a darkened block backdrop for context.
+  drawStageBlock();
+  X.fillStyle = "rgba(0,0,0,0.80)";
+  X.fillRect(0, 0, W, H);
+  // Title.
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 24px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "top";
+  X.fillText("STAGE SELECT", W / 2, 40);
+  X.fillStyle = "#aaa";
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillText("PLAYING AS: " + selectedChar.toUpperCase(), W / 2, 70);
+  // Cleared stages in a row of cards.
+  const cleared = [];
+  for (let i = 0; i < STAGES.length; i++) {
+    if (save.stageBests[i]) cleared.push(i);
+  }
+  if (cleared.length === 0) {
+    X.fillStyle = "#aaa";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.fillText("(no stages cleared yet — beat stage 1 first)", W / 2, 140);
+    return;
+  }
+  const cardW = 100, cardH = 80, gap = 18;
+  const rowW = cleared.length * cardW + (cleared.length - 1) * gap;
+  const startX = (W - rowW) / 2;
+  const cardY = 110;
+  for (let i = 0; i < cleared.length; i++) {
+    const idx = cleared[i];
+    const cx = startX + i * (cardW + gap);
+    const selected = i === stageSelectIdx;
+    // Card.
+    X.fillStyle = selected ? "rgba(232,192,74,0.18)" : "rgba(0,0,0,0.55)";
+    X.fillRect(cx, cardY, cardW, cardH);
+    X.strokeStyle = selected ? "#e8c04a" : "#444";
+    X.lineWidth = selected ? 2 : 1;
+    X.strokeRect(cx + 0.5, cardY + 0.5, cardW - 1, cardH - 1);
+    // Stage number big.
+    X.fillStyle = selected ? "#e8c04a" : "#aaa";
+    X.font = "bold 28px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.fillText(String(idx + 1), cx + cardW / 2, cardY + 8);
+    // Stage name.
+    X.fillStyle = "#fff";
+    X.font = "bold 9px ui-monospace, monospace";
+    const name = STAGES[idx].name;
+    X.fillText(name, cx + cardW / 2, cardY + 44);
+    // Best combo for this stage.
+    const bestCombo = save.bestComboPerStage[idx] || 0;
+    if (bestCombo > 0) {
+      X.fillStyle = "#7d8d4f";
+      X.font = "bold 8px ui-monospace, monospace";
+      X.fillText("BEST COMBO " + bestCombo, cx + cardW / 2, cardY + 60);
+    }
+  }
+  X.lineWidth = 1;
+  // Help text.
+  X.fillStyle = "#aaa";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("←/→  PICK    ENTER  PLAY    ESC  BACK", W / 2, H - 28);
+}
+
+// Enter the playing state at an arbitrary stage (used by stage-select).
+function enterPlayingAtStage(stageIdx) {
+  player = makePlayer(selectedChar, 120, 300);
+  currentStage = Math.max(0, Math.min(stageIdx, STAGES.length - 1));
+  currentWave = 0;
+  waveDelay = 0;
+  enemies = spawnWave(currentStage, 0);
+  particles = [];
+  projectiles = [];
+  hitstopFrames = 0;
+  flashFrames = 0;
+  shakeFrames = 0;
+  shakeMag = 0;
+  stageClearMessage = "";
+  stageClearTimer = 0;
+  bossSpawnedFor = {};
+  tutorialDismissed = true;   // stage-select players know the controls
+  tutorialStart = 0;
+  setState("playing");
+  // No opening cutscene when jumping in via stage select. Stage intro
+  // beat still plays for narrative consistency.
+  if (typeof beginStageIntroBeat === "function") beginStageIntroBeat();
 }
 
 // Selected character for the next run. Switches via 1/2/3 on the title screen
@@ -7470,6 +7607,10 @@ function enterPlaying() {
   stageClearMessage = "";
   stageClearTimer = 0;
   bossSpawnedFor = {};
+  // Reset tutorial overlay session state — if !save.tutorialDone, the tutorial
+  // will appear on stage 1 again this run.
+  tutorialDismissed = false;
+  tutorialStart = 0;
   setState("playing");
   // Opening cutscene runs once at the start of every fresh run.
   // Skippable; on completion the player is already in stage 1.
@@ -7584,6 +7725,10 @@ function beginStageClear() {
     }
     if (player.maxCombo > save.bestCombo) save.bestCombo = player.maxCombo;
     save.stagesCleared = Math.max(save.stagesCleared, player.stagesClearedThisRun);
+    // Mark this stage as cleared so it shows up in stage-select.
+    save.stageBests[currentStage] = true;
+    // Tutorial flag — first stage 1 clear, never show again.
+    if (currentStage === 0) save.tutorialDone = true;
     // Atlas unlocks after clearing 3 stages in any run.
     if (player.stagesClearedThisRun >= 3) save.unlocks.atlas = true;
     saveSave();
@@ -8058,6 +8203,7 @@ function render() {
   else if (STATE === "cinematic") renderCinematic();
   else if (STATE === "bossIntro") renderBossIntro();
   else if (STATE === "beat") renderBeat();
+  else if (STATE === "stageSelect") renderStageSelect();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
@@ -8173,6 +8319,82 @@ function renderTitle() {
     X.font = "8px ui-monospace, monospace";
     X.fillText("* clear 3 stages to unlock ATLAS", W / 2, H - 44);
   }
+  // Stage-select hint — only shows once the player has cleared at least one stage.
+  if (Object.keys(save.stageBests || {}).length > 0) {
+    X.fillStyle = "#7d8d4f";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.fillText("TAB — STAGE SELECT", W / 2, H / 2 + 80);
+  }
+}
+
+// Tutorial overlay state — tracks lifetime + dismissed flag for this session.
+let tutorialDismissed = false;
+let tutorialStart = 0;
+
+function drawTutorialOverlay() {
+  // Initialize timer on first call.
+  if (tutorialStart === 0) tutorialStart = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  const elapsed = now - tutorialStart;
+  // Dismiss after 16 seconds OR after the player lands at least one hit.
+  if (elapsed > 16 || (player && player.damageDealt > 0)) {
+    tutorialDismissed = true;
+  }
+  if (tutorialDismissed) return;
+
+  // Soft fade-in over first 0.4s, fade-out over last 0.5s.
+  const fadeIn = Math.min(1, elapsed / 0.4);
+  const fadeOut = Math.min(1, (16 - elapsed) / 0.5);
+  const a = Math.min(fadeIn, fadeOut);
+
+  // Tips list — cycles through the controls. Each tip stays visible ~2.5s.
+  const tips = [
+    { key: "WASD or ←↑↓→",       label: "MOVE  (double-tap to RUN)" },
+    { key: "SPACE",               label: "JUMP   (DOWN+SPACE to DODGE)" },
+    { key: "J",                   label: "LIGHT ATTACK  (chain J→J→J for combo)" },
+    { key: "K",                   label: "HEAVY  (launches enemies — followup mid-air)" },
+    { key: "I",                   label: "PARRY  (tap right before a hit lands)" },
+    { key: "L",                   label: "SPECIAL  (costs HP — Rio's Sunset Spin / Duke's Rolling Thunder / Atlas's Foundation Stone)" },
+    { key: "U",                   label: "GRAB  (then J to throw)" },
+    { key: "P",                   label: "PAUSE  (also: difficulty, audio, accessibility)" },
+  ];
+  const tipsPerCycle = tips.length;
+  const cycleDur = 14;   // total before fade-out
+  const slot = Math.min(tipsPerCycle - 1, Math.floor((elapsed / cycleDur) * tipsPerCycle));
+  const tip = tips[slot];
+
+  // Panel.
+  const panelW = 460, panelH = 38, panelX = (W - panelW) / 2, panelY = 64;
+  X.globalAlpha = a * 0.9;
+  X.fillStyle = "rgba(0,0,0,0.75)";
+  X.fillRect(panelX, panelY, panelW, panelH);
+  X.fillStyle = "#e8c04a";
+  X.fillRect(panelX, panelY, panelW, 2);
+  X.fillRect(panelX, panelY + panelH - 2, panelW, 2);
+  // Key cap.
+  const keyTxt = tip.key;
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 12px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "middle";
+  X.fillText(keyTxt, panelX + 12, panelY + panelH / 2);
+  // Label.
+  X.fillStyle = "#fff";
+  X.font = "bold 11px ui-monospace, monospace";
+  X.fillText(tip.label, panelX + 12 + keyTxt.length * 8 + 16, panelY + panelH / 2);
+  // Title strip above.
+  X.font = "bold 9px ui-monospace, monospace";
+  X.fillStyle = "rgba(232,192,74," + a.toFixed(2) + ")";
+  X.textAlign = "center";
+  X.fillText("CONTROLS — LAND A HIT TO DISMISS", W / 2, panelY - 6);
+  // Progress dots below.
+  const dotY = panelY + panelH + 4;
+  for (let i = 0; i < tipsPerCycle; i++) {
+    X.fillStyle = i === slot ? "#e8c04a" : "rgba(170,170,170,0.55)";
+    X.fillRect(W / 2 - tipsPerCycle * 3 + i * 6, dotY, 4, 2);
+  }
+  X.globalAlpha = 1;
 }
 
 function renderPlaying() {
@@ -8206,6 +8428,12 @@ function renderPlaying() {
   }
 
   drawHUD();
+
+  // Tutorial overlay — first run only, stage 1, dismisses on first attack
+  // landed or after 14 seconds. Stays out of the way at the top center.
+  if (!save.tutorialDone && currentStage === 0 && player && !player.dead) {
+    drawTutorialOverlay();
+  }
 
   // Stage clear / interlude overlay.
   if (stageClearTimer > 0 && stageClearMessage) {
