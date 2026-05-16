@@ -116,9 +116,16 @@ function startServer() {
 
   async function capture(charKey) {
     window.eval(`selectedChar = '${charKey}';`);
-    if (window.eval("STATE") !== "title") { press("Escape"); step(4); }
+    // Drive back to title — Escape from 'beat' lands in 'playing' first
+    // (beats absorb Escape as 'skip'), then a second Escape goes to title.
+    let safety = 5;
+    while (window.eval("STATE") !== "title" && safety-- > 0) {
+      press("Escape"); step(4);
+    }
     press("Enter"); step(2);  // title -> select
-    press("Enter"); step(2);  // select -> playing
+    press("Enter"); step(2);  // select -> playing (triggers opening beat)
+    // Opening cutscene fires post-enterPlaying — skip it so render runs in 'playing'.
+    if (window.eval("STATE") === "beat") { press("Enter"); step(4); }
     window.eval("__spriteUsed = 0; __procFallback = 0;");
     step(20);
     const su = window.eval("__spriteUsed");

@@ -890,18 +890,23 @@ function drawTouchOverlay() {
 }
 
 // ---------- Action bindings ----------
-// WASD / arrows for movement; right-hand row JKLU for combat; I = parry.
+// Two parallel layouts so the player can use either hand for actions:
+//   RIGHT-HAND: J K L I U (default — combat keys on the right number-row side)
+//   LEFT-HAND:  F G R E Q (alternate — combat keys on the left near WASD)
+// Movement remains WASD AND arrows. Pick whichever pair is comfortable; both
+// fire simultaneously, so left- and right-hand players don't need a settings
+// menu to switch.
 const KEY = {
   left:    ["KeyA", "ArrowLeft"],
   right:   ["KeyD", "ArrowRight"],
   up:      ["KeyW", "ArrowUp"],
   down:    ["KeyS", "ArrowDown"],
   jump:    ["Space"],
-  light:   ["KeyJ"],
-  heavy:   ["KeyK"],
-  special: ["KeyL"],
-  grab:    ["KeyU"],
-  parry:   ["KeyI"],
+  light:   ["KeyJ", "KeyF"],
+  heavy:   ["KeyK", "KeyG"],
+  special: ["KeyL", "KeyR"],
+  grab:    ["KeyU", "KeyQ"],
+  parry:   ["KeyI", "KeyE"],
 };
 
 function actionHeld(a) {
@@ -8352,11 +8357,11 @@ function drawTutorialOverlay() {
   const tips = [
     { key: "WASD or ←↑↓→",       label: "MOVE  (double-tap to RUN)" },
     { key: "SPACE",               label: "JUMP   (DOWN+SPACE to DODGE)" },
-    { key: "J",                   label: "LIGHT ATTACK  (chain J→J→J for combo)" },
-    { key: "K",                   label: "HEAVY  (launches enemies — followup mid-air)" },
-    { key: "I",                   label: "PARRY  (tap right before a hit lands)" },
-    { key: "L",                   label: "SPECIAL  (costs HP — Rio's Sunset Spin / Duke's Rolling Thunder / Atlas's Foundation Stone)" },
-    { key: "U",                   label: "GRAB  (then J to throw)" },
+    { key: "J or F",              label: "LIGHT ATTACK  (chain three for combo)" },
+    { key: "K or G",              label: "HEAVY  (launches enemies — followup mid-air)" },
+    { key: "I or E",              label: "PARRY  (tap right before a hit lands)" },
+    { key: "L or R",              label: "SPECIAL  (costs HP — Rio's Sunset Spin / Duke's Rolling Thunder / Atlas's Foundation Stone)" },
+    { key: "U or Q",              label: "GRAB  (then J/F to throw)" },
     { key: "P",                   label: "PAUSE  (also: difficulty, audio, accessibility)" },
   ];
   const tipsPerCycle = tips.length;
