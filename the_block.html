@@ -7457,6 +7457,8 @@ function enterPlayingAtStage(stageIdx) {
   stageClearMessage = "";
   stageClearTimer = 0;
   bossSpawnedFor = {};
+  sectionUnlocked = false;
+  sectionTransition = null;
   tutorialDismissed = true;   // stage-select players know the controls
   tutorialStart = 0;
   setState("playing");
@@ -7481,7 +7483,8 @@ const STAGES = [
     waves: [
       [["runner", 440, 280], ["runner", 520, 320]],
       [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
-      [["chains", 480, 300]],
+      // Section 3 = mini-boss climax: a Chains brawler backed by a Tank.
+      [["chains", 480, 300], ["tank", 580, 320]],
     ],
     boss: null,
   },
@@ -7492,7 +7495,8 @@ const STAGES = [
     waves: [
       [["slice", 440, 280], ["runner", 520, 320]],
       [["slice", 460, 290], ["slice", 580, 310]],
-      [["chains", 480, 295], ["runner", 600, 320]],
+      // Section 3 mini-boss: Chains + Slice + a final ranged Lamplight.
+      [["chains", 480, 295], ["slice", 560, 320], ["lamplight", 600, 285]],
     ],
     boss: null,
   },
@@ -7514,7 +7518,8 @@ const STAGES = [
     waves: [
       [["chains", 440, 282], ["slice", 540, 320]],
       [["shade", 480, 298], ["chains", 600, 320]],
-      [["shade", 460, 290], ["slice", 540, 285], ["slice", 600, 320]],
+      // Section 3 mini-boss climax: two Shades + a Slice flanker.
+      [["shade", 440, 290], ["shade", 580, 320], ["slice", 540, 285], ["slice", 600, 320]],
     ],
     boss: null,
   },
@@ -7525,7 +7530,8 @@ const STAGES = [
     waves: [
       [["dojo", 460, 290], ["chains", 560, 318]],
       [["dojo", 460, 290], ["dojo", 560, 318]],
-      [["rig", 480, 300], ["dojo", 580, 320]],
+      // Section 3 mini-boss: Rig + Dojo + extra Dojo for the cage finale.
+      [["rig", 480, 300], ["dojo", 580, 320], ["dojo", 540, 285]],
     ],
     boss: null,
   },
@@ -7547,7 +7553,8 @@ const STAGES = [
     waves: [
       [["tank", 480, 300], ["rig", 580, 320]],
       [["rig", 480, 290], ["tank", 580, 320]],
-      [["rig", 460, 295], ["rig", 580, 318]],
+      // Section 3 mini-boss: two Rigs + a Tank in the foundry.
+      [["rig", 460, 295], ["rig", 580, 318], ["tank", 540, 305]],
     ],
     boss: null,
   },
@@ -7558,7 +7565,8 @@ const STAGES = [
     waves: [
       [["chains", 480, 300], ["slice", 580, 320]],
       [["lamplight", 600, 290], ["slice", 460, 320]],
-      [["chains", 460, 295], ["chains", 580, 320]],
+      // Section 3 mini-boss: two Chains brawlers + a Slice flanker.
+      [["chains", 460, 295], ["chains", 580, 320], ["slice", 540, 290]],
     ],
     boss: null,
   },
@@ -7590,6 +7598,42 @@ let currentWave = 0;
 let waveDelay = 0;        // seconds before next wave spawns (after clearing one)
 let stageClearMessage = ""; // overlay text during interlude
 let stageClearTimer = 0;
+// Side-scrolling section progression. After each wave clears, sectionUnlocked
+// becomes true; when the player walks to the right edge, the screen
+// transitions to the next section and the next wave spawns. Each wave of a
+// stage is its own visual section so the player feels they're progressing
+// across the neighborhood, not standing in one room.
+let sectionUnlocked = false;
+let sectionTransition = null;   // { t, dur, phase: 'out'|'in', onMid: () => void }
+const SECTION_TRIGGER_X = 580;  // walk past this to advance after wave clears
+
+function startSectionTransition(onMid) {
+  if (sectionTransition) return;
+  sectionTransition = { t: 0, dur: 1.0, phase: "out", onMid };
+}
+
+function updateSectionTransition(dt) {
+  if (!sectionTransition) return;
+  sectionTransition.t += dt;
+  if (sectionTransition.phase === "out" && sectionTransition.t >= 0.5) {
+    // Mid-transition: fire callback to swap waves / reset player.
+    if (sectionTransition.onMid) sectionTransition.onMid();
+    sectionTransition.phase = "in";
+  }
+  if (sectionTransition.t >= sectionTransition.dur) {
+    sectionTransition = null;
+  }
+}
+
+function renderSectionTransition() {
+  if (!sectionTransition) return;
+  const half = sectionTransition.dur / 2;
+  const a = sectionTransition.phase === "out"
+    ? Math.min(1, sectionTransition.t / half)
+    : Math.max(0, 1 - (sectionTransition.t - half) / half);
+  X.fillStyle = "rgba(0,0,0," + a.toFixed(2) + ")";
+  X.fillRect(0, 0, W, H);
+}
 
 function spawnWave(stageIdx, waveIdx) {
   const stage = STAGES[stageIdx];
@@ -7612,6 +7656,8 @@ function enterPlaying() {
   stageClearMessage = "";
   stageClearTimer = 0;
   bossSpawnedFor = {};
+  sectionUnlocked = false;
+  sectionTransition = null;
   // Reset tutorial overlay session state — if !save.tutorialDone, the tutorial
   // will appear on stage 1 again this run.
   tutorialDismissed = false;
@@ -7689,29 +7735,58 @@ function updatePlaying(dt) {
     }
   }
 
-  // Wave / stage progression — advance once all live enemies are gone.
+  // Run section transition timer.
+  updateSectionTransition(dt);
+
+  // Wave / stage progression — multi-section: when a wave clears, unlock the
+  // section so the player can walk to the right edge to advance. The right-
+  // edge trigger fires startSectionTransition which fades to black, swaps
+  // the wave, then fades back in with the player at the left edge.
+  const stage = STAGES[currentStage];
   if (waveDelay > 0) {
     waveDelay -= dt;
     if (waveDelay <= 0) {
-      currentWave++;
-      const stage = STAGES[currentStage];
-      if (stage && stage.waves[currentWave]) {
-        enemies = enemies.concat(spawnWave(currentStage, currentWave));
-      } else if (stage && stage.boss && !bossSpawnedFor[currentStage]) {
-        // Boss intro cutscene plays first, then spawns the boss when done.
-        // beginBossIntro sets bossSpawnedFor on completion so we don't
-        // re-trigger; if no intro is configured for this boss it falls
-        // through to a direct spawn.
-        beginBossIntro(stage.boss);
-      } else if (stage && stage.finalQte) {
-        beginKaneCinematic();
-      } else {
-        beginStageClear();
-      }
+      // Wave is over. Unlock the section so the player can walk forward.
+      sectionUnlocked = true;
     }
   } else if (enemies.length === 0 || enemies.every(e => e.dead)) {
-    // Brief pause before next wave / stage clear so death animations land.
-    waveDelay = 1.0;
+    // Brief pause before unlocking so death animations land.
+    waveDelay = 0.8;
+  }
+
+  // Detect the player walking past the right-edge trigger when unlocked.
+  if (sectionUnlocked && !sectionTransition && player && !player.dead &&
+      player.x > SECTION_TRIGGER_X) {
+    // Choose what's next.
+    const nextWaveIdx = currentWave + 1;
+    const hasNextWave = stage && stage.waves[nextWaveIdx];
+    const hasBoss = stage && stage.boss && !bossSpawnedFor[currentStage];
+    const hasFinal = stage && stage.finalQte;
+    if (hasNextWave) {
+      sectionUnlocked = false;
+      startSectionTransition(() => {
+        currentWave = nextWaveIdx;
+        enemies = spawnWave(currentStage, currentWave);
+        particles = [];
+        projectiles = [];
+        if (player) { player.x = 120; player.vx = 0; player.knockX = 0; }
+      });
+    } else if (hasBoss) {
+      sectionUnlocked = false;
+      startSectionTransition(() => {
+        if (player) { player.x = 120; player.vx = 0; player.knockX = 0; }
+        beginBossIntro(stage.boss);
+      });
+    } else if (hasFinal) {
+      sectionUnlocked = false;
+      startSectionTransition(() => {
+        beginKaneCinematic();
+      });
+    } else {
+      // No more waves and no boss — stage is cleared.
+      sectionUnlocked = false;
+      beginStageClear();
+    }
   }
 }
 
@@ -7757,6 +7832,8 @@ function advanceStage() {
   enemies = [];
   particles = [];
   projectiles = [];
+  sectionUnlocked = false;
+  sectionTransition = null;
   if (currentStage >= STAGES.length) {
     // End of currently-built stages. Phase 4.1 extends to 10.
     finalizeRun(true);
@@ -8439,6 +8516,31 @@ function renderPlaying() {
   if (!save.tutorialDone && currentStage === 0 && player && !player.dead) {
     drawTutorialOverlay();
   }
+
+  // GO arrow — when the section is unlocked, point the player toward the
+  // right edge. Pulses to draw the eye.
+  if (sectionUnlocked && !sectionTransition && player && !player.dead) {
+    const t = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+    const pulse = 0.55 + 0.45 * Math.sin(t * 4);
+    const arrowX = W - 32 + Math.sin(t * 6) * 3;
+    const arrowY = (STAGE_TOP + STAGE_BOT) / 2;
+    X.fillStyle = "rgba(0,0,0,0.55)";
+    X.fillRect(arrowX - 22, arrowY - 12, 30, 24);
+    X.fillStyle = "rgba(232,192,74," + pulse.toFixed(2) + ")";
+    // Arrow chevron pointing right.
+    for (let i = 0; i < 10; i++) {
+      X.fillRect(arrowX - i, arrowY - 8 + i, 2, 1);
+      X.fillRect(arrowX - i, arrowY + 8 - i, 2, 1);
+    }
+    X.fillStyle = "rgba(232,192,74," + pulse.toFixed(2) + ")";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.textBaseline = "top";
+    X.fillText("GO →", arrowX - 8, arrowY + 14);
+  }
+
+  // Section-transition fade overlay (outside of stage-clear timer).
+  renderSectionTransition();
 
   // Stage clear / interlude overlay.
   if (stageClearTimer > 0 && stageClearMessage) {
