@@ -52,20 +52,24 @@ If you have **Python** installed:
 
 ## Controls
 
-| Action | Keyboard | Notes |
-|---|---|---|
-| Move | WASD or arrow keys | hold to walk |
-| Run | Double-tap a direction | |
-| Jump | Space | |
-| Dodge | Down + Space | invincible briefly |
-| Light attack | **J** | chain J → J → J for a combo |
-| Heavy / launcher | **K** | crouches then rises |
-| Special | **L** | costs HP — Sunset Spin / Rolling Thunder / Foundation Stone |
-| Grab | **U** | grab an enemy → throw with J |
-| Parry | **I** | tap right before a hit lands |
-| Pause | **P** or Escape | also adjust audio + difficulty here |
-| Debug overlay | **F3** | shows hitboxes |
-| Skip cutscene | Enter / Space / J / Escape | works for opening, boss intros, stage beats, ending |
+Two action layouts work in parallel — pick whichever hand is comfortable, no settings menu needed.
+
+| Action | Right-hand keys | Left-hand keys | Notes |
+|---|---|---|---|
+| Move | WASD or arrows | (same) | hold to walk |
+| Run | Double-tap a direction | (same) | |
+| Jump | Space | (same) | |
+| Dodge | Down + Space | (same) | invincible briefly |
+| Light attack | **J** | **F** | chain three for a combo |
+| Heavy / launcher | **K** | **G** | crouches then rises |
+| Special | **L** | **R** | costs HP — Sunset Spin / Rolling Thunder / Foundation Stone |
+| Grab | **U** | **Q** | grab an enemy → throw with J or F |
+| Parry | **I** | **E** | tap right before a hit lands |
+| Pause | **P** or Escape | (same) | also adjust audio + difficulty here |
+| Debug overlay | **F3** | (same) | shows hitboxes |
+| Skip cutscene | Enter / Space / J / F / Escape | (same) | works for opening, boss intros, stage beats, ending |
+
+**Recommended for left-hand players**: arrow keys for movement (right hand), Q/E/R/F/G for actions (left hand), Space for jump.
 
 Gamepad also works — Xbox / PlayStation controllers are auto-detected.
 
