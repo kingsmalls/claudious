@@ -864,6 +864,7 @@ function duckMusic(amount, durSec) {
 let NPC_CHATTER  = {};   // { stageName: [strings] }
 let ACHIEVEMENTS = [];   // [{ id, name, description, trigger, rarity }]
 let ACH_BY_ID    = {};   // lookup map for quick rendering
+let BOSS_DIALOG  = {};   // { bossKey: { intro: [...], midfight: [...], taunt: [...], defeat: [...] } }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
   fetch("content/npc_chatter.json").then(r => r.ok ? r.json() : null)
@@ -875,6 +876,8 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
         ACH_BY_ID = Object.fromEntries(j.map(a => [a.id, a]));
       }
     }).catch(() => {});
+  fetch("content/boss_dialog.json").then(r => r.ok ? r.json() : null)
+    .then(j => { if (j) BOSS_DIALOG = j; }).catch(() => {});
 }
 
 // ---------- Achievement popup queue ----------
@@ -1520,6 +1523,8 @@ function startDodge(p) {
   p.vy = 0;
   p.animState = "dodge";
   p.animTime = 0;
+  // Per-run / per-stage achievement counters.
+  p.dodgeUsedThisStage = true;
 }
 
 function advanceAttack(p) {
@@ -1760,6 +1765,8 @@ function updatePlayer(p, dt) {
         // Snap facing back so the elbow hits where the enemy actually was.
         p.facing = facingBeforeInput;
         startAttack(p, "back_atk");
+        p.backAtkThisStage = (p.backAtkThisStage || 0) + 1;
+        if (p.backAtkThisStage >= 3) unlockAchievement("back_atk_3");
       } else {
         startAttack(p, "atk1");
       }
@@ -1781,6 +1788,7 @@ function updatePlayer(p, dt) {
       p.hp -= sp.hpCost || 0;
       startAttack(p, "special");
       playSfx("special");
+      p.specialUsedThisStage = true;
     }
   }
   if (actionPressed("grab") && grounded && !p.attacking) {
@@ -6107,6 +6115,10 @@ function applyHit(target, hb, attacker) {
   // and so the victim's attack-cancel doesn't immediately re-eat the next active frame.
   // Short enough that player chain combos still land (chain gaps >=10f).
   target.iframes = 4;
+  // Launcher juggle achievement: hit a target while it's already airborne.
+  if (target !== player && attacker === player && target.airborne) {
+    unlockAchievement("launcher_juggle");
+  }
   // Player taking damage breaks parry chain but retains 40% meter.
   if (player && target === player) {
     player.parryChain = 0;
@@ -6462,20 +6474,22 @@ function update(dt) {
   else if (STATE === "bossIntro") updateBossIntro(dt);
   else if (STATE === "beat") updateBeat(dt);
   else if (STATE === "stageSelect") updateStageSelect(dt);
+  else if (STATE === "achievementList") updateAchievementList(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
 
 // ---------- Pause menu (Phase 4.4) ----------
 const PAUSE_OPTIONS = [
-  { id: "resume",   label: "RESUME"      },
-  { id: "diff",     label: "DIFFICULTY"  },
-  { id: "vol",      label: "MASTER VOL"  },
-  { id: "sfx",      label: "SFX VOL"     },
-  { id: "muted",    label: "MUTED"       },
-  { id: "flash",    label: "REDUCE FLASH"},
-  { id: "shake",    label: "REDUCE SHAKE"},
-  { id: "quit",     label: "QUIT TO TITLE" },
+  { id: "resume",       label: "RESUME"        },
+  { id: "achievements", label: "ACHIEVEMENTS"  },
+  { id: "diff",         label: "DIFFICULTY"    },
+  { id: "vol",          label: "MASTER VOL"    },
+  { id: "sfx",          label: "SFX VOL"       },
+  { id: "muted",        label: "MUTED"         },
+  { id: "flash",        label: "REDUCE FLASH"  },
+  { id: "shake",        label: "REDUCE SHAKE"  },
+  { id: "quit",         label: "QUIT TO TITLE" },
 ];
 let pauseIdx = 0;
 
@@ -6497,6 +6511,9 @@ function updatePaused(dt) {
   const opt = PAUSE_OPTIONS[pauseIdx];
   if (opt.id === "resume" && enter) {
     setState("playing"); saveSave(); return;
+  }
+  if (opt.id === "achievements" && enter) {
+    setState("achievementList"); achievementListScroll = 0; return;
   }
   if (opt.id === "quit" && enter) {
     player = null; enemies = []; particles = []; projectiles = [];
@@ -7176,11 +7193,29 @@ function beginBossIntro(bossKey) {
     spawnStageBoss(bossKey);
     return;
   }
+  // If boss_dialog.json has an intro pool for this boss, pick from it; else
+  // fall back to the static lines hard-coded in BOSS_INTRO. Pool picks are
+  // randomized so repeated playthroughs get different intro lines.
+  let lines = def.lines;
+  const pool = (typeof BOSS_DIALOG !== "undefined") &&
+               BOSS_DIALOG && BOSS_DIALOG[bossKey] &&
+               Array.isArray(BOSS_DIALOG[bossKey].intro) &&
+               BOSS_DIALOG[bossKey].intro.length > 0 ? BOSS_DIALOG[bossKey].intro : null;
+  if (pool) {
+    // Pick up to 3 lines at random (without repeats) so the cutscene length
+    // is similar to the hardcoded version.
+    const pick = pool.slice();
+    for (let i = pick.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pick[i], pick[j]] = [pick[j], pick[i]];
+    }
+    lines = pick.slice(0, Math.min(3, pick.length));
+  }
   // Compute typewriter timing: each line gets a slice of the duration.
   const lineSlots = [];
-  const lineDur = def.duration / (def.lines.length + 0.4);
+  const lineDur = def.duration / (lines.length + 0.4);
   let cur = 0.6;   // initial pause
-  for (const line of def.lines) {
+  for (const line of lines) {
     lineSlots.push({ text: line, startAt: cur, charsAt: cur, fullAt: cur + lineDur * 0.7 });
     cur += lineDur;
   }
@@ -7631,6 +7666,101 @@ function renderStageSelect() {
   X.fillText("←/→  PICK    ENTER  PLAY    ESC  BACK", W / 2, H - 28);
 }
 
+// ---------- Achievement list ----------
+// Accessible from the pause menu. Shows every achievement with locked/
+// unlocked state, rarity color, and description. Scroll with ↑/↓ or W/S.
+// Escape returns to the pause menu.
+let achievementListScroll = 0;
+
+function updateAchievementList(dt) {
+  if (consumePress("Escape") || consumePress("KeyP")) {
+    setState("paused");
+    return;
+  }
+  if (consumePress("ArrowDown") || consumePress("KeyS")) {
+    achievementListScroll = Math.min(achievementListScroll + 1, Math.max(0, ACHIEVEMENTS.length - 8));
+    playSfx("menu");
+  }
+  if (consumePress("ArrowUp") || consumePress("KeyW")) {
+    achievementListScroll = Math.max(0, achievementListScroll - 1);
+    playSfx("menu");
+  }
+}
+
+function renderAchievementList() {
+  // Dark backdrop.
+  X.fillStyle = "rgba(10,10,16,0.96)";
+  X.fillRect(0, 0, W, H);
+  // Header.
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 18px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "top";
+  X.fillText("ACHIEVEMENTS", W / 2, 18);
+  // Unlock count + progress bar.
+  const total = ACHIEVEMENTS.length;
+  const unlocked = ACHIEVEMENTS.filter(a => save.achievements[a.id]).length;
+  X.fillStyle = "#aaa";
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillText(unlocked + " / " + total + " UNLOCKED", W / 2, 42);
+  // Progress bar.
+  const barW = 280, barX = (W - barW) / 2, barY = 58;
+  X.fillStyle = "#1a1a22";
+  X.fillRect(barX, barY, barW, 4);
+  X.fillStyle = "#7d8d4f";
+  X.fillRect(barX, barY, Math.round(barW * unlocked / Math.max(1, total)), 4);
+  // List rows.
+  const rowH = 30;
+  const top = 80;
+  const visible = 6;
+  for (let i = 0; i < visible; i++) {
+    const idx = achievementListScroll + i;
+    if (idx >= ACHIEVEMENTS.length) break;
+    const a = ACHIEVEMENTS[idx];
+    const got = !!save.achievements[a.id];
+    const y = top + i * rowH;
+    const rarityColor =
+      a.rarity === "legendary" ? "#ff8a40" :
+      a.rarity === "rare"      ? "#a8c8f4" :
+      a.rarity === "uncommon"  ? "#7d8d4f" :
+                                 "#dcd6c4";
+    // Row background.
+    X.fillStyle = got ? "rgba(232,192,74,0.07)" : "rgba(0,0,0,0.55)";
+    X.fillRect(60, y, W - 120, rowH - 4);
+    // Rarity bar.
+    X.fillStyle = got ? rarityColor : "#3a3a44";
+    X.fillRect(60, y, 3, rowH - 4);
+    // Name.
+    X.fillStyle = got ? "#fff" : "#666";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.textBaseline = "top";
+    X.fillText(got ? a.name : "???",  74, y + 4);
+    // Description.
+    X.fillStyle = got ? "#aaa" : "#444";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.fillText(got ? a.description : "(locked)", 74, y + 16);
+    // Rarity tag at right.
+    X.fillStyle = got ? rarityColor : "#444";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "right";
+    X.fillText(a.rarity.toUpperCase(), W - 70, y + 4);
+  }
+  // Scroll indicator.
+  if (ACHIEVEMENTS.length > visible) {
+    X.fillStyle = "#666";
+    X.font = "bold 9px ui-monospace, monospace";
+    X.textAlign = "center";
+    if (achievementListScroll > 0) X.fillText("▲", W / 2, top - 12);
+    if (achievementListScroll + visible < ACHIEVEMENTS.length) X.fillText("▼", W / 2, top + visible * rowH + 4);
+  }
+  // Help.
+  X.fillStyle = "#888";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("↑/↓  SCROLL    ESC  BACK", W / 2, H - 16);
+}
+
 // Enter the playing state at an arbitrary stage (used by stage-select).
 function enterPlayingAtStage(stageIdx) {
   player = makePlayer(selectedChar, 120, 300);
@@ -8009,10 +8139,17 @@ function beginStageClear() {
       unlockAchievement("first_stage");
       if (player.damageTaken === 0) unlockAchievement("no_damage_block");
     }
+    // Stage-flag achievement triggers.
+    if (!player.dodgeUsedThisStage)  unlockAchievement("no_dodge_all");
+    if (!player.specialUsedThisStage) unlockAchievement("no_special_all");
     // Check for all-10-cleared.
     const allCleared = Array.from({length: 10}, (_, i) => i)
                             .every(i => save.stageBests[i]);
     if (allCleared) unlockAchievement("all_stages_clear");
+    // Reset per-stage flags for the next stage.
+    player.dodgeUsedThisStage = false;
+    player.specialUsedThisStage = false;
+    player.backAtkThisStage = 0;
     saveSave();
   }
   // Show the narrative stage-clear beat instead of the legacy text overlay.
@@ -8167,8 +8304,24 @@ function updateTaxiHazard(dt) {
   }
   if (taxiState.car) {
     const c = taxiState.car;
+    const wasAlive = !c.scored;
     c.x += c.vx * dt;
-    if (c.x < -160 || c.x > W + 160) { taxiState.car = null; return; }
+    if (c.x < -160 || c.x > W + 160) {
+      // Taxi just left the screen without hitting the player. If the
+      // player was in the curb zone but dodged/iframed it, count it.
+      if (wasAlive && taxiState.nearMiss) {
+        c.scored = true;
+        player.taxiDodgesThisRun = (player.taxiDodgesThisRun || 0) + 1;
+        if (player.taxiDodgesThisRun >= 3) unlockAchievement("dodge_taxi");
+        taxiState.nearMiss = false;
+      }
+      taxiState.car = null; return;
+    }
+    // Track near-miss: player was in the curb lane AND had iframes/dodge.
+    if (player && !player.dead && Math.abs(player.x - (c.x + 30)) < 50 &&
+        player.y > STAGE_BOT - 8 && (player.iframes > 0 || player.dodging)) {
+      taxiState.nearMiss = true;
+    }
     // Hit if player is at the curb edge.
     if (player && !player.dead && player.iframes <= 0 && !player.dodging &&
         player.y > STAGE_BOT - 8) {
@@ -8215,7 +8368,13 @@ function updateTrainHazard(dt) {
   if (trainState.car) {
     const c = trainState.car;
     c.x += c.vx * dt;
-    if (c.x < -260 || c.x > W + 260) { trainState.car = null; return; }
+    if (c.x < -260 || c.x > W + 260) {
+      // Train cleared without hitting anyone. Award dodge achievement.
+      if (player && !player.dead && !trainState.hitThisPass) {
+        unlockAchievement("dodge_train");
+      }
+      trainState.car = null; trainState.hitThisPass = false; return;
+    }
     if (player && !player.dead && player.iframes <= 0 && !player.dodging) {
       const inLane = Math.abs(player.y - c.y) < 16;
       const inX = player.x > c.x - 12 && player.x < c.x + 200;
@@ -8226,6 +8385,7 @@ function updateTrainHazard(dt) {
           hits: new Set(),
         }, null);
         shakeFrames = Math.max(shakeFrames, 14);
+        trainState.hitThisPass = true;
       }
     }
     if (shakeFrames < 4) shakeFrames = 4;
@@ -8501,6 +8661,7 @@ function render() {
   else if (STATE === "bossIntro") renderBossIntro();
   else if (STATE === "beat") renderBeat();
   else if (STATE === "stageSelect") renderStageSelect();
+  else if (STATE === "achievementList") renderAchievementList();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
