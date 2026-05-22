@@ -1,0 +1,11 @@
+{
+  "_note": "Placeholder. Run `python generate.py enemy_variants` to populate with named sub-types per enemy. Schema: { enemy_type: [{ name, subtitle, hp_mul, speed_mul, damage_mul, dialog_grunt, dialog_kod, backstory }] }",
+  "runner": [],
+  "tank": [],
+  "slice": [],
+  "chains": [],
+  "lamplight": [],
+  "shade": [],
+  "dojo": [],
+  "rig": []
+}
