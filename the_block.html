@@ -868,7 +868,8 @@ function duckMusic(amount, durSec) {
 let NPC_CHATTER  = {};   // { stageName: [strings] }
 let ACHIEVEMENTS = [];   // [{ id, name, description, trigger, rarity }]
 let ACH_BY_ID    = {};   // lookup map for quick rendering
-let BOSS_DIALOG  = {};   // { bossKey: { intro: [...], midfight: [...], taunt: [...], defeat: [...] } }
+let BOSS_DIALOG  = {};   // { bossKey: { intro, midfight, taunt, defeat } }
+let ENEMY_VARIANTS = {}; // { type: [{ name, subtitle, hp_mul, speed_mul, damage_mul, dialog_grunt, dialog_kod, backstory }] }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
   fetch("content/npc_chatter.json").then(r => r.ok ? r.json() : null)
@@ -882,6 +883,8 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
     }).catch(() => {});
   fetch("content/boss_dialog.json").then(r => r.ok ? r.json() : null)
     .then(j => { if (j) BOSS_DIALOG = j; }).catch(() => {});
+  fetch("content/enemy_variants.json").then(r => r.ok ? r.json() : null)
+    .then(j => { if (j) ENEMY_VARIANTS = j; }).catch(() => {});
 }
 
 // ---------- Achievement popup queue ----------
@@ -4159,7 +4162,18 @@ function makeEnemy(type, x, y) {
   const cfg = (typeof difficultyConfig === "function") ? difficultyConfig() : null;
   const hpMul = cfg ? (stats.isBoss ? Math.sqrt(cfg.enemyHpMul) : cfg.enemyHpMul) : 1;
   const aggrMul = cfg ? cfg.enemyAggrMul : 1;
-  const scaledHp = Math.max(1, Math.round(stats.hp * hpMul));
+  // Variant promotion: 25%% chance a non-boss enemy spawns as a named
+  // sub-type from content/enemy_variants.json. Applies stat multipliers
+  // and stores dialog lines for use on hurt / KO.
+  let variant = null;
+  if (!stats.isBoss && ENEMY_VARIANTS[type] && Array.isArray(ENEMY_VARIANTS[type]) &&
+      ENEMY_VARIANTS[type].length > 0 && Math.random() < 0.25) {
+    variant = ENEMY_VARIANTS[type][Math.floor(Math.random() * ENEMY_VARIANTS[type].length)];
+  }
+  const vHp     = variant && typeof variant.hp_mul     === "number" ? variant.hp_mul     : 1;
+  const vSpeed  = variant && typeof variant.speed_mul  === "number" ? variant.speed_mul  : 1;
+  const vDmg    = variant && typeof variant.damage_mul === "number" ? variant.damage_mul : 1;
+  const scaledHp = Math.max(1, Math.round(stats.hp * hpMul * vHp));
   return {
     type, x, y, z: 0,
     isBoss: !!stats.isBoss,
@@ -4171,10 +4185,15 @@ function makeEnemy(type, x, y) {
     facing: -1,
     animState: "idle",
     animTime: 0,
-    walkSpeed: stats.walkSpeed,
-    runSpeed:  stats.runSpeed,
+    walkSpeed: stats.walkSpeed * vSpeed,
+    runSpeed:  stats.runSpeed  * vSpeed,
     hp: scaledHp, hpMax: scaledHp,
     aggrMul,
+    damageMul: vDmg,
+    variantName: variant ? variant.name : null,
+    variantSubtitle: variant ? variant.subtitle : null,
+    dialogGrunt: variant ? variant.dialog_grunt : null,
+    dialogKod:   variant ? variant.dialog_kod   : null,
     range: stats.range,
     hurtHw: stats.hurtHw, hurtHd: stats.hurtHd, hurtHi: stats.hurtHi,
     staggerN: stats.staggerN || 1,
@@ -6153,7 +6172,12 @@ function applyHit(target, hb, attacker) {
   if (target.dead) return;
   if (player && target === player) {
     // Difficulty: pre-scale this hit's damage on the player.
-    hb = Object.assign({}, hb, { damage: Math.max(1, Math.round(hb.damage * difficultyDamageMul())) });
+    // Variant: if the attacker is a named variant enemy, apply their damageMul.
+    let dmg = hb.damage * difficultyDamageMul();
+    if (attacker && attacker.damageMul && attacker.damageMul !== 1) {
+      dmg *= attacker.damageMul;
+    }
+    hb = Object.assign({}, hb, { damage: Math.max(1, Math.round(dmg)) });
   }
 
   // DOJO deflection: if the target's guard window is active and the attacker is
@@ -6181,6 +6205,11 @@ function applyHit(target, hb, attacker) {
   // Boss taunts when they land a hit on the player.
   if (target === player && attacker && attacker.isBoss && !attacker.dead) {
     bossSay(attacker, "taunt");
+  }
+  // Variant grunt — fires once per enemy lifetime when first hit by the player.
+  if (target !== player && attacker === player && target.dialogGrunt && !target._grunted) {
+    target._grunted = true;
+    spawnBossSpeech(target.x, target.y - 38, target.dialogGrunt, "#bbb");
   }
   target.hp -= hb.damage;
   // TANK super-armor: shrugs off hitstun until staggerN hits land in a row.
@@ -6243,6 +6272,10 @@ function applyHit(target, hb, attacker) {
     if (target === player) { vibrate(120); playSfx("ko"); }
     else if (target.isBoss) { vibrate([30, 30, 60]); playSfx("ko"); }
     else { vibrate(20); playSfx("ko"); }
+    // Variant KO line — only fires for named variants.
+    if (target !== player && target.dialogKod) {
+      spawnBossSpeech(target.x, target.y - 38, target.dialogKod, "#aaa");
+    }
     // Achievement triggers — enemy KO'd by player.
     if (target !== player && attacker === player) {
       save.totalKOs = (save.totalKOs || 0) + 1;
