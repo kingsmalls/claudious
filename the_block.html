@@ -95,6 +95,8 @@ const DEFAULT_SAVE = {
   // Cumulative across all runs. Used by total-KO and other persistent achievements.
   totalKOs: 0,
   charsVictorious: {},  // { rio: true, ... }
+  // Fastest clear time per stage (seconds). Lower is better.
+  bestTimes: {},
 };
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 function loadSave() {
@@ -120,6 +122,7 @@ function loadSave() {
     if (typeof data.tutorialDone === "boolean") merged.tutorialDone = data.tutorialDone;
     merged.achievements    = Object.assign({}, DEFAULT_SAVE.achievements,    data.achievements    || {});
     merged.charsVictorious = Object.assign({}, DEFAULT_SAVE.charsVictorious, data.charsVictorious || {});
+    merged.bestTimes       = Object.assign({}, DEFAULT_SAVE.bestTimes,       data.bestTimes       || {});
     if (typeof data.totalKOs === "number") merged.totalKOs = data.totalKOs;
     return merged;
   } catch (e) {
@@ -557,6 +560,7 @@ const SFX_TABLE = {
   menu:          { f0: 660, f1:  660, dur: 0.05, type: "square",  gain: 0.4 },
   menu_select:   { f0: 880, f1: 1100, dur: 0.10, type: "square",  gain: 0.5 },
   stage_clear:   { f0: 660, f1:  990, dur: 0.30, type: "square",  gain: 0.5 },
+  achievement:   { f0: 880, f1: 1760, dur: 0.40, type: "triangle", gain: 0.45 },
   victory:       { f0: 660, f1: 1320, dur: 0.50, type: "square",  gain: 0.6 },
   game_over:     { f0: 220, f1:   50, dur: 0.40, type: "sawtooth",gain: 0.5,
                    layerNoise: 0.30, layerNoiseFreq:  200 },
@@ -889,11 +893,13 @@ const achievementQueue = [];
 function unlockAchievement(id) {
   if (!id || save.achievements[id]) return;
   save.achievements[id] = true;
+  // Count this for the run-summary screen.
+  if (player) player.achievementsUnlockedThisRun = (player.achievementsUnlockedThisRun || 0) + 1;
   saveSave();
   const def = ACH_BY_ID[id];
   if (def) {
     achievementQueue.push({ def, t: 0, dur: 3.4 });
-    playSfx("stage_clear");
+    playSfx("achievement");
   }
 }
 
@@ -7735,7 +7741,17 @@ function renderStageSelect() {
     if (bestCombo > 0) {
       X.fillStyle = "#7d8d4f";
       X.font = "bold 8px ui-monospace, monospace";
-      X.fillText("BEST COMBO " + bestCombo, cx + cardW / 2, cardY + 60);
+      X.fillText("BEST COMBO " + bestCombo, cx + cardW / 2, cardY + 56);
+    }
+    // Best time (mm:ss).
+    const bestT = save.bestTimes[idx];
+    if (bestT && bestT < Infinity) {
+      const m = Math.floor(bestT / 60);
+      const s = Math.floor(bestT - m * 60);
+      const txt = "BEST TIME " + m + ":" + (s < 10 ? "0" + s : s);
+      X.fillStyle = "#a8c8f4";
+      X.font = "bold 8px ui-monospace, monospace";
+      X.fillText(txt, cx + cardW / 2, cardY + 68);
     }
   }
   X.lineWidth = 1;
@@ -7861,6 +7877,10 @@ function enterPlayingAtStage(stageIdx) {
   sectionTransition = null;
   tutorialDismissed = true;   // stage-select players know the controls
   tutorialStart = 0;
+  if (player) {
+    player.stageStartTime = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+    player.achievementsUnlockedThisRun = 0;
+  }
   setState("playing");
   // No opening cutscene when jumping in via stage select. Stage intro
   // beat still plays for narrative consistency.
@@ -8062,6 +8082,10 @@ function enterPlaying() {
   // will appear on stage 1 again this run.
   tutorialDismissed = false;
   tutorialStart = 0;
+  if (player) {
+    player.stageStartTime = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+    player.achievementsUnlockedThisRun = 0;
+  }
   setState("playing");
   // Opening cutscene runs once at the start of every fresh run.
   // Skippable; on completion the player is already in stage 1.
@@ -8226,6 +8250,13 @@ function beginStageClear() {
     const allCleared = Array.from({length: 10}, (_, i) => i)
                             .every(i => save.stageBests[i]);
     if (allCleared) unlockAchievement("all_stages_clear");
+    // Best-time per stage. Lower is better.
+    if (player.stageStartTime) {
+      const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+      const elapsed = now - player.stageStartTime;
+      const prevBest = save.bestTimes[currentStage] || Infinity;
+      if (elapsed < prevBest) save.bestTimes[currentStage] = elapsed;
+    }
     // Reset per-stage flags for the next stage.
     player.dodgeUsedThisStage = false;
     player.specialUsedThisStage = false;
@@ -8275,6 +8306,7 @@ function advanceStage() {
     player.x = 120;
     player.y = 300;
     player.vx = 0; player.vy = 0;
+    player.stageStartTime = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   }
 }
 
@@ -8789,11 +8821,15 @@ function drawRunRecap(cx, cy) {
   X.fillStyle = "#ddd";
   X.textAlign = "center";
   X.textBaseline = "middle";
+  const ach = (player && player.achievementsUnlockedThisRun) || 0;
   const lines = [
-    "score        " + player.score,
-    "max combo    " + player.maxCombo,
+    "playing as       " + (player.char || "rio").toUpperCase(),
+    "difficulty       " + (save.settings.difficulty || "normal").toUpperCase(),
+    "score            " + player.score,
+    "max combo        " + player.maxCombo,
     "perfect parries  " + player.parryPerfectCount,
     "stages cleared   " + player.stagesClearedThisRun,
+    "achievements     +" + ach + " this run",
   ];
   for (let i = 0; i < lines.length; i++) {
     X.fillText(lines[i], cx, cy + i * 12);
