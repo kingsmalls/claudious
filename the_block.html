@@ -5987,6 +5987,43 @@ function spawnParryWord(x, y, text, color) {
 function spawnMilestone(x, y, text) {
   particles.push({ kind: "word", x, y, vy: -16, life: 0, max: 1.0, text, color: "#e8c04a", scale: 1.4 });
 }
+// Boss speech: short quoted line that floats above the boss. Used by the
+// mid-fight dialog system that pulls from content/boss_dialog.json.
+function spawnBossSpeech(x, y, text, color) {
+  particles.push({
+    kind: "speech", x, y, vy: -10, life: 0, max: 2.4,
+    text, color: color || "#fff",
+  });
+}
+
+// Pick a random midfight or taunt line for a given boss, with built-in
+// cooldown so the boss doesn't spam lines. Falls back to a default
+// minimal pool if BOSS_DIALOG isn't loaded or the array is empty.
+const BOSS_FALLBACK_TAUNT = ["Stay down.", "Try again.", "Quietly."];
+const BOSS_FALLBACK_MIDFIGHT = ["Still here?", "Walk away.", "Last chance."];
+
+function bossSay(boss, beat) {
+  if (!boss || boss.dead) return;
+  const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+  boss._lastSpoke = boss._lastSpoke || 0;
+  if (now - boss._lastSpoke < 2.5) return;   // cooldown
+  const pool =
+    (BOSS_DIALOG && BOSS_DIALOG[boss.type] && Array.isArray(BOSS_DIALOG[boss.type][beat])
+      && BOSS_DIALOG[boss.type][beat].length > 0)
+        ? BOSS_DIALOG[boss.type][beat]
+        : (beat === "taunt" ? BOSS_FALLBACK_TAUNT : BOSS_FALLBACK_MIDFIGHT);
+  const line = pool[Math.floor(Math.random() * pool.length)];
+  if (!line || line === "...") return;   // skip silent-Blackwell entries
+  boss._lastSpoke = now;
+  // Color-coded per boss for instant recognition.
+  const color =
+    boss.type === "baron"     ? "#cfa040" :
+    boss.type === "razor"     ? "#cfd0d6" :
+    boss.type === "volt"      ? "#4a8ad0" :
+    boss.type === "blackwell" ? "#f4c860" :
+    boss.type === "kane"      ? "#e8c04a" : "#fff";
+  spawnBossSpeech(boss.x, boss.y - 50, line, color);
+}
 
 function updateParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -6047,6 +6084,26 @@ function drawParticles() {
       X.globalAlpha = fade;
       X.fillText(p.text, Math.round(p.x), Math.round(p.y));
       X.globalAlpha = 1;
+    } else if (p.kind === "speech") {
+      // Boss midfight / taunt line. Quoted text in a small black panel
+      // anchored above the boss, fades in/out.
+      const inT  = Math.min(1, t / 0.18);
+      const outT = Math.min(1, (1 - t) / 0.18);
+      const a    = Math.min(inT, outT);
+      X.font = "bold 10px ui-monospace, monospace";
+      X.textAlign = "center";
+      X.textBaseline = "alphabetic";
+      const txt = '"' + p.text + '"';
+      const w = X.measureText(txt).width + 14;
+      const h = 16;
+      X.globalAlpha = a;
+      X.fillStyle = "rgba(0,0,0,0.78)";
+      X.fillRect(Math.round(p.x - w / 2), Math.round(p.y - h), w, h);
+      X.fillStyle = p.color;
+      X.fillRect(Math.round(p.x - w / 2), Math.round(p.y - h), w, 1);
+      X.fillStyle = "#fff";
+      X.fillText(txt, Math.round(p.x), Math.round(p.y - 3));
+      X.globalAlpha = 1;
     }
   }
 }
@@ -6101,6 +6158,24 @@ function applyHit(target, hb, attacker) {
     return;
   }
 
+  // Boss midfight dialog: fires when HP crosses 75% / 50% / 25% thresholds.
+  // Tracked via target._spokeAt set so each threshold only fires once.
+  if (target.isBoss && !target.dead && attacker === player) {
+    const beforeFrac = target.hp / target.hpMax;
+    const afterFrac  = (target.hp - hb.damage) / target.hpMax;
+    target._spokeAt = target._spokeAt || {};
+    for (const thresh of [0.75, 0.5, 0.25]) {
+      if (beforeFrac > thresh && afterFrac <= thresh && !target._spokeAt[thresh]) {
+        target._spokeAt[thresh] = true;
+        bossSay(target, "midfight");
+        break;
+      }
+    }
+  }
+  // Boss taunts when they land a hit on the player.
+  if (target === player && attacker && attacker.isBoss && !attacker.dead) {
+    bossSay(attacker, "taunt");
+  }
   target.hp -= hb.damage;
   // TANK super-armor: shrugs off hitstun until staggerN hits land in a row.
   // Tracks via staggerCount which resets when the tank attacks.
