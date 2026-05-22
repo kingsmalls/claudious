@@ -1,8 +1,111 @@
 {
-  "_note": "Placeholder. Run `python generate.py boss_dialog` to populate the dialog pool per boss. Schema: { boss_key: { intro: [...], midfight: [...], taunt: [...], defeat: [...] } }",
-  "baron": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
-  "razor": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
-  "volt":  { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
-  "blackwell": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
-  "kane":  { "intro": [], "midfight": [], "taunt": [], "defeat": [] }
+  "_note": "Boss dialog pool — picked from at runtime by the engine. Each boss has intro / midfight / taunt / defeat arrays. Run `python generate.py boss_dialog` to regenerate via the Anthropic API with fresh variants matching the canon docs.",
+  "baron": {
+    "intro": [
+      "You don't have to do this.",
+      "Walk away. I'll tell Kane it was nothing.",
+      "...This is the last time I ask."
+    ],
+    "midfight": [
+      "Still here, huh.",
+      "I trained with worse.",
+      "You're embarrassing yourself.",
+      "Twenty years on the force taught me patience.",
+      "Last chance.",
+      "Kane doesn't pay me for nothing."
+    ],
+    "taunt": [
+      "Stay down.",
+      "That's enough.",
+      "Should have walked.",
+      "Brass is heavy.",
+      "Hands stay up, kid."
+    ],
+    "defeat": [
+      "Fine.",
+      "He'll send someone worse.",
+      "Tell Marcus I said sorry."
+    ]
+  },
+  "razor": {
+    "intro": [
+      "We could have done this in your kitchen.",
+      "You're making this so much harder than it needs to be."
+    ],
+    "midfight": [
+      "I don't usually have to chase.",
+      "Three million was on the table.",
+      "Your jacket is going to need stitches.",
+      "This isn't personal."
+    ],
+    "taunt": [
+      "Cute.",
+      "Sit down.",
+      "Bleed quietly.",
+      "I went to school for this."
+    ],
+    "defeat": [
+      "Tell Kane I'm done.",
+      "I'll send a different lawyer.",
+      "..."
+    ]
+  },
+  "volt": {
+    "intro": [
+      "Kane built me.",
+      "So I owe him a building."
+    ],
+    "midfight": [
+      "These legs cost more than your block.",
+      "I don't get tired.",
+      "Move forward.",
+      "Keep coming."
+    ],
+    "taunt": [
+      "Heavy.",
+      "Stay grounded.",
+      "Try again.",
+      "Wattage."
+    ],
+    "defeat": [
+      "Tell Kane I held the door.",
+      "...",
+      "He'll find someone else."
+    ]
+  },
+  "blackwell": {
+    "intro": [
+      "...",
+      "...",
+      "..."
+    ],
+    "midfight": [
+      "...",
+      "...",
+      "..."
+    ],
+    "taunt": [
+      "...",
+      "..."
+    ],
+    "defeat": [
+      "..."
+    ]
+  },
+  "kane": {
+    "intro": [
+      "I understand you're upset. I would be too. Let me make it right.",
+      "Three million. To you, today.",
+      "Sit down. Sign the paper."
+    ],
+    "midfight": [
+      "...",
+      "...",
+      "..."
+    ],
+    "taunt": [],
+    "defeat": [
+      "...I see."
+    ]
+  }
 }
