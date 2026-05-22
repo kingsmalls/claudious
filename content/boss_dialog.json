@@ -1,0 +1,8 @@
+{
+  "_note": "Placeholder. Run `python generate.py boss_dialog` to populate the dialog pool per boss. Schema: { boss_key: { intro: [...], midfight: [...], taunt: [...], defeat: [...] } }",
+  "baron": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
+  "razor": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
+  "volt":  { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
+  "blackwell": { "intro": [], "midfight": [], "taunt": [], "defeat": [] },
+  "kane":  { "intro": [], "midfight": [], "taunt": [], "defeat": [] }
+}

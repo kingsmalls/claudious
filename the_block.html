@@ -88,12 +88,13 @@ const DEFAULT_SAVE = {
   runs: 0,
   stagesCleared: 0,
   // Persisted set of stage indices the player has finished at least once.
-  // Used by the stage-select option on the title screen so you can replay
-  // any cleared stage without grinding from stage 1.
   stageBests: {},
-  // Tutorial flag — flips true after stage 1 first-completion so the
-  // onboarding overlay doesn't appear again.
   tutorialDone: false,
+  // Achievements unlocked, keyed by id from content/achievements.json.
+  achievements: {},
+  // Cumulative across all runs. Used by total-KO and other persistent achievements.
+  totalKOs: 0,
+  charsVictorious: {},  // { rio: true, ... }
 };
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 function loadSave() {
@@ -117,6 +118,9 @@ function loadSave() {
     merged.bestComboPerStage = Object.assign({}, DEFAULT_SAVE.bestComboPerStage, data.bestComboPerStage || {});
     merged.stageBests       = Object.assign({}, DEFAULT_SAVE.stageBests,       data.stageBests || {});
     if (typeof data.tutorialDone === "boolean") merged.tutorialDone = data.tutorialDone;
+    merged.achievements    = Object.assign({}, DEFAULT_SAVE.achievements,    data.achievements    || {});
+    merged.charsVictorious = Object.assign({}, DEFAULT_SAVE.charsVictorious, data.charsVictorious || {});
+    if (typeof data.totalKOs === "number") merged.totalKOs = data.totalKOs;
     return merged;
   } catch (e) {
     return deepClone(DEFAULT_SAVE);
@@ -854,6 +858,165 @@ function duckMusic(amount, durSec) {
   setTimeout(() => { musicTargetVolume = 1; applyMusicVolume(); }, durSec * 1000);
 }
 
+// ---------- Generated content (NPC chatter + achievements) ----------
+// Loaded from content/*.json at boot. Optional — game runs fine if missing.
+// See generate.py for how to regenerate these files via the Anthropic API.
+let NPC_CHATTER  = {};   // { stageName: [strings] }
+let ACHIEVEMENTS = [];   // [{ id, name, description, trigger, rarity }]
+let ACH_BY_ID    = {};   // lookup map for quick rendering
+
+if (typeof window !== "undefined" && typeof fetch === "function") {
+  fetch("content/npc_chatter.json").then(r => r.ok ? r.json() : null)
+    .then(j => { if (j) NPC_CHATTER = j; }).catch(() => {});
+  fetch("content/achievements.json").then(r => r.ok ? r.json() : null)
+    .then(j => {
+      if (Array.isArray(j)) {
+        ACHIEVEMENTS = j;
+        ACH_BY_ID = Object.fromEntries(j.map(a => [a.id, a]));
+      }
+    }).catch(() => {});
+}
+
+// ---------- Achievement popup queue ----------
+// unlockAchievement(id) flips the save flag, queues a popup, and saves.
+// Popups render in the top-right corner with a rarity-colored border for ~3s
+// each, queued so multiple unlocks don't overlap.
+const achievementQueue = [];
+
+function unlockAchievement(id) {
+  if (!id || save.achievements[id]) return;
+  save.achievements[id] = true;
+  saveSave();
+  const def = ACH_BY_ID[id];
+  if (def) {
+    achievementQueue.push({ def, t: 0, dur: 3.4 });
+    playSfx("stage_clear");
+  }
+}
+
+function updateAchievementPopups(dt) {
+  for (const p of achievementQueue) p.t += dt;
+  while (achievementQueue.length && achievementQueue[0].t >= achievementQueue[0].dur) {
+    achievementQueue.shift();
+  }
+}
+
+function drawAchievementPopup() {
+  if (!achievementQueue.length) return;
+  const p = achievementQueue[0];
+  const def = p.def;
+  // Slide in over 0.4s, hold, slide out over 0.4s.
+  const inT = Math.min(1, p.t / 0.4);
+  const outT = Math.min(1, (p.dur - p.t) / 0.4);
+  const slide = Math.min(inT, outT);
+  const w = 240, h = 56;
+  const x = W - w - 12 - (1 - slide) * (w + 20);
+  const y = 16;
+  // Rarity color.
+  const rarityColor =
+    def.rarity === "legendary" ? "#ff8a40" :
+    def.rarity === "rare"      ? "#a8c8f4" :
+    def.rarity === "uncommon"  ? "#7d8d4f" :
+                                 "#dcd6c4";
+  X.fillStyle = "rgba(0,0,0,0.85)";
+  X.fillRect(x, y, w, h);
+  X.fillStyle = rarityColor;
+  X.fillRect(x, y, 3, h);
+  X.fillStyle = rarityColor;
+  X.font = "bold 8px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.textBaseline = "top";
+  X.fillText("ACHIEVEMENT — " + def.rarity.toUpperCase(), x + 10, y + 6);
+  X.fillStyle = "#fff";
+  X.font = "bold 12px ui-monospace, monospace";
+  X.fillText(def.name, x + 10, y + 18);
+  X.fillStyle = "#aaa";
+  X.font = "bold 9px ui-monospace, monospace";
+  // Wrap description if too long.
+  const desc = def.description;
+  const maxChars = 32;
+  if (desc.length <= maxChars) {
+    X.fillText(desc, x + 10, y + 36);
+  } else {
+    let split = desc.lastIndexOf(" ", maxChars);
+    if (split < 0) split = maxChars;
+    X.fillText(desc.substring(0, split), x + 10, y + 34);
+    X.fillText(desc.substring(split + 1),  x + 10, y + 45);
+  }
+}
+
+// ---------- NPC chatter overlay ----------
+// During stages, random NPCs (offscreen) shout lines from npc_chatter.json
+// keyed by stage name. Lines pop up at a top corner, fade out.
+let chatterPool = [];
+let chatterNext = 4;     // seconds until next bark
+let chatterActive = null;
+
+function pickChatter(stageName) {
+  const lines = NPC_CHATTER[stageName];
+  if (!lines || lines.length === 0) return null;
+  // Refill the pool when empty so we shuffle through lines once each.
+  if (chatterPool.length === 0) {
+    chatterPool = lines.slice();
+    // Fisher-Yates.
+    for (let i = chatterPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chatterPool[i], chatterPool[j]] = [chatterPool[j], chatterPool[i]];
+    }
+  }
+  return chatterPool.shift();
+}
+
+function updateChatter(dt) {
+  chatterNext -= dt;
+  if (chatterActive) {
+    chatterActive.t += dt;
+    if (chatterActive.t >= chatterActive.dur) chatterActive = null;
+  }
+  if (chatterNext <= 0 && !chatterActive && STATE === "playing" &&
+      !sectionTransition && currentStage < STAGES.length) {
+    const stageName = STAGES[currentStage].name;
+    const line = pickChatter(stageName);
+    if (line) {
+      chatterActive = {
+        text: line,
+        side: Math.random() < 0.5 ? "left" : "right",
+        t: 0,
+        dur: 2.8,
+      };
+    }
+    chatterNext = 5 + Math.random() * 6;   // next bark in 5-11 seconds
+  }
+}
+
+function drawChatter() {
+  if (!chatterActive) return;
+  const c = chatterActive;
+  // Fade in/out.
+  const inT = Math.min(1, c.t / 0.3);
+  const outT = Math.min(1, (c.dur - c.t) / 0.4);
+  const a = Math.min(inT, outT);
+  if (a <= 0) return;
+  X.globalAlpha = a * 0.85;
+  X.font = "bold 11px ui-monospace, monospace";
+  X.textBaseline = "top";
+  const measured = X.measureText('"' + c.text + '"');
+  const txtW = measured.width;
+  const padX = 10, padY = 6;
+  const boxW = txtW + padX * 2;
+  const boxH = 22;
+  const x = c.side === "left" ? 12 : W - boxW - 12;
+  const y = 40;
+  X.fillStyle = "rgba(0,0,0,0.75)";
+  X.fillRect(x, y, boxW, boxH);
+  X.fillStyle = "#e8c04a";
+  X.fillRect(x, y, boxW, 2);
+  X.fillStyle = "#fff";
+  X.textAlign = "left";
+  X.fillText('"' + c.text + '"', x + padX, y + padY);
+  X.globalAlpha = 1;
+}
+
 // Boot the audio context the first time the user interacts (browser autoplay).
 if (typeof window !== "undefined") {
   const boot = () => {
@@ -1459,6 +1622,7 @@ function updatePlayer(p, dt) {
       p.parryChain = 0;
       p.parryChainTimer = 0;
       flashFrames = Math.max(flashFrames, 4);
+      unlockAchievement("counter_special");
     }
   }
 
@@ -5986,6 +6150,18 @@ function applyHit(target, hb, attacker) {
     if (target === player) { vibrate(120); playSfx("ko"); }
     else if (target.isBoss) { vibrate([30, 30, 60]); playSfx("ko"); }
     else { vibrate(20); playSfx("ko"); }
+    // Achievement triggers — enemy KO'd by player.
+    if (target !== player && attacker === player) {
+      save.totalKOs = (save.totalKOs || 0) + 1;
+      if (save.totalKOs >= 100) unlockAchievement("100_kos");
+      if (save.totalKOs >= 500) unlockAchievement("500_kos");
+      if (target.isBoss) {
+        if (target.type === "baron") unlockAchievement("first_boss");
+        if (target.type === "razor") unlockAchievement("razor_down");
+        if (target.type === "volt")  unlockAchievement("volt_down");
+        if (target.type === "blackwell") unlockAchievement("find_blackwell");
+      }
+    }
     // Brief slow-motion on KO for impact feel. Boss KO gets longer drag.
     // dt is multiplied by SLOWMO_RATE while slowmoFrames > 0; uses the same
     // unscaled-hitstop-style global counter so it doesn't pile up.
@@ -6023,6 +6199,11 @@ function applyHit(target, hb, attacker) {
     player.hitsLanded++;
     player.damageDealt += hb.damage;
     if (player.comboHits > player.maxCombo) player.maxCombo = player.comboHits;
+    // Achievement combo milestones.
+    if (player.comboHits >= 5)  unlockAchievement("first_combo_5");
+    if (player.comboHits >= 10) unlockAchievement("combo_10");
+    if (player.comboHits >= 20) unlockAchievement("combo_20");
+    if (player.comboHits >= 30) unlockAchievement("combo_30");
     // Milestone celebrations as the combo grows.
     const milestones = COMBO_MILESTONES;
     for (let i = 0; i < milestones.length; i++) {
@@ -6104,6 +6285,12 @@ function resolveParry(p, hb, attacker) {
     playSfx("parry_perfect");
     p.parryMeter = Math.min(100, p.parryMeter + 30);
     p.parryPerfectCount++;
+    // Achievement triggers.
+    unlockAchievement("perfect_parry_1");
+    if (p.parryPerfectCount >= 10) unlockAchievement("perfect_parry_10");
+    if (attacker && attacker.type === "baron" && attacker.attackName === "haymaker") {
+      unlockAchievement("parry_haymaker");
+    }
     if (p.parryChain >= 2) p.hp = Math.min(p.hpMax, p.hp + PARRY_HEAL_HP);
     if (attacker && !attacker.dead) {
       const counterDmg = Math.round(hb.damage * PARRY_PERFECT_BONUS);
@@ -7165,6 +7352,8 @@ function updateCinematic(dt) {
     return;
   }
   if (cineState.t >= cineState.duration) {
+    // Achievement check: all prompts hit?
+    if (cineState.prompts.every(p => p.hit)) unlockAchievement("refuse_kane");
     cineState = null;
     if (typeof beginEndingCinematic === "function") beginEndingCinematic();
     else { finalizeRun(true); setState("victory"); }
@@ -7373,6 +7562,7 @@ function updateStageSelect(dt) {
     const startStage = cleared[stageSelectIdx];
     enterPlayingAtStage(startStage);
     playSfx("menu_select");
+    unlockAchievement("stage_select");
   }
 }
 
@@ -7737,6 +7927,9 @@ function updatePlaying(dt) {
 
   // Run section transition timer.
   updateSectionTransition(dt);
+  // Chatter + achievement popups tick during play.
+  updateChatter(dt);
+  updateAchievementPopups(dt);
 
   // Wave / stage progression — multi-section: when a wave clears, unlock the
   // section so the player can walk to the right edge to advance. The right-
@@ -7811,6 +8004,15 @@ function beginStageClear() {
     if (currentStage === 0) save.tutorialDone = true;
     // Atlas unlocks after clearing 3 stages in any run.
     if (player.stagesClearedThisRun >= 3) save.unlocks.atlas = true;
+    // Achievement triggers on stage clear.
+    if (currentStage === 0) {
+      unlockAchievement("first_stage");
+      if (player.damageTaken === 0) unlockAchievement("no_damage_block");
+    }
+    // Check for all-10-cleared.
+    const allCleared = Array.from({length: 10}, (_, i) => i)
+                            .every(i => save.stageBests[i]);
+    if (allCleared) unlockAchievement("all_stages_clear");
     saveSave();
   }
   // Show the narrative stage-clear beat instead of the legacy text overlay.
@@ -7873,6 +8075,19 @@ function finalizeRun(victorious) {
     save.highScores[player.char] = score;
   }
   save.runs++;
+  if (victorious) {
+    // Per-character victory achievement + cross-character tracking.
+    save.charsVictorious[player.char] = true;
+    if (player.char === "rio")   unlockAchievement("rio_run");
+    if (player.char === "duke")  unlockAchievement("duke_run");
+    if (player.char === "atlas") unlockAchievement("atlas_run");
+    // All three completed?
+    if (save.charsVictorious.rio && save.charsVictorious.duke && save.charsVictorious.atlas) {
+      unlockAchievement("all_chars_clear");
+    }
+    // Brutal-clear achievement.
+    if (save.settings.difficulty === "brutal") unlockAchievement("brutal_clear");
+  }
   saveSave();
 }
 
@@ -8538,6 +8753,11 @@ function renderPlaying() {
     X.textBaseline = "top";
     X.fillText("GO →", arrowX - 8, arrowY + 14);
   }
+
+  // NPC chatter overlay — stage barks from offscreen.
+  drawChatter();
+  // Achievement popup overlay — appears top-right when one unlocks.
+  drawAchievementPopup();
 
   // Section-transition fade overlay (outside of stage-clear timer).
   renderSectionTransition();
