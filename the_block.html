@@ -6475,6 +6475,8 @@ function update(dt) {
   else if (STATE === "beat") updateBeat(dt);
   else if (STATE === "stageSelect") updateStageSelect(dt);
   else if (STATE === "achievementList") updateAchievementList(dt);
+  else if (STATE === "controls") updateControls(dt);
+  else if (STATE === "credits")  updateCredits(dt);
   else if (STATE === "victory") updateVictory(dt);
   else if (STATE === "gameover") updateGameOver(dt);
 }
@@ -7563,6 +7565,9 @@ function updateTitle(dt) {
     setState("stageSelect");
     return;
   }
+  // C opens the controls screen; V opens credits.
+  if (consumePress("KeyC")) { setState("controls"); return; }
+  if (consumePress("KeyV")) { setState("credits");  return; }
   if (consumePress("Enter") || consumePress("Space") || consumePress("NumpadEnter")) {
     setState("select");
   }
@@ -8662,6 +8667,8 @@ function render() {
   else if (STATE === "beat") renderBeat();
   else if (STATE === "stageSelect") renderStageSelect();
   else if (STATE === "achievementList") renderAchievementList();
+  else if (STATE === "controls") renderControls();
+  else if (STATE === "credits")  renderCredits();
   else if (STATE === "victory") renderVictory();
   else if (STATE === "gameover") renderGameOver();
 }
@@ -8724,6 +8731,14 @@ function drawRunRecap(cx, cy) {
 }
 
 function renderTitle() {
+  // Animated stage 1 backdrop, heavily dimmed, so the title screen feels
+  // like a freeze-frame of the Block at night — skyline, flickering windows,
+  // drizzle drifting across the sky. Same render function used in-game so
+  // animations match.
+  drawStageBlock();
+  X.fillStyle = "rgba(0,0,0,0.78)";
+  X.fillRect(0, 0, W, H);
+
   // Title block
   X.fillStyle = "#e8c04a"; // bandana yellow — Rio's signature, used as title accent
   X.fillRect(W / 2 - 140, H / 2 - 60, 280, 4);
@@ -8784,6 +8799,148 @@ function renderTitle() {
     X.textAlign = "center";
     X.fillText("TAB — STAGE SELECT", W / 2, H / 2 + 80);
   }
+  // Controls + credits hints on either side.
+  X.fillStyle = "#888";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "left";
+  X.fillText("[C] CONTROLS", 20, H - 16);
+  X.textAlign = "right";
+  X.fillText("CREDITS [V]", W - 20, H - 16);
+}
+
+// ---------- Controls screen ----------
+function updateControls(dt) {
+  if (consumePress("Escape") || consumePress("KeyC") || consumePress("Enter") || consumePress("Space")) {
+    setState("title");
+  }
+}
+function renderControls() {
+  X.fillStyle = "rgba(10,10,16,0.96)";
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 20px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "top";
+  X.fillText("CONTROLS", W / 2, 24);
+
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillStyle = "#aaa";
+  X.fillText("Pick whichever hand is comfortable — both layouts always work.", W / 2, 50);
+
+  // Two-column reference: right-hand layout vs left-hand.
+  const colY = 80;
+  const colW = 240;
+  const leftX  = W / 2 - colW - 12;
+  const rightX = W / 2 + 12;
+
+  function col(x, title, rows) {
+    X.fillStyle = "#e8c04a";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.textAlign = "left";
+    X.fillText(title, x + 10, colY);
+    X.font = "bold 10px ui-monospace, monospace";
+    for (let i = 0; i < rows.length; i++) {
+      const [k, l] = rows[i];
+      const y = colY + 22 + i * 18;
+      X.fillStyle = "#fff";
+      X.fillText(k, x + 10, y);
+      X.fillStyle = "#aaa";
+      X.fillText(l, x + 80, y);
+    }
+  }
+
+  col(leftX, "RIGHT-HAND LAYOUT", [
+    ["WASD / ←↑↓→", "Move (double-tap RUN)"],
+    ["SPACE",       "Jump  (DOWN+SPACE dodge)"],
+    ["J",           "Light attack  (chain combo)"],
+    ["K",           "Heavy / launcher"],
+    ["L",           "Special (HP cost)"],
+    ["U",           "Grab  (then J to throw)"],
+    ["I",           "Parry"],
+    ["P",           "Pause"],
+  ]);
+  col(rightX, "LEFT-HAND LAYOUT", [
+    ["WASD / ←↑↓→", "Move (double-tap RUN)"],
+    ["SPACE",       "Jump  (DOWN+SPACE dodge)"],
+    ["F",           "Light attack  (chain combo)"],
+    ["G",           "Heavy / launcher"],
+    ["R",           "Special (HP cost)"],
+    ["Q",           "Grab  (then F to throw)"],
+    ["E",           "Parry"],
+    ["P",           "Pause"],
+  ]);
+
+  X.fillStyle = "#888";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("Gamepad auto-detected — Xbox / PlayStation supported.", W / 2, H - 50);
+  X.fillText("F3 toggles debug overlay (hitboxes).", W / 2, H - 36);
+  X.fillStyle = "#e8c04a";
+  X.fillText("ESC / C / ENTER — BACK", W / 2, H - 16);
+}
+
+// ---------- Credits screen ----------
+function updateCredits(dt) {
+  if (consumePress("Escape") || consumePress("KeyV") || consumePress("Enter") || consumePress("Space")) {
+    setState("title");
+  }
+}
+function renderCredits() {
+  // Stage 1 backdrop dimmed.
+  drawStageBlock();
+  X.fillStyle = "rgba(10,10,16,0.92)";
+  X.fillRect(0, 0, W, H);
+  X.fillStyle = "#e8c04a";
+  X.font = "bold 22px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.textBaseline = "top";
+  X.fillText("THE BLOCK", W / 2, 28);
+  X.font = "bold 10px ui-monospace, monospace";
+  X.fillStyle = "#aaa";
+  X.fillText("a beat-em-up about a neighborhood that refuses to leave", W / 2, 56);
+
+  const groups = [
+    { title: "PROTAGONISTS",
+      lines: ["RIO — speed-finesse boxer",
+              "DUKE — semi-pro with a bad knee",
+              "ATLAS — hardware-store owner, 23 years on this street"] },
+    { title: "BOSSES",
+      lines: ["BARON — Kane's ex-cop enforcer",
+              "RAZOR — corporate intimidation specialist",
+              "VOLT — Kane's cybernetic lieutenant",
+              "BLACKWELL — Kane's personal bodyguard (brutal-only)",
+              "VICTOR KANE — never throws a punch. Always smiling."] },
+    { title: "DESIGN + ENGINEERING",
+      lines: ["Built in pure HTML + Canvas + WebAudio.",
+              "Procedural music. Procedural SFX. Procedural everything.",
+              "Sprite atlases hand-stitched from generated frames."] },
+    { title: "INSPIRED BY",
+      lines: ["Streets of Rage 4, Fight'N Rage, River City Girls.",
+              "Real neighborhoods, real evictions."] },
+    { title: "THE BLOCK STAYS",
+      lines: [] },
+  ];
+
+  let y = 90;
+  for (const g of groups) {
+    X.fillStyle = "#7d8d4f";
+    X.font = "bold 12px ui-monospace, monospace";
+    X.textAlign = "center";
+    X.fillText(g.title, W / 2, y);
+    y += 18;
+    X.fillStyle = "#fff";
+    X.font = "bold 10px ui-monospace, monospace";
+    for (const l of g.lines) {
+      X.fillText(l, W / 2, y);
+      y += 14;
+    }
+    y += 8;
+  }
+
+  X.fillStyle = "#888";
+  X.font = "bold 9px ui-monospace, monospace";
+  X.textAlign = "center";
+  X.fillText("ESC / V / ENTER — BACK", W / 2, H - 16);
 }
 
 // Tutorial overlay state — tracks lifetime + dismissed flag for this session.
