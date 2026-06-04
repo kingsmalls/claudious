@@ -391,6 +391,11 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
   loadAtlasFor("rio");
   loadAtlasFor("duke");
   loadAtlasFor("atlas");
+  // Enemies + bosses load via the same loader. Engine renders sprite when
+  // SPRITES[type] is populated, falls back to procedural drawX otherwise.
+  loadAtlasFor("baron");
+  loadAtlasFor("chains");
+  loadAtlasFor("blackwell");
 }
 
 // Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
@@ -403,6 +408,13 @@ const ANIM_FPS = {
   jump_atk: 14, back_atk: 14, special: 12,
   throw: 10, counter: 12, hurt: 12, dodge: 16,
   grabbed: 6,
+  // Enemy / boss anim names.
+  jab: 14, cross: 12, haymaker: 10, taunt: 8, dead: 6,
+  swing: 11, spin: 13, slam: 10, lunge: 14,
+  shock: 12, strike: 12, slash: 14, charge: 12, overhead: 10,
+  punch: 14, dash: 14, throwknife: 12,
+  shot: 12, charged: 8, backstab: 16, pound: 9,
+  uppercut: 10,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
@@ -410,12 +422,21 @@ const ANIM_LOOPS = {
   jump_atk: false, back_atk: false, special: false,
   throw: false, counter: false, hurt: false, dodge: false,
   grabbed: true,
+  // Enemy / boss anims — attacks + hurt + dead don't loop.
+  jab: false, cross: false, haymaker: false, taunt: false, dead: false,
+  swing: false, spin: false, slam: false, lunge: false,
+  shock: false, strike: false, slash: false, charge: false, overhead: false,
+  punch: false, dash: false, throwknife: false,
+  shot: false, charged: false, backstab: false, pound: false,
+  uppercut: false,
 };
 
 // Choose the right frame for an entity's anim state and draw it. Falls back
 // to the procedural renderer when the atlas is missing the requested anim.
+// Works for both player (p.char) AND enemies (p.type) — same atlas format.
 function drawSpriteCharacter(p) {
-  const sprite = SPRITES[p.char];
+  const key = p.char || p.type;
+  const sprite = SPRITES[key];
   if (!sprite || !sprite.atlas || !sprite.atlas.anims) return false;
   const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
   const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
@@ -5933,6 +5954,11 @@ function drawBlackwell(e) {
 
 // Dispatcher.
 function drawEnemy(e) {
+  // Sprite atlas takes precedence if one is loaded for this enemy type.
+  // drawSpriteCharacter returns true on a successful sprite draw, false if
+  // the atlas or the requested anim is missing — then we fall through to
+  // the per-type procedural renderer below.
+  if (SPRITES[e.type] && drawSpriteCharacter(e)) return;
   switch (e.type) {
     case "tank":      return drawTank(e);
     case "lamplight": return drawLamplight(e);
