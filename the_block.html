@@ -393,9 +393,18 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
   loadAtlasFor("atlas");
   // Enemies + bosses load via the same loader. Engine renders sprite when
   // SPRITES[type] is populated, falls back to procedural drawX otherwise.
+  // Sheets without an atlas JSON silently skip and stay on the procedural
+  // renderer, so a partial roster ships cleanly.
   loadAtlasFor("baron");
   loadAtlasFor("chains");
   loadAtlasFor("blackwell");
+  loadAtlasFor("tank");
+  loadAtlasFor("lamplight");
+  loadAtlasFor("slice");
+  loadAtlasFor("shade");
+  loadAtlasFor("dojo");
+  loadAtlasFor("rig");
+  loadAtlasFor("razor");
 }
 
 // Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
