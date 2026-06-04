@@ -506,9 +506,12 @@ function drawSpriteCharacter(p) {
       X.save();
       X.translate(t.sx, t.sy);
       if (t.facing === -1) X.scale(-1, 1);
+      const trailScale = (typeof sprite.atlas.scale === "number") ? sprite.atlas.scale : 1;
+      const tdw = t.frame.w * trailScale;
+      const tdh = t.frame.h * trailScale;
       X.drawImage(sprite.img,
         t.frame.x, t.frame.y, t.frame.w, t.frame.h,
-        -t.frame.w * ax, -t.frame.h * ay, t.frame.w, t.frame.h);
+        -tdw * ax, -tdh * ay, tdw, tdh);
       X.restore();
     }
     X.globalAlpha = 1;
@@ -535,9 +538,15 @@ function drawSpriteCharacter(p) {
     p.landSquash--;
   }
 
+  // Per-atlas scale. Default 1.0. Enemy atlases use 0.5-0.8 to bring their
+  // sheets (drawn at higher pixel density than the player atlases) into
+  // proportional scale with the playable cast. Read once per draw call.
+  const atlasScale = (typeof sprite.atlas.scale === "number") ? sprite.atlas.scale : 1;
+  const dw = frame.w * atlasScale;
+  const dh = frame.h * atlasScale;
   X.drawImage(sprite.img,
     frame.x, frame.y, frame.w, frame.h,
-    -frame.w * ax, -frame.h * ay, frame.w, frame.h);
+    -dw * ax, -dh * ay, dw, dh);
 
   // ---- Hit flash: re-draw the same frame in pure white at low alpha for
   // 2-4 frames after taking damage. Reads as a clean impact pulse.
@@ -545,7 +554,7 @@ function drawSpriteCharacter(p) {
     X.globalCompositeOperation = "source-atop";
     X.globalAlpha = 0.55;
     X.fillStyle = "#ffffff";
-    X.fillRect(-frame.w * ax, -frame.h * ay, frame.w, frame.h);
+    X.fillRect(-dw * ax, -dh * ay, dw, dh);
     X.globalCompositeOperation = "source-over";
     X.globalAlpha = 1;
     p.hitFlash--;
