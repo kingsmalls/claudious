@@ -317,25 +317,34 @@ After you generate a sheet, save it as `characters/<type>.png` (lowercase enemy 
 
 KANE is a QTE cinematic encounter — never throws a punch, stays seated at his desk for the entire scene. The sheet is **scene poses**, not combat frames.
 
-> Pixel art sprite sheet, side-view 2D beat-em-up style, **128x128** frame size (bigger because the DESK is part of the silhouette), 4 columns by 2 rows uniform grid (8 cells, one per pose), magenta `#ff00ff` background, bottom-center anchor.
+**IMPORTANT for the AI generator:** Kane was rewritten in v1.1 to be **unmistakably fictional** — a Dickensian-villain caricature in a modern suit — because generic "wealthy older businessman" prompts triggered safety filters on real-person resemblance. Lead with the **caricatured features and period accessories** (round wire-rim glasses, pocket-watch chain, white cotton gloves, caged finch, asymmetric half-smile) and the generator should produce comfortably. See `characters/KANE.md` for full spec.
+
+> Pixel art sprite sheet of a **FICTIONAL Dickensian villain character** in a modern setting. NOT a real person, NOT a public figure — a stylized caricature in the tradition of Mr. Burns from The Simpsons or Anton Ego from Ratatouille. 128x128 frame size, 4 columns by 2 rows uniform grid (8 cells, one per pose), magenta `#ff00ff` background, bottom-center anchor.
 >
-> **Character:** Victor Kane. 58-year-old real-estate developer. CEO of Kane Properties LLC. 5'11", lean fit. Looks 50 not 58. Maintains body like a portfolio. White skin slightly tan from recent vacation. Sharp features, thin lips, eyes that look genuinely interested. **PERPETUAL WARM SMILE** — not a smirk, a real smile. The smile is the menace.
+> **Character — caricatured, fictional, period-Victorian banker in a modern suit:** "Victor Kane." 60-65 year old man, unnaturally TALL and THIN like an old crane in a suit. Pale waxen skin (#d8c8b8 light, #a89488 shadow). Long thin nose, sharp narrow cheekbones, small precise mouth, deep-set eyes. Wears **round wire-rim gold glasses** (#cfa040 thin frames, perfectly circular ~3px lenses) — THIS IS THE MOST IMPORTANT VISUAL HOOK, render them prominently. **Pure white hair** (#e8e8e4) slicked back from a high widow's peak, with **a single dark grey streak** (#5a5a62) running through the RIGHT side, visible in every frame. **The smile is ASYMMETRIC — only the LEFT corner of the mouth lifts**, a perpetual half-smirk that never reaches the eyes.
 >
-> **Costume:** Bespoke charcoal three-piece suit (#3a3a40 with subtle 1-px pinstripe every 6 px in #4f4f57). Single-breasted jacket, perfect tailoring. Crisp starched white dress shirt (#f4f4f0). Dark burgundy silk tie (#4a1018), perfectly knotted. Three-piece vest all six buttons done up. Dark slacks matching suit. Mirror-polished black oxford shoes. **A gold cufflink visible on each sleeve** (#f4c860). A single gold wedding band on the left hand (his wife is dead, he wears it for the image).
+> **Costume — Dickensian banker, not modern CEO:** Charcoal three-piece suit (#3a3a40 body, 1-px pinstripe #4f4f57 every 6 px). **Jacket cut LONGER than modern fashion** — mid-thigh hem, tall-coat silhouette. **Stand-up wing collar** (period detail, not modern). **Cravat-style emerald-green silk tie** (#1a4a30 with #2a6a40 highlight), tied in a fat 19th-century knot. Vest all six buttons done up. **A brass pocket-watch chain** (#cfa040) loops across the vest from a buttonhole into the right vest pocket — visible 8-10 px arc. **Thin white cotton gloves on both hands** (#dcd6c4) — the kind nobody wears indoors anymore. Dark slacks matching suit. Polished black oxford shoes.
 >
 > **Required identity items, must be visible in EVERY frame:**
-> 1. **THE SMILE.** Always smiling. Even when refused, even when the building shakes. The smile NEVER drops.
-> 2. **THE DESK** — heavy mahogany (#4a2818 with #1a0e08 shadow and #6a3820 highlight), wide dark wood surface taking up the bottom 1/3 of the frame. Hands rest on the desk in idle.
-> 3. **A fountain pen** held casually in the right hand, black with gold cap (#f4c860). Used to gesture, point, offer to sign.
-> 4. **A leather-bound checkbook** open on the desk, visible from F1 onward. The check is the REAL weapon. The protagonist refuses it.
+> 1. **The ROUND WIRE-RIM GOLD GLASSES** — small, perfectly circular, gold frames. This is the single biggest "fictional character" hook.
+> 2. **The ASYMMETRIC HALF-SMILE** — left corner only. Never a full symmetric smile.
+> 3. **The SINGLE DARK GREY STREAK** in the otherwise pure-white slicked-back hair.
+> 4. **A small brass lapel pin shaped like a tiny skyscraper** (#cfa040, ~2x4 px) on the left lapel.
+> 5. **The WHITE COTTON GLOVES** on both hands.
+> 6. **The POCKET-WATCH CHAIN** arc across the vest.
+> 7. **The DESK** — heavy dark mahogany (#4a2818 body, #1a0e08 shadow, #6a3820 highlight), wide surface taking up the bottom 1/3 of every cell. Gloved hands rest flat on the desk in idle.
+> 8. **A small brass-caged finch** on the desk's left side (#cfa040 cage, #a8a4a0 bird inside). Storywise: "the ones who don't fly are mine."
+> 9. **A folded contract + fountain pen** on the desk's right side. Pen is black with a gold cap (#cfa040), gestured with during the QTE prompts.
 >
-> **Tone:** polite, patient, GENUINE. Means what he says. Never raises voice. Never stands.
+> **Tone:** polite, patient, genuine. Means what he says. Never raises voice. Never stands. **The combined silhouette — long jacket + stand-up collar + round glasses + slicked white hair with grey streak + pocket-watch chain + caged finch + gloved hands on mahogany desk — should read on first sight as "this is a character from a story, not a person you saw on TV."**
 >
 > **Pose layout (top to bottom, 4 per row — 1 pose per cell):**
-> Row 1: `seated_open` (idle — hands folded on desk, smile, eyes on target), `lean_in` (Prompt 1 — leans forward elbows on desk), `gesture_open` (Prompt 2 — right hand extended palm-up offering the check), `gesture_pen` (Prompt 3 — pen pointed at target gently)
-> Row 2: `gesture_hard` (Prompt 4 — pen tip lowered to document, smile same but eyes colder for one beat), `lean_back` (Prompt 5 — leans back in chair, sets pen down, hands folded again, smile NEVER drops), `quiet` (final pose — same as seated_open but fully still), 1 spare
+> Row 1: `seated_open` (idle — gloved hands folded on desk, half-smile, finch still), `lean_in` (Prompt 1 — leans forward elbows on desk, gloves flat), `gesture_open` (Prompt 2 — right hand extended palm-up offering the contract), `gesture_pen` (Prompt 3 — pen pointed at target gently like a teacher)
+> Row 2: `gesture_hard` (Prompt 4 — pen tip lowered to document, half-smile same but eyes cold for one beat), `lean_back` (Prompt 5 — leans back in chair, sets pen down, gloves fold again, half-smile NEVER drops), `quiet` (final pose — same as seated_open but fully still), 1 spare
 >
-> Pixel-art style. Desk extends across the full cell width. Kane is centered behind it, head/shoulders visible above. No standing or fighting poses. **The lack of motion is the menace.**
+> Pixel-art style, clean silhouette, hard edges, exaggerated caricatured proportions. Desk extends across the full cell width. Kane is centered behind it, head/shoulders visible above. No standing or fighting poses. **The lack of motion is the menace.**
+>
+> **DO NOT:** include any resemblance to a real public figure. If a draft looks like a known person, change features until it doesn't. No symmetric smile. No modern phone, laptop, or tablet. No bare hands (gloves stay on every frame).
 
 ---
 
