@@ -139,17 +139,24 @@ Bass, slow, careful. Doesn't raise his voice. Shouts only when something is genu
 
 ## VICTOR KANE (the antagonist)
 
-**Late 50s. Real-estate developer. Never throws a punch onscreen.**
+**60-65. Real-estate developer. Never throws a punch onscreen.**
 
-### Visual
+### Visual — a Dickensian-villain caricature in a modern suit
 
-- Tall, slightly stooped
-- Expensive suits (`#22202c` / `#3a3848`) with a cream pocket square (`#cfa040`)
-- Slick-back grey hair (`#6a6a64`)
-- White shirt, deep-red tie (`#5a1018`)
-- Calm, narrow eyes — never wide
-- Always rendered as a silhouette in cinematics. The story makes the point that
-  he doesn't lift his own hands; the framing should reinforce that.
+Kane is deliberately drawn as a *fictional character*, not a real-world businessman type. Lean into caricature. Period-feeling accessories sell that he's a story person, not a public figure.
+
+- Unnaturally tall and thin — like an old crane learning to wear a suit
+- Pale waxen skin, dark-circled eyes, long thin nose, narrow cheekbones
+- **Round wire-rim gold glasses** — small, perfectly circular. Single biggest "fictional character" hook.
+- **Pure white hair slicked back from a high widow's peak**, with **a single dark grey streak** running through the right side
+- **Asymmetric half-smile — only the LEFT corner of the mouth lifts.** Never a full smile. The asymmetry is the tell.
+- **Charcoal three-piece suit** (`#3a3a40`) with subtle pinstripe and a **jacket cut LONGER than modern fashion** (mid-thigh hem, tall-coat silhouette)
+- **Stand-up wing collar** + **emerald-green cravat** (`#1a4a30`) tied in a fat 19th-century knot
+- **Pocket-watch chain** (`#cfa040`) looped across the vest from buttonhole into right vest pocket
+- **Thin white cotton gloves** on both hands — the kind nobody wears indoors anymore
+- **A small brass lapel pin shaped like a tiny skyscraper** on the left lapel
+- Behind the desk: **a small brass-caged finch** ("the ones who don't fly are mine") and a folded contract + fountain pen
+- Always rendered as a silhouette in cinematics. The story makes the point that he doesn't lift his own hands; the framing should reinforce that.
 
 ### Personality
 
