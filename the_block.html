@@ -4199,8 +4199,9 @@ const ENEMY_DEFAULT_ATTACK = {
   razor: "slash", volt: "strike", blackwell: "punch",
 };
 
-function makeEnemy(type, x, y) {
+function makeEnemy(type, x, y, opts) {
   const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
+  const o = opts || {};
   // Difficulty: scale enemy HP at spawn so the toughness curve matches the
   // tier the player chose. Bosses scale slightly less so cinematic-feel HP
   // bars stay readable across difficulty.
@@ -4227,7 +4228,6 @@ function makeEnemy(type, x, y) {
     vx: 0, vy: 0, vz: 0,
     airborne: false,
     knockdownFrames: 0,
-    facing: -1,
     animState: "idle",
     animTime: 0,
     walkSpeed: stats.walkSpeed * vSpeed,
@@ -4263,6 +4263,14 @@ function makeEnemy(type, x, y) {
     hitboxes: [],
     hurtboxes: [],
     attackHits: null,
+    // Ambient: enemy is "hanging out" at a scene prop. AI is suspended until
+    // the player closes within wakeRange or the enemy is hit. ambientPose
+    // picks a flavour-idle (e.g. "crouch" for fixing a car, "lean" for
+    // hanging by a streetlight); falls back to plain idle if unknown.
+    ambient: !!o.ambient,
+    wakeRange: typeof o.wakeRange === "number" ? o.wakeRange : 170,
+    ambientPose: o.ambientPose || null,
+    facing: typeof o.facing === "number" ? o.facing : -1,
   };
 }
 
@@ -4339,6 +4347,25 @@ function updateEnemy(e, dt) {
     e.hurtboxes.length = 0;
     e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi });
     return;
+  }
+
+  // Ambient: enemy waits at a scene prop until player gets close or it's hit.
+  if (e.ambient) {
+    if (e.hp < e.hpMax) {
+      e.ambient = false;
+    } else if (player && !player.dead) {
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      if (dx * dx + dy * dy < e.wakeRange * e.wakeRange) e.ambient = false;
+    }
+    if (e.ambient) {
+      e.animState = e.ambientPose || "idle";
+      e.animTime += dt;
+      e.hitboxes.length = 0;
+      e.hurtboxes.length = 0;
+      e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi });
+      return;
+    }
   }
 
   e.aiCooldown -= dt;
@@ -7984,9 +8011,15 @@ const STAGES = [
     drawBg: function() { drawStageBlock(); },
     hazard: "taxi",
     waves: [
-      [["runner", 440, 280], ["runner", 520, 320]],
-      [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
-      // Section 3 = mini-boss climax: a Chains brawler backed by a Tank.
+      // Heroes arrive: two Kane crew already on-scene — one crouched fixing
+      // a car at the curb, one leaning against the streetlight. They wake
+      // when the player closes. Backup rolls in from the right.
+      [["runner", 340, 318, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
+       ["runner", 420, 282, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
+       ["runner", 560, 320]],
+      // Two-sided: one circles in from behind (left), two from the right.
+      [["runner", 80, 320, { facing: 1 }], ["runner", 460, 290], ["slice", 600, 285]],
+      // Mini-boss climax: Chains in the middle, Tank backup from the right.
       [["chains", 480, 300], ["tank", 580, 320]],
     ],
     boss: null,
@@ -7996,9 +8029,13 @@ const STAGES = [
     drawBg: function() { drawStageTunnels(); },
     hazard: "train",
     waves: [
-      [["slice", 440, 280], ["runner", 520, 320]],
-      [["slice", 460, 290], ["slice", 580, 310]],
-      // Section 3 mini-boss: Chains + Slice + a final ranged Lamplight.
+      // One Slice is already leaning against the tunnel wall when heroes
+      // round the corner.
+      [["slice", 360, 295, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
+       ["runner", 540, 320]],
+      // Pincer: Slice rushes from the dark behind (left), another from ahead.
+      [["slice", 70, 290, { facing: 1 }], ["slice", 580, 310]],
+      // Mini-boss: Chains middle, Slice flank, Lamplight cover-fire.
       [["chains", 480, 295], ["slice", 560, 320], ["lamplight", 600, 285]],
     ],
     boss: null,
@@ -8007,8 +8044,12 @@ const STAGES = [
     name: "RIVER ROW",
     drawBg: function() { drawStageRiver(); },
     waves: [
-      [["runner", 440, 280], ["tank", 540, 322]],
-      [["lamplight", 580, 290], ["runner", 460, 320]],
+      // A Tank leans on the railing watching the water. He turns when heroes
+      // get close.
+      [["tank", 360, 322, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
+       ["runner", 540, 280]],
+      // Two-sided: ranged Lamplight from behind, runner from ahead.
+      [["lamplight", 60, 290, { facing: 1 }], ["runner", 540, 320]],
       [["tank", 480, 290], ["lamplight", 600, 320]],
     ],
     boss: "baron",
@@ -8019,10 +8060,12 @@ const STAGES = [
     drawBg: function() { drawStageLantern(); },
     hazard: "lanterns",
     waves: [
-      [["chains", 440, 282], ["slice", 540, 320]],
-      [["shade", 480, 298], ["chains", 600, 320]],
-      // Section 3 mini-boss climax: two Shades + a Slice flanker.
-      [["shade", 440, 290], ["shade", 580, 320], ["slice", 540, 285], ["slice", 600, 320]],
+      // A Chains hangs out under a lantern; Slice arrives from down the row.
+      [["chains", 350, 320, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
+       ["slice", 560, 282]],
+      [["shade", 480, 298], ["chains", 90, 320, { facing: 1 }]],
+      // Section 3 mini-boss climax: two Shades + Slice flankers from both sides.
+      [["shade", 440, 290], ["shade", 580, 320], ["slice", 60, 285, { facing: 1 }], ["slice", 600, 320]],
     ],
     boss: null,
   },
@@ -8031,10 +8074,12 @@ const STAGES = [
     drawBg: function() { drawStageCage(); },
     hazard: "spikes",
     waves: [
-      [["dojo", 460, 290], ["chains", 560, 318]],
-      [["dojo", 460, 290], ["dojo", 560, 318]],
-      // Section 3 mini-boss: Rig + Dojo + extra Dojo for the cage finale.
-      [["rig", 480, 300], ["dojo", 580, 320], ["dojo", 540, 285]],
+      // A Dojo is already inside the cage, practicing forms. Chains stalks in.
+      [["dojo", 360, 305, { ambient: true, ambientPose: "kata", wakeRange: 140, facing: -1 }],
+       ["chains", 560, 318]],
+      [["dojo", 80, 290, { facing: 1 }], ["dojo", 560, 318]],
+      // Mini-boss climax: Rig + Dojos closing from both ends.
+      [["rig", 480, 300], ["dojo", 580, 320], ["dojo", 60, 285, { facing: 1 }]],
     ],
     boss: null,
   },
@@ -8043,9 +8088,11 @@ const STAGES = [
     drawBg: function() { drawStageUptown(); },
     hazard: "glass",
     waves: [
-      [["lamplight", 560, 300], ["dojo", 460, 320]],
-      [["dojo", 480, 290], ["dojo", 580, 320]],
-      [["lamplight", 600, 285], ["chains", 460, 320]],
+      // A Lamplight stands under an awning, gun lowered. Dojo arrives.
+      [["lamplight", 360, 300, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
+       ["dojo", 560, 320]],
+      [["dojo", 70, 290, { facing: 1 }], ["dojo", 580, 320]],
+      [["lamplight", 600, 285], ["chains", 90, 320, { facing: 1 }]],
     ],
     boss: "razor",
   },
@@ -8054,10 +8101,12 @@ const STAGES = [
     drawBg: function() { drawStageWorks(); },
     hazard: "molten",
     waves: [
-      [["tank", 480, 300], ["rig", 580, 320]],
-      [["rig", 480, 290], ["tank", 580, 320]],
-      // Section 3 mini-boss: two Rigs + a Tank in the foundry.
-      [["rig", 460, 295], ["rig", 580, 318], ["tank", 540, 305]],
+      // A Rig is bent over machinery (fixing a press). Tank patrols in.
+      [["rig", 360, 320, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
+       ["tank", 560, 300]],
+      [["rig", 80, 290, { facing: 1 }], ["tank", 580, 320]],
+      // Mini-boss: two Rigs + a Tank in the foundry, one closing from left.
+      [["rig", 460, 295], ["rig", 60, 318, { facing: 1 }], ["tank", 540, 305]],
     ],
     boss: null,
   },
@@ -8066,10 +8115,13 @@ const STAGES = [
     drawBg: function() { drawStageFreeway(); },
     hazard: "cars",
     waves: [
-      [["chains", 480, 300], ["slice", 580, 320]],
-      [["lamplight", 600, 290], ["slice", 460, 320]],
-      // Section 3 mini-boss: two Chains brawlers + a Slice flanker.
-      [["chains", 460, 295], ["chains", 580, 320], ["slice", 540, 290]],
+      // Two crew on the shoulder fixing a stalled car. They turn at footsteps.
+      [["chains", 340, 322, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
+       ["slice", 410, 320, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
+       ["slice", 580, 282]],
+      [["lamplight", 60, 290, { facing: 1 }], ["slice", 540, 320]],
+      // Mini-boss: Chains brawlers + Slice flankers from both sides.
+      [["chains", 460, 295], ["chains", 580, 320], ["slice", 70, 290, { facing: 1 }]],
     ],
     boss: null,
   },
@@ -8078,9 +8130,11 @@ const STAGES = [
     drawBg: function() { drawStageTower(); },
     hazard: "wind",
     waves: [
-      [["dojo", 480, 295], ["lamplight", 580, 320]],
-      [["rig", 460, 290], ["dojo", 580, 320]],
-      [["rig", 460, 295], ["rig", 580, 320]],
+      // Tower guards posted at their stations.
+      [["dojo", 350, 295, { ambient: true, ambientPose: "guard", wakeRange: 140, facing: 1 }],
+       ["lamplight", 550, 320, { ambient: true, ambientPose: "guard", wakeRange: 140, facing: -1 }]],
+      [["rig", 80, 290, { facing: 1 }], ["dojo", 580, 320]],
+      [["rig", 60, 295, { facing: 1 }], ["rig", 580, 320]],
     ],
     boss: "volt",
   },
@@ -8088,8 +8142,8 @@ const STAGES = [
     name: "THE TOP",
     drawBg: function() { drawStageTop(); },
     waves: [
-      [["dojo", 480, 295], ["dojo", 580, 320]],
-      [["rig", 460, 290], ["rig", 580, 320]],
+      [["dojo", 90, 295, { facing: 1 }], ["dojo", 580, 320]],
+      [["rig", 60, 290, { facing: 1 }], ["rig", 580, 320]],
     ],
     boss: "blackwell",
     finalQte: true, // after the boss is felled, fire the Kane cinematic
@@ -8141,7 +8195,13 @@ function renderSectionTransition() {
 function spawnWave(stageIdx, waveIdx) {
   const stage = STAGES[stageIdx];
   if (!stage || !stage.waves[waveIdx]) return [];
-  return stage.waves[waveIdx].map(([type, x, y]) => makeEnemy(type, x, y));
+  return stage.waves[waveIdx].map(entry => {
+    const [type, x, y, opts] = entry;
+    const e = makeEnemy(type, x, y, opts);
+    // Spawns to the left of centre face right by default; right-side face left.
+    if (!opts || typeof opts.facing !== "number") e.facing = x < W * 0.5 ? 1 : -1;
+    return e;
+  });
 }
 
 function enterPlaying() {
@@ -8175,7 +8235,11 @@ function enterPlaying() {
   if (typeof beginOpeningCutscene === "function") beginOpeningCutscene();
 }
 
+// Frame-counted windows (active hitboxes, parry) intentionally NOT scaled.
+const GAME_TEMPO_MUL = 1.2;
+
 function updatePlaying(dt) {
+  dt *= GAME_TEMPO_MUL;
   if (consumePress("Escape")) {
     player = null;
     enemies = [];
