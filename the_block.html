@@ -448,7 +448,11 @@ function drawSpriteCharacter(p) {
   const sprite = SPRITES[key];
   if (!sprite || !sprite.atlas || !sprite.atlas.anims) return false;
   const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
-  const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
+  // STRICT match: only sprite-render if this exact anim is in the atlas.
+  // For sparse enemy atlases (e.g., idle+walk only) the dispatcher then
+  // falls through to the per-type procedural drawer for attack frames.
+  // Players have all 15 anims so this doesn't affect them.
+  const frames = sprite.atlas.anims[animName];
   if (!frames || frames.length === 0) return false;
   // Per-anim fps with sensible default. Atlas can override globally via
   // sprite.atlas.fps; engine table provides per-anim tuning on top.
