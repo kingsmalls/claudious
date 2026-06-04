@@ -116,21 +116,35 @@ After you generate a sheet, save it as `characters/<type>.png` (lowercase enemy 
 
 ### lamplight.png
 
-> Pixel art sprite sheet, side-view 2D beat-em-up style, 48x72 frame size, 8 columns by 4 rows uniform grid, magenta `#ff00ff` background, bottom-center anchor.
+> Pixel art sprite sheet, side-view 2D beat-em-up style, **NOIR GUNMAN aesthetic** — fedora + long trench coat + white scarf over the face. Think 1940s/1970s hardboiled detective with a pistol. 64x88 frame size, 8 columns by 4 rows uniform grid, magenta `#ff00ff` background, bottom-center anchor.
 >
-> **Character:** Lamplight. 28-40 year old hired gun. Lean, 5'10"-6'1", steady hands. Black balaclava covers face from nose down — only eyes visible (flat, bored, slightly tan skin around eyes #d4a888). Dark brown leather jacket (#2a1f15) fitted, two front pockets. Black tactical pants (#1a1a22) slim cut. Combat boots laced full. Hair hidden under beanie. Gender ambiguous.
+> **Character — noir hired gun, NOT a tactical-game henchman:** Lamplight. 35-50 year old hired gun. Lean but not athletic, 5'10"-6'1", carries weight at the shoulders from years of holding a gun raised. **Almost the whole face hidden** — only a narrow strip of eyes visible (#d4a888 light skin, flat bored expression) between the fedora brim above and the scarf below. Gender ambiguous. Hair completely hidden under the hat.
 >
-> **Required identity item, must be visible in EVERY frame:** a pistol always visible, held two-handed at chest height by default. Gun body (#3a3a40) with lighter barrel (#4a4a50). Raises to fire. During `atk1` active frame, a bright orange-yellow muzzle flash dot (#ffd76a core, #ff8a40 edge) appears at the barrel tip.
+> **Costume — the silhouette IS the threat:**
+> - **BLACK FEDORA** (#0a0a10) with a wide-ish brim **pulled low over the eyes** so the brim casts shadow across the upper face. Slightly battered darker leather band around the crown. This is the most recognizable silhouette element.
+> - **LONG DARK TRENCH COAT** mid-calf length (#1a1a22 body, #0a0a10 shadow, #2a2a36 highlight). Collar **popped UP**, reaching the bottom of the scarf. Steel buckle belt at the waist. **Flares behind on motion** like a cape but isn't a cape.
+> - **LONG WHITE SCARF** (#dcd6c4 with #9a9482 shadow) wrapped twice around the neck and **pulled up over the nose and mouth**. The ends hang loose from the neck — visible 14-18 px tail down the front of the coat. **The white scarf against the black coat is the high-contrast tell.**
+> - Black fitted leather gloves (#16100a).
+> - Dark tactical pants (#1a1a22) under the coat — only the lower legs (below the coat hem) visible.
+> - Heavy black combat boots (#0a0a10) laced full.
+>
+> **Required identity items, must be visible in EVERY frame:**
+> 1. The **fedora silhouette** with shadow cast over the upper face.
+> 2. The **white scarf** wrapped twice, ends visible hanging down the coat front.
+> 3. The **pistol** always held two-handed at chest level by default (gun body #3a3a40, barrel #4a4a50). Raises to fire.
+> 4. During `atk1` active frame: a bright **orange-yellow muzzle flash dot** at the barrel (#fff8c0 core, #ffd76a mid, #ff8a40 edge) — visible past the scarf.
 >
 > **Tone:** composed, holds 70-110 px range from the target. Backs up if you close in. Never melees. Quiet during combat.
 >
 > **Frame layout (top to bottom, 8 per row):**
-> Row 1: `idle` x4 (gun two-handed at chest, eyes scan), `walk` x4 (backward steps while keeping gun raised)
-> Row 2: `atk1` x5 (regular shot — F1-2 raise + aim, F3 trigger pull with muzzle flash, F4-5 recoil + recover), `atk2` x3 first half (charged shot — F1-3 long aim with growing glow at barrel)
-> Row 3: `atk2` x5 (charged — F4 longer aim with brighter glow, F5 bigger muzzle flash, F6-8 harder recoil), `hurt` x3 (body twists, gun arm drops 1 frame)
-> Row 4: `dead` x4 (falls, gun lands on ground beside body), 4 spare cells
+> Row 1: `idle` x4 (gun two-handed at chest, eye-slit visible under fedora brim, scarf tails sway 1 px on breath), `walk` x4 (backward steps while keeping gun raised, coat hem sways behind)
+> Row 2: `atk1` x5 (regular shot — F1-2 raise + aim, fedora tilts down 1 px, F3 trigger pull with muzzle flash visible past the scarf, F4-5 recoil + recover), `atk2` x3 first half (charged shot — F1-3 long aim with growing BLUE glow at barrel #4a8ad0, glow also tints the scarf for one frame)
+> Row 3: `atk2` x5 (charged — F4 longer aim with brighter glow, F5 bigger muzzle flash, F6-8 harder recoil with body rocking back and coat flaring behind), `hurt` x3 (body twists, gun arm drops 1 frame, fedora and scarf stay in place)
+> Row 4: `dead` x4 (falls — F3 fedora rolls off the head revealing buzz cut underneath, but the face is still scarf-covered, gun lands on ground beside body), 4 spare cells
 >
-> Pixel-art style. Visible identity = the gun + the masked face.
+> **DO NOT include:** visible face below the eyes (scarf stays up on every frame including hurt), visible hair (fedora covers it), modern tactical gear (vests, plate carriers, knee pads — Lamplight is noir, not military), visible logos or badges, two visible guns, a cigarette (that's Duke), a long flowing cape (the coat flares slightly but isn't a cape).
+>
+> Pixel-art style. The silhouette must read as 1940s noir gunman from any angle — fedora + popped collar + white scarf are the three things that must always be visible.
 
 ### baron.png
 
@@ -311,40 +325,48 @@ After you generate a sheet, save it as `characters/<type>.png` (lowercase enemy 
 
 ## STAGE 10 — THE TOP (KANE final boss)
 
-**Enemies you need to generate**: `kane` (1 new — though this is a cinematic sheet, not a fighter sheet).
+**Enemies you need to generate**: `kane` (1 new — a real fighter sheet now, not QTE-only).
 
 ### kane.png
 
-KANE is a QTE cinematic encounter — never throws a punch, stays seated at his desk for the entire scene. The sheet is **scene poses**, not combat frames.
+KANE was reworked in v1.2 — he's now a real combat boss with a **sword-cane and a pocket-watch chain whip**. He stands up from his desk and reveals he's been a fighter all along. The QTE cinematic still plays as the intro; the actual fight begins after the 5 prompts resolve.
 
-**IMPORTANT for the AI generator:** Kane was rewritten in v1.1 to be **unmistakably fictional** — a Dickensian-villain caricature in a modern suit — because generic "wealthy older businessman" prompts triggered safety filters on real-person resemblance. Lead with the **caricatured features and period accessories** (round wire-rim glasses, pocket-watch chain, white cotton gloves, caged finch, asymmetric half-smile) and the generator should produce comfortably. See `characters/KANE.md` for full spec.
+**IMPORTANT for the AI generator:** Kane is **explicitly fictional** — a Dickensian-villain caricature in a modern suit — because generic "wealthy older businessman" prompts trigger safety filters on real-person resemblance. Lead with the **caricatured features and period accessories** (round wire-rim glasses, tall-coat silhouette, sword-cane, stand-up wing collar) — the reference points are **Mr. Burns from The Simpsons or Anton Ego from Ratatouille**, NOT any real public figure. See `characters/KANE.md` for full spec.
 
-> Pixel art sprite sheet of a **FICTIONAL Dickensian villain character** in a modern setting. NOT a real person, NOT a public figure — a stylized caricature in the tradition of Mr. Burns from The Simpsons or Anton Ego from Ratatouille. 128x128 frame size, 4 columns by 2 rows uniform grid (8 cells, one per pose), magenta `#ff00ff` background, bottom-center anchor.
+> Pixel art sprite sheet of a **FICTIONAL Dickensian-villain fencing master** — a tall thin caricature in a long charcoal three-piece suit who fights with a sword-cane and a brass pocket-watch chain whip. NOT a real person, NOT a public figure. Reference points: Mr. Burns from The Simpsons, Anton Ego from Ratatouille. 128x144 frame size, 6 columns by 10 rows uniform grid, magenta `#ff00ff` background, bottom-center anchor.
 >
-> **Character — caricatured, fictional, period-Victorian banker in a modern suit:** "Victor Kane." 60-65 year old man, unnaturally TALL and THIN like an old crane in a suit. Pale waxen skin (#d8c8b8 light, #a89488 shadow). Long thin nose, sharp narrow cheekbones, small precise mouth, deep-set eyes. Wears **round wire-rim gold glasses** (#cfa040 thin frames, perfectly circular ~3px lenses) — THIS IS THE MOST IMPORTANT VISUAL HOOK, render them prominently. **Pure white hair** (#e8e8e4) slicked back from a high widow's peak, with **a single dark grey streak** (#5a5a62) running through the RIGHT side, visible in every frame. **The smile is ASYMMETRIC — only the LEFT corner of the mouth lifts**, a perpetual half-smirk that never reaches the eyes.
+> **Character — caricatured, fictional, Dickensian fencing villain:** "Victor Kane." 60-65 year old man, unnaturally TALL and THIN like an old crane in a suit (~6'2", reads taller because he stands perfectly straight, long fingers, narrow shoulders). **Moves with the precision of a fencing master in his prime** — explosive snap from STILL to fully extended strike, no wasted motion. Pale waxen skin (#d8c8b8 light, #a89488 shadow). Long thin nose, sharp narrow cheekbones, small precise mouth, deep-set eyes. **Round wire-rim gold glasses** (#cfa040 thin frames, perfectly circular ~3px lenses) — biggest "fictional character" visual hook, prominent in every frame. **Pure white hair** (#e8e8e4) slicked back from a high widow's peak, with **a single dark grey streak** (#5a5a62) on the RIGHT side. **Asymmetric half-smile — LEFT corner only** — never drops, even on death (until the final death frame).
 >
-> **Costume — Dickensian banker, not modern CEO:** Charcoal three-piece suit (#3a3a40 body, 1-px pinstripe #4f4f57 every 6 px). **Jacket cut LONGER than modern fashion** — mid-thigh hem, tall-coat silhouette. **Stand-up wing collar** (period detail, not modern). **Cravat-style emerald-green silk tie** (#1a4a30 with #2a6a40 highlight), tied in a fat 19th-century knot. Vest all six buttons done up. **A brass pocket-watch chain** (#cfa040) loops across the vest from a buttonhole into the right vest pocket — visible 8-10 px arc. **Thin white cotton gloves on both hands** (#dcd6c4) — the kind nobody wears indoors anymore. Dark slacks matching suit. Polished black oxford shoes.
+> **Costume — Dickensian fencing master:** Charcoal three-piece suit (#3a3a40 body, 1-px pinstripe #4f4f57 every 6 px). **Jacket cut LONGER than modern fashion** — mid-thigh tall-coat hem. **Stand-up wing collar** (period detail). **Emerald-green silk cravat** (#1a4a30 with #2a6a40 highlight) in a fat 19th-century knot. Vest with **brass pocket-watch chain** (#cfa040) looped across from a buttonhole into the right vest pocket (8-10 px arc). Dark slacks. Mirror-polished black oxford shoes. **Tiny brass skyscraper lapel pin** (#cfa040, ~2x4 px) on the left lapel. **Thin white cotton gloves** (#dcd6c4) on BOTH hands in `idle`. The RIGHT GLOVE is removed during the `glove_off` reveal pose and stays off for the rest of the sheet (his bare right hand grips the sword).
+>
+> **Weapons — revealed when he stands up to fight:**
+> - **SWORD-CANE**: a long black walking cane (#08080a sheath, #cfa040 brass knob) that conceals a thin silver blade (#cfd0d6 with #ffffff edge). Once drawn, **the silver blade is ~80 px long** (gives him exceptional reach). He holds the empty sheath in the LEFT hand as a parrying tool.
+> - **POCKET-WATCH WHIP**: the brass chain (#cfa040) with a gold watch fob (#f4c860) at the end. Used only for the `special` move — pulled from the vest pocket and swung in a wide horizontal arc.
 >
 > **Required identity items, must be visible in EVERY frame:**
-> 1. **The ROUND WIRE-RIM GOLD GLASSES** — small, perfectly circular, gold frames. This is the single biggest "fictional character" hook.
-> 2. **The ASYMMETRIC HALF-SMILE** — left corner only. Never a full symmetric smile.
-> 3. **The SINGLE DARK GREY STREAK** in the otherwise pure-white slicked-back hair.
-> 4. **A small brass lapel pin shaped like a tiny skyscraper** (#cfa040, ~2x4 px) on the left lapel.
-> 5. **The WHITE COTTON GLOVES** on both hands.
-> 6. **The POCKET-WATCH CHAIN** arc across the vest.
-> 7. **The DESK** — heavy dark mahogany (#4a2818 body, #1a0e08 shadow, #6a3820 highlight), wide surface taking up the bottom 1/3 of every cell. Gloved hands rest flat on the desk in idle.
-> 8. **A small brass-caged finch** on the desk's left side (#cfa040 cage, #a8a4a0 bird inside). Storywise: "the ones who don't fly are mine."
-> 9. **A folded contract + fountain pen** on the desk's right side. Pen is black with a gold cap (#cfa040), gestured with during the QTE prompts.
+> 1. **ROUND WIRE-RIM GOLD GLASSES** — small, perfectly circular.
+> 2. **ASYMMETRIC HALF-SMILE** — LEFT corner only.
+> 3. **SINGLE DARK GREY STREAK** in pure-white slicked-back hair.
+> 4. **TALL-COAT JACKET SILHOUETTE** (mid-thigh hem).
+> 5. **STAND-UP WING COLLAR**.
+> 6. **POCKET-WATCH CHAIN** arc across the vest in all idle/walk frames (the chain is pulled out only during `special`).
+> 7. **SWORD-CANE** in his hand from `glove_off` onward — sheath in LEFT hand, drawn blade in RIGHT hand.
 >
-> **Tone:** polite, patient, genuine. Means what he says. Never raises voice. Never stands. **The combined silhouette — long jacket + stand-up collar + round glasses + slicked white hair with grey streak + pocket-watch chain + caged finch + gloved hands on mahogany desk — should read on first sight as "this is a character from a story, not a person you saw on TV."**
+> **Frame layout (top to bottom, 6 per row):**
+> Row 1: `idle` x4 (standing tall behind the desk, sword-cane planted point-down, gloved off-hand on knob, pure stillness), `walk` x2 first half (slow precise approach, cane taps floor)
+> Row 2: `walk` x4 last (cane-tap continues), `atk1` x2 first half (cane thrust — F1-2 wind-up shoulder back)
+> Row 3: `atk1` x3 last (F3 full extend sword tip forward, F4 hold, F5 retract), `atk2` x3 first half (cross sweep — F1 cane raised diagonally, F2 horizontal slash with body torque, F3 follow-through with jacket flare like a cape)
+> Row 4: `atk2` x3 last (F4-5 reset to stance, F6 idle), `atk3` x3 first half (fencing lunge — F1 coil down, F2-3 explosive forward lunge with sword leading)
+> Row 5: `atk3` x4 last (F4-5 hold the lunge — longest reach pose, F6-7 recover to stance), `special` x2 first half (chain whip — F1 pulls watch out of vest, F2 winds chain in half-circle)
+> Row 6: `special` x6 last (F3-4 winds higher, F5-7 horizontal wide arc across screen at chest height with motion-blur on chain, F8 watch returns to pocket)
+> Row 7: `special` x2 final (F9 cane re-planted, F10 idle reset), `counter` x4 (F1 sheath raised to deflect, F2 deflect impact, F3 immediate sword thrust forward, F4 recovery)
+> Row 8: `counter` x1 last (F5 reset), `hurt` x3 (body folds slightly at waist, glasses STAY ON, half-smile STAYS, sword stays in hand), `glove_off` x2 first half (Kane stands from desk — F1, removes right glove with precise tug — F2)
+> Row 9: `glove_off` x2 last (F3 drops glove, F4 draws sword from cane), `dead` x4 first half (falls backwards over the desk — F1-2 falling, F3-4 landed)
+> Row 10: `dead` x1 last (F5 — half-smile finally drops for ONE frame, his face is empty), 5 spare cells
 >
-> **Pose layout (top to bottom, 4 per row — 1 pose per cell):**
-> Row 1: `seated_open` (idle — gloved hands folded on desk, half-smile, finch still), `lean_in` (Prompt 1 — leans forward elbows on desk, gloves flat), `gesture_open` (Prompt 2 — right hand extended palm-up offering the contract), `gesture_pen` (Prompt 3 — pen pointed at target gently like a teacher)
-> Row 2: `gesture_hard` (Prompt 4 — pen tip lowered to document, half-smile same but eyes cold for one beat), `lean_back` (Prompt 5 — leans back in chair, sets pen down, gloves fold again, half-smile NEVER drops), `quiet` (final pose — same as seated_open but fully still), 1 spare
+> **DO NOT include:** any resemblance to a real public figure (if a draft looks like a known person, change features until it doesn't). No symmetric smile — always lopsided (left corner only). **NO pistol, gun, or modern firearm of any kind** — he fights with the sword-cane and the chain whip only. No modern phone, laptop, tablet on the desk — period props only. No bare hands except the right hand from `glove_off` onward. No mussed hair or open jacket — appearance stays perfect except on `dead`. The smile should never reach the eyes.
 >
-> Pixel-art style, clean silhouette, hard edges, exaggerated caricatured proportions. Desk extends across the full cell width. Kane is centered behind it, head/shoulders visible above. No standing or fighting poses. **The lack of motion is the menace.**
->
-> **DO NOT:** include any resemblance to a real public figure. If a draft looks like a known person, change features until it doesn't. No symmetric smile. No modern phone, laptop, or tablet. No bare hands (gloves stay on every frame).
+> Pixel-art style, clean silhouette, hard edges, exaggerated caricatured proportions. Kane is tall enough to fill the cell height comfortably; the desk only appears in `idle` and `glove_off` frames.
 
 ---
 
