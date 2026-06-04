@@ -1,0 +1,83 @@
+{
+  "fps": 4,
+  "frames": {
+    "seated_open_0": {
+      "x": 0,
+      "y": 0,
+      "w": 256,
+      "h": 253
+    },
+    "lean_in_0": {
+      "x": 256,
+      "y": 0,
+      "w": 256,
+      "h": 253
+    },
+    "gesture_open_0": {
+      "x": 512,
+      "y": 0,
+      "w": 256,
+      "h": 253
+    },
+    "gesture_pen_0": {
+      "x": 768,
+      "y": 0,
+      "w": 256,
+      "h": 253
+    },
+    "gesture_hard_0": {
+      "x": 0,
+      "y": 253,
+      "w": 256,
+      "h": 253
+    },
+    "lean_back_0": {
+      "x": 256,
+      "y": 253,
+      "w": 256,
+      "h": 253
+    },
+    "quiet_0": {
+      "x": 512,
+      "y": 253,
+      "w": 256,
+      "h": 253
+    },
+    "spare_0": {
+      "x": 768,
+      "y": 253,
+      "w": 256,
+      "h": 253
+    }
+  },
+  "anims": {
+    "seated_open": [
+      "seated_open_0"
+    ],
+    "lean_in": [
+      "lean_in_0"
+    ],
+    "gesture_open": [
+      "gesture_open_0"
+    ],
+    "gesture_pen": [
+      "gesture_pen_0"
+    ],
+    "gesture_hard": [
+      "gesture_hard_0"
+    ],
+    "lean_back": [
+      "lean_back_0"
+    ],
+    "quiet": [
+      "quiet_0"
+    ],
+    "spare": [
+      "spare_0"
+    ]
+  },
+  "anchor": {
+    "x": 0.5,
+    "y": 1.0
+  }
+}
