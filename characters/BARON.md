@@ -8,21 +8,24 @@ He fights like a boxer because he was one. The brass knuckles are for the people
 
 > ## 🛑 REQUIRED ANIMATION ROWS — read first
 >
-> The sheet must contain **11 distinct animation rows** in this exact order, one anim per row, no skipping:
+> The sheet must contain **14 distinct animation rows** in this exact order, one anim per row, no skipping:
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — jab (4 frames)
-> 4. `atk2` — cross (5 frames)
-> 5. `atk3` — haymaker (9 frames)
-> 6. `knee` — rising knee (5 frames)
-> 7. `leap` — leaping double-smash (6 frames)
-> 8. `jump_atk` — aerial knee (4 frames)
-> 9. `hurt` (3 frames)
-> 10. `taunt` (5 frames)
-> 11. `dead` (5 frames)
+> 3. `atk1` — jab (4 frames) — head-level straight
+> 4. `atk2` — cross (5 frames) — head-level straight with hip drive
+> 5. `atk3` — liver hook (5 frames) — low body shot at hip level (different angle)
+> 6. `uppercut` — rising brass-knuckle uppercut (6 frames) — vertical rising fist
+> 7. `haymaker` — overhand looping (9 frames) — telegraphed heavy
+> 8. `clinch` — clinch + knee (7 frames) — boxer's grab into rising knee strike
+> 9. `special` — BONE-BREAKER COMBO (12 frames) — five-strike chained finisher, **must be visually distinct from atk3**
+> 10. `counter` — coat parry-riposte (6 frames) — coat-flare deflect into hidden cross
+> 11. `jump_atk` — aerial knee (4 frames)
+> 12. `hurt` (3 frames)
+> 13. `taunt` (5 frames) — hair-comb gesture
+> 14. `dead` (5 frames)
 >
-> **Total: 56 frames in 11 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+> **Total: 81 frames in 14 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -89,13 +92,26 @@ buckle silver      #8a8a8e
 
 ## Personality / fighting style
 
-- **Five signature moves — jab / cross / haymaker / knee / leaping smash. Brass knuckles glint gold on every punch — the colour tell. The square jaw juts forward during attacks — the caricature in motion.**
-  - **`jab` — Pistoning lead.** Fast left-hand boxer's jab. **Visual signature: F2 shows the fist mid-extension with a 1-px GOLD GLINT on the brass knuckles** — the only bright colour in the frame. Body barely twists. Coat doesn't move. 11 dmg.
-  - **`cross` — Hip-driven straight.** Heavy right-hand straight. **Visual signature: F3 the long coat FLARES WIDE behind him in a 45° fan** as the body rotates fully, gold knuckles forward at peak. Front foot rooted, rear heel rising. **The square jaw juts forward** by 1 px at peak. 16 dmg.
-  - **`haymaker` — Looping overhand.** Telegraphed wind-up overhand. **Visual signature: F1–F4 the coat OPENS FULLY (both panels swept aside) revealing the chest scar at the open collar — a 4-frame "I'm about to end this" tell.** F5 = peak with the right arm at full overhand extension, body rotated past 90°, gold knuckles tracing a comet arc from shoulder-high down to chest-of-target. 28 dmg + 250 knockback. **Super-armored** — eats hits during the wind-up.
-  - **`knee` — Rising knee strike.** Close-range knee to the gut. **Visual signature: F2–F3 the rear knee drives upward 18 px past the body line, leading with the kneecap. Both hands grab the imagined opponent's collar to pull them DOWN onto the knee — body folds forward 20° to meet the knee, coat flaring open**. Pure noir-comic enforcer move. 18 dmg + 90 knockback.
-  - **`leap` — Leaping double-fist smash.** A short forward jump ending with both fists driving down. **Visual signature: F2–F3 silhouette is a forward-leaping figure — both fists clasped together overhead, knees tucked under, coat flaring behind**. F4 lands hard with **dust burst (4–5 brown specks at his feet)** as both knuckle-rings come down together. 22 dmg + 180 knockback.
-- **Boxing patterns mixed with bare-knuckle brutality.** Strings 2–3 jabs, then a cross, occasional haymaker, occasional knee at close range, occasional leap as a gap-closer.
+- **Eight signature moves with VARIED ANGLES — head punches, body punches, vertical uppercuts, grapples, a multi-hit special, a counter. Brass knuckles glint gold on every punch — the colour tell. The square jaw juts forward during attacks — the caricature in motion.**
+  - **`jab` — Pistoning lead.** Fast left-hand boxer's jab. **Visual signature: F2 fist mid-extension with a 1-px GOLD GLINT on the brass knuckles — the only bright colour in the frame, at HEAD level.** Body barely twists. Coat doesn't move. 11 dmg.
+  - **`cross` — Hip-driven straight.** Heavy right-hand straight. **Visual signature: F3 the long coat FLARES WIDE behind him in a 45° fan** as the body rotates fully, gold knuckles forward at HEAD level. Front foot rooted, rear heel rising. **Square jaw juts forward** by 1 px at peak. 16 dmg.
+  - **`liver_hook` — Body shot.** Low horizontal hook to the gut. **Visual signature: F2–F3 body SQUATS DOWN slightly (knees bend, shoulder drops), rear arm whips around in a horizontal arc, gold knuckles trail visible at HIP LEVEL (not head level) — the angle that distinguishes this from jab/cross. F4 follow-through carries body past target.** Boxer's signature liver shot. 18 dmg + 120 knockback.
+  - **`uppercut` — Rising brass-knuckle uppercut.** Vertical rising fist into the chin. **Visual signature: F2 deep coil — body crouches, lead fist drops to thigh. F3–F4 explosive RISE — body uncoils upward, lead fist drives straight UP past the chin, gold-knuckle vertical streak from hip to overhead (different angle from any other Baron punch — only one going UP).** 20 dmg + 80 knockback, launches.
+  - **`haymaker` — Overhand looping.** Telegraphed wind-up overhand. **Visual signature: F1–F4 the coat OPENS FULLY (both panels swept aside) revealing the chest scar at the open collar — a 4-frame "I'm about to end this" tell.** F5 = peak with the right arm at full overhand extension above the shoulder, body rotated past 90°, gold knuckles tracing a comet arc from shoulder-high down to chest-of-target. 28 dmg + 250 knockback. **Super-armored** — eats hits during the wind-up.
+  - **`clinch` — Boxer's clinch + knee combo.** Grab + pull-down + rising knee, one continuous motion. **Visual signature: F1–F2 both arms reach forward and CLAMP onto the opponent's shoulders (Baron's hands close into fists holding the imagined collar). F3 he PULLS DOWN hard (body bends forward, head lowers). F4 simultaneously his rear KNEE drives UP into the gut at the moment the opponent reaches the bent-over position. F5 release. F6–F7 recovery.** Grab + knee in one motion — no other character does this. 22 dmg + 100 knockback.
+  - **`special` — "Bone-Breaker" five-hit combo.** Baron's signature multi-hit finisher. **Visual signature: 5 RAPID-FIRE BRASS-KNUCKLE STRIKES, each with a gold glint, body alternating left-right with each hit, coat whipping in every direction:**
+    - F1–F2 = deep boxer stance load, both arms cocked
+    - F3 = STRIKE 1 — JAB to face (gold glint #1, head level)
+    - F4 = STRIKE 2 — CROSS to face (gold glint #2, head level, body torqued opposite)
+    - F5 = STRIKE 3 — LIVER HOOK (gold glint #3, hip level — third glint at a NEW height)
+    - F6 = STRIKE 4 — UPPERCUT (gold glint #4, vertical streak rising)
+    - F7–F8 = body coils backward for finisher, both arms wind back
+    - F9 = STRIKE 5 — HAYMAKER (gold glint #5 + COAT FLARES BEHIND like a cape, biggest glint of the five)
+    - F10 = hold the finisher pose
+    - F11–F12 = recovery, body returns to guard
+    - Total visual: 5 gold flashes in rapid succession at DIFFERENT heights (head, head, hip, vertical, head — like a piano scale of brass-knuckle glints). 60 dmg total across the chain, last hit knockdowns.
+  - **`counter` — Coat-parry riposte.** Magician-like deflect-and-strike. **Visual signature: F1 Baron raises his lead arm in a defensive guard. F2 the coat FANS WIDE in front of his body in a 90° sweep — for 1 frame his torso is HIDDEN BEHIND THE COAT (the magician's misdirection). F3 coat begins to drop, brass knuckles glint behind it. F4 a CROSS PUNCH erupts THROUGH the coat with gold-knuckle trail. F5–F6 coat resettles, body returns to guard.** Reads as "where did the punch come from?" 18 dmg + parry effect.
+- **Boxing patterns mixed with bare-knuckle brutality.** Strings 1–2 jabs, mixes in a liver hook for variety, occasional cross or uppercut, occasional haymaker, occasional clinch at close range. Counter-fires when player throws at his guard. Uses Bone-Breaker special at low HP or when player tries to combo him.
 - **Talks during the fight.** Calm and even-toned: "You don't have to do this." / "Walk away. I'll tell Kane it was nothing." / "This is the last time I ask."
 
 ## Animations
@@ -104,11 +120,14 @@ buckle silver      #8a8a8e
 |------------|-------:|-------|
 | `idle`     | 4 | **Boxer's bounce on the balls of the feet** (1 px up/down). Hands at chin in textbook guard, gold knuckles catching highlight on F2. Coat sways 1 px at the hem. **Square jaw + scar + white hair streak visible.** |
 | `walk`     | 6 | Casual approach, almost a stroll. Coat trails 2 px behind. Hands at chin, low guard. |
-| `atk1`     | 4 | **Jab.** F1 = lead shoulder cocks back 2 px. F2 = **fist extends with gold-knuckle glint at peak**. F3 = full extension, knuckles vertical. F4 = sharp snap-back. |
-| `atk2`     | 5 | **Cross.** F1 = hip cocks back. F2 = rotation begins. F3 = **peak — rear fist crosses centerline, coat flares behind in 45° fan, gold knuckles forward, body rotated 45°, square jaw juts forward 1 px**. F4 = rotation continues. F5 = snap-back, coat resettles. |
-| `atk3`     | 9 | **Haymaker.** F1–F4 = wind-up — **coat OPENS FULLY across all four frames, chest scar visible at the open collar**. F5 = peak — right arm at full overhand extension above the shoulder, body rotated past 90°, **gold-knuckle trail (3-px arc of comet glint)**. F6–F8 = follow-through. F9 = recovery, coat closing back. |
-| `knee`     | 5 | **Rising knee.** F1 = both hands rise to "collar grab" pose, body coils. F2 = **rear knee starts driving up, hands pull DOWN simultaneously, body folds forward 10°**. F3 = peak — **knee 18 px past body line, body bent forward 20°, coat flaring open at the front**. F4 = held one frame. F5 = recovery, knee plants. |
-| `leap`     | 6 | **Leaping double-smash.** F1 = deep coil, knees bend, both fists drop to hips. F2 = launch — **body airborne, knees tucked under, both fists clasping together overhead, coat flaring behind 8 px**. F3 = mid-flight peak, full leap silhouette. F4 = descent begins, fists arcing down. F5 = **landing impact — both clasped fists at chest-of-target height, dust burst at his feet (4–5 brown specks)**. F6 = recovery, body straightening. |
+| `atk1`     | 4 | **Jab (head level).** F1 = lead shoulder cocks back 2 px. F2 = **fist extends with gold-knuckle glint at peak, head level**. F3 = full extension, knuckles vertical. F4 = sharp snap-back. |
+| `atk2`     | 5 | **Cross (head level).** F1 = hip cocks back. F2 = rotation begins. F3 = **peak — rear fist crosses centerline, coat flares behind in 45° fan, gold knuckles forward at head level, body rotated 45°, square jaw juts forward 1 px**. F4 = rotation continues. F5 = snap-back, coat resettles. |
+| `atk3`     | 5 | **Liver hook (BODY shot, HIP level — different angle than atk1/atk2).** F1 = body SQUATS slightly, knees bend 10°, lead shoulder drops. F2 = rear arm whips around horizontally at hip height. F3 = **peak — gold knuckles at HIP LEVEL (not head — the angle that distinguishes this from jab/cross), body torqued 60°, opposite arm thrown back for balance**. F4 = follow-through past target. F5 = body rises back to stance. |
+| `uppercut` | 6 | **Brass-knuckle uppercut (VERTICAL — the only Baron punch going UP).** F1 = deep coil — body crouches low, lead fist drops to thigh height. F2 = body still coiled, weight on rear leg. F3 = **explosive RISE begins, lead fist starts climbing straight up**. F4 = **peak — body fully extended skyward, lead fist driven straight up past head height, gold-knuckle VERTICAL STREAK from hip-start to head-end**. F5 = held one frame at peak. F6 = recovery, fist coming down. |
+| `haymaker` | 9 | **Overhand haymaker.** F1–F4 = wind-up — **coat OPENS FULLY across all four frames, chest scar visible at the open collar**. F5 = peak — right arm at full overhand extension above the shoulder, body rotated past 90°, **gold-knuckle trail (3-px arc of comet glint)** from shoulder-high down to chest-of-target. F6–F8 = follow-through. F9 = recovery, coat closing back. |
+| `clinch`   | 7 | **Clinch + knee combo.** F1 = both hands rise to chest height, palms open. F2 = **arms CLAMP onto the imagined opponent's shoulders (hands close into fists holding the collar)**. F3 = **PULL DOWN hard — body folds forward, imagined opponent dragged down toward Baron's hip area**. F4 = rear knee starts driving UP toward the bent-down opponent. F5 = **peak — knee 18 px past body line at gut-of-target height, both hands still gripping the collar (target is bent at the waist), coat flaring open at the front**. F6 = release — hands let go, opponent flies back. F7 = recovery, knee plants. |
+| `special`  | 12 | **"BONE-BREAKER" 5-hit combo (the signature finisher).** F1–F2 = deep boxer stance load, both arms cocked. F3 = **STRIKE 1: jab to face — gold glint #1 at HEAD level**. F4 = **STRIKE 2: cross to face — gold glint #2 at HEAD level, body torqued opposite**. F5 = **STRIKE 3: liver hook — gold glint #3 at HIP level (third glint at a NEW height)**. F6 = **STRIKE 4: uppercut — gold glint #4 as VERTICAL streak rising**. F7–F8 = body coils backward for the finisher, both arms wind back, coat flares open. F9 = **STRIKE 5: HAYMAKER — gold glint #5 (biggest of the five) + COAT FLARES FULLY BEHIND like a cape, body rotated 90°**. F10 = hold the finisher pose. F11–F12 = recovery, body returns to guard. **Visual identity: 5 gold flashes at DIFFERENT heights (head, head, hip, vertical, head) — like a piano scale of brass-knuckle glints.** |
+| `counter`  | 6 | **Coat-parry riposte (magician's deflect-and-strike).** F1 = Baron raises lead arm in defensive guard. F2 = **the coat FANS WIDE in front of his body in a 90° sweep — for 1 frame his torso is HIDDEN BEHIND THE COAT (the magician's misdirection)**. F3 = coat starts to drop, **brass knuckles glint behind the coat (visible through a gap)**. F4 = **CROSS PUNCH erupts THROUGH the coat with gold-knuckle trail**, fist past the body. F5–F6 = coat resettles, body returns to guard. |
 | `jump_atk` | 4 | **Aerial knee** — short-hop forward, rear knee drives forward at chest height. Coat flares behind. |
 | `hurt`     | 3 | Body folds. **Hair stays neat.** Hands drop briefly from guard. Scar stays visible. |
 | `taunt`    | 5 | **Combs hair with one hand** — checks the white streak. F1–F2 = right hand rises to hair. F3 = held comb pose. F4–F5 = hand returns to guard. Polite smile throughout. (Plays once during the fight.) |

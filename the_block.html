@@ -434,6 +434,8 @@ const ANIM_FPS = {
   punch: 14, dash: 14, throwknife: 12,
   shot: 12, charged: 8, backstab: 16, pound: 9,
   uppercut: 10,
+  // Baron's expanded boxing repertoire.
+  liver_hook: 13, clinch: 10,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
@@ -448,6 +450,7 @@ const ANIM_LOOPS = {
   punch: false, dash: false, throwknife: false,
   shot: false, charged: false, backstab: false, pound: false,
   uppercut: false,
+  liver_hook: false, clinch: false,
 };
 
 // Choose the right frame for an entity's anim state and draw it. Falls back
@@ -506,6 +509,8 @@ const ANIM_FALLBACK = {
   atk:        ["atk1", "idle"],
   knee:       ["atk2", "atk1", "idle"],
   leap:       ["atk3", "atk1", "idle"],
+  liver_hook: ["atk3", "atk2", "atk1", "idle"],
+  clinch:     ["atk2", "atk1", "idle"],
   front_kick: ["atk1", "idle"],
   roundhouse: ["atk2", "atk1", "idle"],
   axe_kick:   ["atk3", "atk2", "atk1", "idle"],
@@ -4224,7 +4229,9 @@ const ENEMY_ATK = {
     damage: 14, knockback: 120, hitstop: 6,
     hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
-  // BARON — methodical boxing patterns. Brass-knuckle hits land hard.
+  // BARON — methodical boxing patterns with varied angles. Brass-knuckle
+  // hits land hard. Mixes head punches, body shots, vertical uppercuts, a
+  // clinch grapple, a coat-parry counter, and a five-hit special combo.
   baron_jab: {
     startup: 6, active: 3, recovery: 14,
     damage: 11, knockback: 110, hitstop: 5,
@@ -4235,11 +4242,48 @@ const ENEMY_ATK = {
     damage: 16, knockback: 150, hitstop: 6,
     hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
   },
+  // Liver hook — low body shot, hitbox sits LOWER than jab/cross.
+  baron_liver_hook: {
+    startup: 10, active: 4, recovery: 20,
+    damage: 18, knockback: 120, hitstop: 6,
+    hit: { fwd: 20, hw: 13, hd: 12, lo: 0, hi: 22 },
+  },
+  // Brass-knuckle uppercut — launcher, vertical hitbox.
+  baron_uppercut: {
+    startup: 12, active: 4, recovery: 20,
+    damage: 20, knockback: 80, hitstop: 7,
+    launch: 240,
+    hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 52 },
+  },
   baron_haymaker: {
     startup: 16, active: 5, recovery: 28,
     damage: 28, knockback: 250, hitstop: 9,
     hit: { fwd: 24, hw: 15, hd: 15, lo: 0, hi: 44 },
     superArmor: true,
+  },
+  // Clinch grab → rising knee. Two hits: small grab tick, big knee impact.
+  baron_clinch: {
+    startup: 8, active: 6, recovery: 22,
+    damage: 22, knockback: 100, hitstop: 8,
+    hit: { fwd: 14, hw: 11, hd: 12, lo: 0, hi: 36 },
+  },
+  // Bone-Breaker five-hit special. Multi-hit window — engine ticks damage
+  // at frames 8, 12, 16, 20, 26 (jab/cross/liver/uppercut/haymaker), final
+  // hit launches.
+  baron_special: {
+    startup: 10, active: 22, recovery: 18,
+    damage: 12, knockback: 280, hitstop: 7,
+    multiHit: true,
+    launch: 200,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 48 },
+    superArmor: true,
+  },
+  // Coat-parry counter — quick parry window then a riposte cross.
+  baron_counter: {
+    startup: 4, active: 5, recovery: 16,
+    damage: 18, knockback: 160, hitstop: 6,
+    hit: { fwd: 22, hw: 13, hd: 13, lo: 0, hi: 40 },
+    parryWindow: 6,
   },
   // RAZOR — fast assassin, dual-knife flurry, telegraphed dash slash.
   razor_slash: {
@@ -4927,14 +4971,18 @@ function runBaronAI(e, dx, dy, dist, dt) {
     e.vx = 0; e.vy = 0;
     e.animState = "idle";
     if (e.aiCooldown <= 0) {
+      // Eight-move pattern mixes head shots, body shots, vertical uppercut,
+      // grapple, and the haymaker. Phase 2 adds clinch + special + counter
+      // to make the back half of the fight feel different from the front.
       const pattern = phase2
-        ? ["jab", "cross", "jab", "haymaker", "cross", "haymaker"]
-        : ["jab", "jab", "cross", "haymaker", "jab", "cross"];
+        ? ["jab", "liver_hook", "uppercut", "cross", "clinch",
+           "jab", "haymaker", "liver_hook", "special",
+           "cross", "uppercut", "haymaker"]
+        : ["jab", "jab", "cross", "liver_hook", "jab", "haymaker",
+           "cross", "uppercut", "jab", "liver_hook", "cross", "haymaker"];
       const atk = pattern[e.bossPatternStep % pattern.length];
       e.bossPatternStep++;
       startEnemyAttack(e, atk);
-      // Cooldowns set when the attack ends in advanceEnemyAttack; for telegraphed
-      // haymakers we reduce the post-cooldown so the player gets a window.
     }
   }
 }
