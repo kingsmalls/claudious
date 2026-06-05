@@ -6,18 +6,21 @@ In the engine: BLACKWELL spawns as an extra wave on stages 7 and 8 in **brutal**
 
 > ## 🛑 REQUIRED ANIMATION ROWS — read first
 >
-> The sheet must contain **8 distinct animation rows** in this exact order, one anim per row, no skipping:
+> The sheet must contain **11 distinct animation rows** in this exact order, one anim per row, no skipping:
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
 > 3. `atk1` — stepping hook (6 frames)
 > 4. `atk2` — stomp kick (5 frames)
 > 5. `atk3` — freight-train charge (12 frames)
-> 6. `atk4` — overhead (13 frames)
-> 7. `hurt` (3 frames)
-> 8. `dead` (7 frames)
+> 6. `atk4` — overhead question-mark smash (13 frames)
+> 7. `lift` — lift-slam grapple (9 frames) — grab + raise overhead + slam down
+> 8. `special` — RAMPAGE triple-charge (16 frames) — three consecutive shoulder charges with the target juggled between them, **must be visually distinct from atk3**
+> 9. `counter` — IRON WALL parry-and-strike (7 frames) — crossed-arm block + power counter punch
+> 10. `hurt` (3 frames)
+> 11. `dead` (7 frames)
 >
-> **Total: 56 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+> **Total: 88 frames in 11 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -96,7 +99,10 @@ ring engraving     #1a1a22
 | `atk1`     | 6 | **Stepping hook.** F1 = arms uncross fully (BOTH arms uncrossed by end of F1 — no slow-cross-reveal). F2 = **lead foot steps forward 16 px, rear arm cocks back behind the shoulder, body coiling**. F3 = **peak — torso rotated 60°, rear fist mid-arc at chest height with gold ring glint, free arm across the body, body leaned 15° into the punch**. F4 = follow-through, fist past the impact line, body fully torqued. F5 = retract, body unwinding. F6 = arms re-cross back to idle. |
 | `atk2`     | 5 | **Stomp kick.** F1 = arms uncross, lead knee starts lifting toward chest. F2 = knee at chest height (chamber). F3 = **peak — lead leg fully extended straight forward at hip height, BOOT SOLE leading flat at the target, supporting leg planted, body leaned BACK 20°, both arms thrown back wide — capital-T silhouette**. F4 = leg retracts to chamber. F5 = boot plants back, arms re-cross. |
 | `atk3`     | 12 | **Freight-train charge.** F1 = arms uncross. F2 = stance widens. F3 = **lead shoulder LOWERS toward horizontal**, body angled 25° forward. F4 = **fully horizontal forward, body at 35°, both arms swept behind**. F5 = launch (4-px motion lines behind shoulders). F6 = mid-charge (first ground-crack at the rear boot). F7 = continuing charge (second ground-crack). F8 = approaching impact. F9 = **impact, body upright, dust burst at contact**. F10 = follow-through. F11 = stance recovery. F12 = arms re-cross. |
-| `atk4`     | 13 | **Question-mark overhead.** F1 = arms uncross fast. F2 = both arms start rising at sides. F3 = arms continuing up, body coiling. F4 = arms approaching vertical. F5 = **peak A — body fully vertical, both arms straight UP, fists clasped at apex, body arched slightly backwards (question-mark silhouette)**. F6 = held peak (1). F7 = held peak (2). F8 = **held peak (3) — FOUR-FRAME apex hold**. F9 = body folds forward at the waist, fists arcing down. F10 = fists past the head. F11 = fists at chest height, body fully bent forward. F12 = **impact — fists driving into the ground, MASSIVE dust burst (10–12 brown specks reaching 50 px out, vertical dust plume past head height), body fully folded forward**. F13 = straighten, dust settling. |
+| `atk4`     | 13 | **Question-mark overhead.** F1 = arms uncross fast. F2 = both arms start rising at sides. F3 = arms continuing up, body coiling. F4 = arms approaching vertical. F5 = **peak A — body fully vertical, both arms straight UP, fists clasped at apex, body arched slightly backwards (question-mark silhouette)**. F6 = held peak (1). F7 = held peak (2). F8 = **held peak (3) — FOUR-FRAME apex hold**. F9 = body folds forward, fists arcing down. F10 = fists past the head. F11 = fists at chest height, body fully bent forward. F12 = **impact — MASSIVE dust burst (10–12 brown specks reaching 50 px out, vertical dust plume past head height)**. F13 = straighten, dust settling. |
+| `lift`     | 9 | **Lift-slam grapple.** F1 = arms uncross, body lowers into wrestler crouch. F2 = both arms reach forward at chest height, hands open wide. F3 = **GRAB — both hands close on the imagined opponent's torso (the silhouette shows him hugging an upright body)**. F4 = body straightens, **opponent LIFTED off the ground — both arms hold the imagined body up at chest height**. F5 = **PEAK LIFT — opponent raised fully overhead, Blackwell's body fully extended skyward, arms holding the body horizontally above his head**. F6 = body coils slightly for the slam. F7 = **SLAM — body drives downward, opponent thrown straight down, Blackwell's arms following through past the waist**. F8 = impact (opponent crashes to floor, dust burst at Blackwell's feet). F9 = recovery, body straightens, arms re-cross. **No other character in the game does a lift-slam grapple.** |
+| `special`  | 16 | **RAMPAGE triple-charge signature.** Three consecutive shoulder charges with the target juggled between them. **Visual identity: GROUND CRACKS in three discrete lines on the floor — one per charge.** F1 = arms uncross. F2 = stance widens deep. F3 = **CHARGE 1 — body lowered like atk3, lead shoulder horizontal**. F4 = launch forward, motion lines + first ground-crack. F5 = impact 1 (target juggled upward). F6 = **PIVOT — body spins to face the airborne target, regains stance instantly (no recovery)**. F7 = **CHARGE 2 — second shoulder-charge in opposite direction (away from initial direction), second ground-crack**. F8 = impact 2 (target juggled higher). F9 = pivot back. F10 = **CHARGE 3 (FINISHER) — body lower, faster, third ground-crack**. F11 = impact 3 — target launched into the air. F12 = body straightens from final charge, fists raised in triumphant pose. F13 = held triumph pose. F14 = arms begin lowering. F15 = recovery. F16 = arms re-cross. **Visual identity: three forward-shoulder silhouettes across the screen at different X positions + three ground-cracks.** |
+| `counter`  | 7 | **IRON WALL parry-and-strike.** F1 = arms cross TIGHTER in front of the chest (the iconic pose becomes a defensive guard). F2 = **incoming attack IMPACTS the crossed forearms — sparks burst at the contact point, Blackwell DOES NOT MOVE**. F3 = held parry pose (1 frame — the "I caught that" beat). F4 = arms EXPLODE outward from the cross, rear arm winds up. F5 = **RETURN PUNCH — single devastating cross with the gold ring catching highlight, body torqued 60°, free arm thrown across body**. F6 = held punch pose. F7 = arms re-cross. **Visual identity: SPARKS at the cross + immediate counter-cross.** |
 | `hurt`     | 3 | **Body absorbs, almost no flinch.** Head turns 5°. Crossed arms stay crossed even on hit. (At full HP, he barely registers.) |
 | `dead`     | 7 | The first significant flinch IS the death animation — he goes down slowly, in stages. F1 = body folds at the waist. F2 = falls to one knee, arms uncross. F3 = onto both knees. F4 = forward to all fours. F5 = elbows give. F6 = forehead touches the ground. F7 = settled, face down. Stays unconscious. |
 

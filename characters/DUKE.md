@@ -2,7 +2,7 @@
 
 > ## 🛑 REQUIRED ANIMATION ROWS — read first
 >
-> The sheet must contain **15 distinct animation rows** in this exact order, one anim per row, no skipping, no merging:
+> The sheet must contain **16 distinct animation rows** in this exact order, one anim per row, no skipping, no merging:
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
@@ -11,16 +11,17 @@
 > 5. `atk1` — BOXING JAB (4 frames)
 > 6. `atk2` — CROSS (5 frames)
 > 7. `atk3` — HOOK + STOMP (6 frames)
-> 8. `heavy` — UPPERCUT LAUNCHER (7 frames)
-> 9. `jump_atk` — DIVING ELBOW DROP (4 frames)
-> 10. `back_atk` — REAR ELBOW (4 frames)
-> 11. `special` — ROLLING THUNDER (12 frames) — **the signature move, must be visually distinct from atk3**
-> 12. `throw` (5 frames)
-> 13. `counter` (6 frames)
-> 14. `hurt` (3 frames)
-> 15. `dodge` (5 frames)
+> 8. `atk4` — DROPPING OVERHAND (6 frames) — **NEW** combo finisher: worn-out boxer drops his weight into one final looping right (visually distinct from atk3 horizontal hook)
+> 9. `heavy` — UPPERCUT LAUNCHER (7 frames)
+> 10. `jump_atk` — DIVING ELBOW DROP (4 frames)
+> 11. `back_atk` — REAR ELBOW (4 frames)
+> 12. `special` — ROLLING THUNDER (12 frames) — **the signature move, must be visually distinct from atk3/atk4**
+> 13. `throw` (5 frames)
+> 14. `counter` (6 frames)
+> 15. `hurt` (3 frames)
+> 16. `dodge` (5 frames)
 >
-> **Total: 80 frames in 10 rows × 8 columns.** If any row is missing, the engine substitutes a fallback that looks wrong (e.g. special replaying the atk3 combo finisher). Every row matters.
+> **Total: 86 frames in 16 rows.** If any row is missing, the engine substitutes a fallback that may not match the intended move.
 
 ## Physical
 
@@ -131,14 +132,23 @@ eye whites          #f0f0f0
 - F4: peak — fist fully extended, body rotated 45°, weight on front foot. **Mouth tightens 1 px**.
 - F5: snap-back, body unwinds. Hair strand settles back across the forehead.
 
-### `atk3` — HOOK + STOMP (6 frames, 11 fps) — combo finisher
-**Visual signature:** the **STOMP**. Duke transfers power through a hard right-foot stomp on the same frame the hook lands, and the **dust puff at his right foot is unique to Duke** — no other character generates ground dust from a footstrike during a punch. **F5 the half-grin appears for one frame** — the cynic's "I shouldn't be enjoying this" tell.
+### `atk3` — HOOK + STOMP (6 frames, 11 fps) — chains into atk4
+**Visual signature:** the **STOMP**. Duke transfers power through a hard right-foot stomp on the same frame the hook lands, and the **dust puff at his right foot is unique to Duke** — no other character generates ground dust from a footstrike during a punch.
 - F1: load — body coils, front foot lifts 2 px off the ground, left (front) fist at hip height.
 - F2: stomp wind-up — right foot drives downward.
 - F3: hook arc — left fist swings inward in a horizontal arc as the right foot lands.
 - F4: **contact + stomp landing — fist at impact, DUST PUFF at right foot (1–2 brown specks)**.
-- F5: **HALF-GRIN appears for one frame**. Body tilted 10° forward, fist past the impact line.
-- F6: recovery — body unwinds, hair strand falls back.
+- F5: follow-through, body tilted 10° forward, fist past the impact line.
+- F6: recovery — body unwinds, hair strand falls back. **Chains into atk4 if light pressed.**
+
+### `atk4` — DROPPING OVERHAND (6 frames, 11 fps) — combo finisher
+**Visual signature:** Duke drops his entire WEIGHT into one looping overhand right. **F3 the silhouette is unmistakable — body angled 25° forward, right arm at full overhand extension above the shoulder coming DOWN in a vertical comet arc (different from atk3's horizontal hook). F4 the half-grin appears — the cynic's "I shouldn't be enjoying this" tell that he reserves for the finisher. Cigarette stays put through the whole motion.**
+- F1: load — body coils backward, weight shifting to the left (good) leg, right fist drawn behind the body at shoulder height. **The bad right knee strains visibly** (the 1-px tilt that says "this is going to cost him").
+- F2: wind-up — right arm arcing OVERHEAD now, body rotating, hair strand whipping.
+- F3: **DRIVE — right arm at full overhand extension ABOVE the shoulder, body angled 25° forward, weight transferring forward. The vertical fist position is the move's identity — atk3 was horizontal hook, atk4 is overhand**. 4-px brown stomp-dust spray at his right foot as the weight lands.
+- F4: **impact — right fist at chest-of-target height (having come DOWN from overhead in a comet arc), body fully forward, HALF-GRIN visible**. Cigarette unmoved.
+- F5: follow-through — body bent forward at the waist, fist past the impact line, hair strand falling across the forehead.
+- F6: recovery — body straightens slowly, fist coming back, hair settles.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 9 fps)
 **Visual signature:** the **strained bad knee** is the tell on F1 — a 1-px tilt that says "this is going to hurt him too." F5 peak shows the half-grin AND the cigarette unmoved AND the fist 16 px above his head. The whole pose is "worn-out man putting his whole body into one shot." Slowest player attack — the load takes time.

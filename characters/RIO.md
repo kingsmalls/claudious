@@ -2,25 +2,26 @@
 
 > ## 🛑 REQUIRED ANIMATION ROWS — read first
 >
-> The sheet must contain **15 distinct animation rows** in this exact order, one anim per row, no skipping, no merging:
+> The sheet must contain **16 distinct animation rows** in this exact order, one anim per row, no skipping, no merging:
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
 > 3. `run` (6 frames)
 > 4. `jump` (3 frames)
-> 5. `atk1` — JAB (4 frames)
-> 6. `atk2` — CROSS (5 frames)
-> 7. `atk3` — ROUNDHOUSE KICK (6 frames)
-> 8. `heavy` — UPPERCUT LAUNCHER (7 frames)
-> 9. `jump_atk` — FLYING KNEE (4 frames)
-> 10. `back_atk` — REAR ELBOW (4 frames)
-> 11. `special` — SUNSET SPIN (12 frames) — **the signature move, must be visually distinct from atk3**
-> 12. `throw` (5 frames)
-> 13. `counter` (6 frames)
-> 14. `hurt` (3 frames)
-> 15. `dodge` — backward roll (5 frames)
+> 5. `atk1` — JAB (4 frames) — head-level straight
+> 6. `atk2` — CROSS (5 frames) — head-level hip-driven straight
+> 7. `atk3` — ROUNDHOUSE KICK (6 frames) — chest-height side kick
+> 8. `atk4` — SPINNING BACK KICK (6 frames) — **NEW** combo finisher: 270° rotation into a heel kick, body airborne, yellow bandana traces the full spin (visually distinct from atk3)
+> 9. `heavy` — UPPERCUT LAUNCHER (7 frames)
+> 10. `jump_atk` — FLYING KNEE (4 frames)
+> 11. `back_atk` — REAR ELBOW (4 frames)
+> 12. `special` — SUNSET SPIN (12 frames) — **the signature move, must be visually distinct from atk3/atk4**
+> 13. `throw` (5 frames)
+> 14. `counter` (6 frames)
+> 15. `hurt` (3 frames)
+> 16. `dodge` — backward roll (5 frames)
 >
-> **Total: 80 frames in 10 rows × 8 columns.** If any row is missing, the engine substitutes a fallback that looks wrong (e.g. special replaying the atk3 combo finisher). Every row matters.
+> **Total: 86 frames in 16 rows.** If any row is missing, the engine substitutes a fallback that may not match the intended move.
 
 ## Physical
 
@@ -118,14 +119,23 @@ eye whites          #ffffff
 - F4: peak — fist fully extended, body rotated ~45°.
 - F5: retract — body unwinds back toward forward stance, bandana settles.
 
-### `atk3` — ROUNDHOUSE KICK (6 frames, 11 fps) — combo finisher
-**Visual signature:** the COMBO FINISHER IS A KICK, not a punch. **F3 silhouette is unmistakable — supporting leg planted, kicking leg horizontal at chest height with the shin parallel to the ground, top-of-foot leading, body torqued 90° showing the full hip drive. Yellow bandana whips through the kick arc as a horizontal yellow streak following the kicking foot.** F5 the reserved smile appears — the combo-finisher tell.
+### `atk3` — ROUNDHOUSE KICK (6 frames, 11 fps) — chains into atk4
+**Visual signature:** chest-height side roundhouse. **F3 silhouette: supporting leg planted, kicking leg horizontal at chest height with the shin parallel to the ground, top-of-foot leading, body torqued 90°. Yellow bandana streaks behind the kicking foot as a horizontal yellow ribbon.**
 - F1: wind-up — body coils, kicking (rear) leg starts lifting, supporting foot pivots.
 - F2: chamber — kicking knee rises to chest height to the side, body torquing back.
-- F3: **peak kick — kicking leg horizontal at chest-of-target height, shin parallel to ground, top-of-foot leading, body rotated 90°. Yellow bandana streaks behind the kicking foot as a 14-px horizontal yellow ribbon (tracing the kick arc)**.
+- F3: **peak kick — leg horizontal at chest height, shin parallel to ground, body rotated 90°. Yellow bandana ribbon trails behind the kicking foot.**
 - F4: follow-through — leg past target, body fully torqued.
-- F5: **BRIEF SMILE — mouth corner lifts 1 px. The only frame in the cast where Rio smiles**. Bandana still trailing.
-- F6: recovery — leg returns to stance, body unwinds, bandana settles.
+- F5: leg retraction, body unwinds.
+- F6: recovery — leg returns to stance, bandana settles. **Chains into atk4 if light pressed.**
+
+### `atk4` — SPINNING BACK KICK (6 frames, 11 fps) — combo finisher
+**Visual signature:** the FINISHER is a full 270° spin into a vertical heel kick — completely different silhouette from atk3's horizontal roundhouse. **F4 peak: body airborne mid-spin, kicking leg VERTICAL with heel up over the head, free arm extended for balance, yellow bandana traces a complete 360° CIRCLE around her body across the four spin frames (F2–F5). F5 the reserved smile appears — the finisher tell.**
+- F1: wind-up — supporting foot pivots 90°, body starts rotating away from the target (giving them her back briefly).
+- F2: spin begins — body 90° through rotation, kicking leg lifting OFF the ground. Bandana arcs out.
+- F3: spin continues — body 180° (back fully to target), kicking leg horizontal at chest height. Bandana at 9 o'clock position.
+- F4: **peak — body 270° rotation completed, kicking leg now VERTICAL with the heel raised above her head (heel-up axe-kick orientation), body airborne. Bandana at 12 o'clock above her, having traced a full circle**.
+- F5: **BRIEF SMILE — mouth corner lifts 1 px. The only Rio frame where she smiles.** Heel drives downward toward the target.
+- F6: landing — supporting foot plants, kicking leg retracts, body squares back up to neutral facing. Bandana resettles at the wrist.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 10 fps)
 **Visual signature:** vertical upward fist drive — **the bandana rockets STRAIGHT UP with the rising fist, creating a vertical yellow streak from wrist to above her head**. The only vertical-bandana move.

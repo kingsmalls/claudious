@@ -423,7 +423,7 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
 // instead of restarting so the sprite doesn't visually rewind during recovery.
 const ANIM_FPS = {
   idle: 6, walk: 10, run: 14, jump: 10,
-  atk1: 16, atk2: 14, atk3: 12, heavy: 10,
+  atk1: 16, atk2: 14, atk3: 12, atk4: 11, heavy: 10,
   jump_atk: 14, back_atk: 14, special: 12,
   throw: 10, counter: 12, hurt: 12, dodge: 16,
   grabbed: 6,
@@ -436,10 +436,16 @@ const ANIM_FPS = {
   uppercut: 10,
   // Baron's expanded boxing repertoire.
   liver_hook: 13, clinch: 10,
+  // Razor's expanded blade-work.
+  flurry: 16, fencing_kick: 12, pirouette: 13,
+  // Volt's expanded cyber arsenal.
+  axe: 11, thunder: 11,
+  // Blackwell's expanded brutal arsenal.
+  stomp: 11, lift: 10,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
-  atk1: false, atk2: false, atk3: false, heavy: false,
+  atk1: false, atk2: false, atk3: false, atk4: false, heavy: false,
   jump_atk: false, back_atk: false, special: false,
   throw: false, counter: false, hurt: false, dodge: false,
   grabbed: true,
@@ -451,6 +457,9 @@ const ANIM_LOOPS = {
   shot: false, charged: false, backstab: false, pound: false,
   uppercut: false,
   liver_hook: false, clinch: false,
+  flurry: false, fencing_kick: false, pirouette: false,
+  axe: false, thunder: false,
+  stomp: false, lift: false,
 };
 
 // Choose the right frame for an entity's anim state and draw it. Falls back
@@ -509,8 +518,15 @@ const ANIM_FALLBACK = {
   atk:        ["atk1", "idle"],
   knee:       ["atk2", "atk1", "idle"],
   leap:       ["atk3", "atk1", "idle"],
+  atk4:       ["atk3", "heavy", "atk2", "atk1", "idle"],
   liver_hook: ["atk3", "atk2", "atk1", "idle"],
   clinch:     ["atk2", "atk1", "idle"],
+  flurry:     ["atk2", "atk1", "idle"],
+  pirouette:  ["atk3", "atk2", "atk1", "idle"],
+  axe:        ["atk3", "atk2", "atk1", "idle"],
+  thunder:    ["atk2", "atk1", "idle"],
+  stomp:      ["atk2", "atk1", "idle"],
+  lift:       ["atk3", "atk2", "atk1", "idle"],
   front_kick: ["atk1", "idle"],
   roundhouse: ["atk2", "atk1", "idle"],
   axe_kick:   ["atk3", "atk2", "atk1", "idle"],
@@ -1338,10 +1354,22 @@ const ATTACK_DATA = {
     pushSelf: 30,
   },
   rio_atk3: {
-    startup: 7, active: 5, recovery: 18,
-    damage: 11, knockback: 160, hitstop: 7,
+    startup: 7, active: 5, recovery: 14,
+    damage: 11, knockback: 90, hitstop: 7,
     hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
     pushSelf: 40,
+    chainLight: "atk4", chainHeavy: "heavy",
+  },
+  // atk4: SPIN KICK FINISHER — extends the light-attack combo by one hit.
+  // Rio's third roundhouse opens into a fourth move: a spinning back kick
+  // that launches. Different visual silhouette from atk3 (which is a chest-
+  // height side roundhouse) — atk4 is a spinning HEEL kick rotating 270°.
+  rio_atk4: {
+    startup: 8, active: 5, recovery: 22,
+    damage: 14, knockback: 220, hitstop: 8,
+    hit: { fwd: 24, hw: 14, hd: 14, lo: 0, hi: 44 },
+    pushSelf: 50,
+    launch: 80,
   },
   rio_heavy: {
     startup: 9, active: 4, recovery: 22,
@@ -1399,10 +1427,21 @@ const ATTACK_DATA = {
     pushSelf: 30,
   },
   duke_atk3: {
-    startup: 9, active: 5, recovery: 22,
-    damage: 14, knockback: 200, hitstop: 8,
+    startup: 9, active: 5, recovery: 16,
+    damage: 14, knockback: 100, hitstop: 8,
     hit: { fwd: 24, hw: 14, hd: 14, lo: 0, hi: 40 },
     pushSelf: 50,
+    chainLight: "atk4", chainHeavy: "heavy",
+  },
+  // atk4: DUKE'S OVERHAND FINISHER. Worn-out boxer drops his weight into
+  // one final looping right. Slower than atk3, far more damage, launches
+  // the target on contact.
+  duke_atk4: {
+    startup: 10, active: 5, recovery: 24,
+    damage: 18, knockback: 240, hitstop: 10,
+    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 44 },
+    pushSelf: 70,
+    launch: 120,
   },
   duke_heavy: {
     startup: 11, active: 4, recovery: 22,
@@ -4302,6 +4341,45 @@ const ENEMY_ATK = {
     damage: 0,
     spawnsProjectile: "knife",
   },
+  // Twin-blade rapid flurry — left blade, right blade, alternating.
+  // Multi-hit window with quick re-tick. Mid-range cutting combo.
+  razor_flurry: {
+    startup: 5, active: 12, recovery: 14,
+    damage: 6, knockback: 70, hitstop: 4,
+    hit: { fwd: 20, hw: 13, hd: 12, lo: 0, hi: 38 },
+    multiHit: 4,
+  },
+  // Fencing kick — heel-thrust forward with lead foot.
+  razor_fencing_kick: {
+    startup: 6, active: 4, recovery: 14,
+    damage: 12, knockback: 100, hitstop: 5,
+    hit: { fwd: 20, hw: 12, hd: 11, lo: 0, hi: 28 },
+  },
+  // Spinning twin-blade — 360 rotation with both blades extended.
+  razor_pirouette: {
+    startup: 10, active: 10, recovery: 18,
+    damage: 8, knockback: 90, hitstop: 5,
+    hit: { fwd: 0, hw: 22, hd: 13, lo: 0, hi: 38 },
+    multiHit: 6,
+  },
+  // BLADE DANCE — signature special. Multi-hit ballet of slashes that
+  // ends on a launcher. Hits 6 times across the active window.
+  razor_special: {
+    startup: 8, active: 24, recovery: 20,
+    damage: 7, knockback: 100, hitstop: 5,
+    hit: { fwd: 22, hw: 14, hd: 14, lo: 0, hi: 44 },
+    multiHit: 4,
+    launch: 220,
+    superArmor: true,
+  },
+  // Parry-and-throw counter — deflects with the off-hand blade, immediately
+  // releases a thrown knife as the riposte.
+  razor_counter: {
+    startup: 3, active: 4, recovery: 14,
+    damage: 0,
+    spawnsProjectile: "knife",
+    parryWindow: 6,
+  },
   // VOLT — heavy cybernetic punches and a shock-wave projectile.
   volt_strike: {
     startup: 8, active: 4, recovery: 16,
@@ -4318,6 +4396,44 @@ const ENEMY_ATK = {
     startup: 10, active: 1, recovery: 24,
     damage: 0,
     spawnsProjectile: "shock",
+  },
+  // Cyber axe kick — cyber leg drops vertically.
+  volt_axe: {
+    startup: 12, active: 4, recovery: 22,
+    damage: 20, knockback: 160, hitstop: 8,
+    hit: { fwd: 12, hw: 11, hd: 13, lo: 0, hi: 56 },
+  },
+  // Lightning clinch — grab + electric current, multi-tick.
+  volt_clinch: {
+    startup: 8, active: 12, recovery: 22,
+    damage: 5, knockback: 80, hitstop: 5,
+    hit: { fwd: 14, hw: 11, hd: 12, lo: 0, hi: 38 },
+    multiHit: 4,
+  },
+  // Thunder clap — both fists slam together at chest height, releases a
+  // short-range concussive shockwave on both sides.
+  volt_thunder: {
+    startup: 12, active: 5, recovery: 20,
+    damage: 16, knockback: 150, hitstop: 7,
+    hit: { fwd: 0, hw: 24, hd: 14, lo: 0, hi: 44 },
+  },
+  // OVERDRIVE SURGE — signature special. Cyber arm overloads, releases an
+  // expanding lightning ring centred on Volt. Multi-hit + super-armor.
+  volt_special: {
+    startup: 14, active: 18, recovery: 24,
+    damage: 8, knockback: 140, hitstop: 6,
+    hit: { fwd: 0, hw: 32, hd: 18, lo: 0, hi: 56 },
+    multiHit: 4,
+    launch: 200,
+    superArmor: true,
+  },
+  // Cyber-reflect counter — cyber arm shields incoming projectiles, then
+  // discharges a return-shock at the source.
+  volt_counter: {
+    startup: 4, active: 6, recovery: 14,
+    damage: 18, knockback: 160, hitstop: 7,
+    hit: { fwd: 22, hw: 13, hd: 13, lo: 0, hi: 44 },
+    parryWindow: 8,
   },
   // BLACKWELL — Kane's enforcer. Heavy hands, charge attack, super-armor.
   blackwell_punch: {
@@ -4336,6 +4452,38 @@ const ENEMY_ATK = {
     startup: 18, active: 5, recovery: 28,
     damage: 32, knockback: 260, hitstop: 11,
     hit: { fwd: 18, hw: 14, hd: 16, lo: 0, hi: 56 },
+    superArmor: true,
+  },
+  // Stomp kick — heavy front kick at body height.
+  blackwell_stomp: {
+    startup: 10, active: 4, recovery: 18,
+    damage: 18, knockback: 180, hitstop: 7,
+    hit: { fwd: 22, hw: 13, hd: 12, lo: 0, hi: 32 },
+  },
+  // Lift-slam — pure grapple. Lifts target overhead, slams to the ground.
+  blackwell_lift: {
+    startup: 10, active: 6, recovery: 24,
+    damage: 26, knockback: 220, hitstop: 10,
+    hit: { fwd: 16, hw: 12, hd: 13, lo: 0, hi: 48 },
+    launch: 260,
+  },
+  // RAMPAGE — signature special. Three consecutive shoulder charges, the
+  // target gets juggled between them. Long range, super-armored.
+  blackwell_special: {
+    startup: 12, active: 20, recovery: 26,
+    damage: 12, knockback: 200, hitstop: 8,
+    hit: { fwd: 22, hw: 18, hd: 16, lo: 0, hi: 48 },
+    multiHit: 7,
+    pushSelf: 260,
+    superArmor: true,
+  },
+  // Iron Wall counter — crossed-arm guard catches the incoming hit, then
+  // throws a single devastating counter-punch.
+  blackwell_counter: {
+    startup: 3, active: 7, recovery: 16,
+    damage: 28, knockback: 240, hitstop: 11,
+    hit: { fwd: 22, hw: 14, hd: 14, lo: 0, hi: 48 },
+    parryWindow: 8,
     superArmor: true,
   },
 };
@@ -4892,9 +5040,13 @@ function runRazorAI(e, dx, dy, dist, dt) {
     e.x += e.vx * dt; e.y += e.vy * dt;
     e.animState = "walk";
   } else if (e.aiCooldown <= 0) {
+    // Phase 1: mix single slashes, flurries, fencing kick, and dash.
+    // Phase 2: introduces the spinning pirouette + Blade Dance special.
     const pattern = phase2
-      ? ["slash", "throw", "dash", "slash", "slash", "throw"]
-      : ["slash", "slash", "dash", "slash"];
+      ? ["slash", "flurry", "fencing_kick", "dash", "pirouette",
+         "throw", "slash", "special", "flurry", "dash"]
+      : ["slash", "slash", "flurry", "fencing_kick", "slash",
+         "dash", "throw", "slash", "flurry"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
@@ -4918,9 +5070,13 @@ function runVoltAI(e, dx, dy, dist, dt) {
       startEnemyAttack(e, "shock");
     }
   } else if (e.aiCooldown <= 0) {
+    // Phase 1: punches + plasma orb + axe kick.
+    // Phase 2: adds thunder clap, lightning clinch, and Overdrive Surge.
     const pattern = phase2
-      ? ["strike", "uppercut", "strike", "shock", "uppercut"]
-      : ["strike", "strike", "uppercut", "shock"];
+      ? ["strike", "axe", "clinch", "thunder", "uppercut",
+         "shock", "special", "strike", "axe", "shock"]
+      : ["strike", "strike", "axe", "uppercut", "shock",
+         "strike", "thunder", "axe"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
@@ -4943,9 +5099,13 @@ function runBlackwellAI(e, dx, dy, dist, dt) {
       startEnemyAttack(e, "charge");
     }
   } else if (e.aiCooldown <= 0) {
+    // Phase 1: hook + stomp + charge + overhead.
+    // Phase 2: adds lift-slam and Rampage triple-charge special.
     const pattern = phase2
-      ? ["punch", "punch", "overhead", "charge", "overhead", "punch"]
-      : ["punch", "punch", "charge", "punch", "overhead"];
+      ? ["punch", "stomp", "lift", "overhead", "charge",
+         "punch", "special", "stomp", "overhead", "lift"]
+      : ["punch", "stomp", "punch", "charge", "stomp",
+         "punch", "overhead", "lift"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
