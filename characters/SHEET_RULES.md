@@ -50,7 +50,30 @@ Other backgrounds (white, dark grey, near-black, dark purple) are not
 removed by the chroma key and will render as a coloured rectangle around
 the character.
 
-## 5. Identity items in every frame
+## 5. Attacks must be visually distinct from idle and from each other
+
+Every attack must have a **clearly different silhouette** from the character's
+idle/walk pose AND from every other attack. The peak frame of each attack
+should be readable from across the screen as that specific attack.
+
+Common failure: the generator draws an attack that's mostly the idle pose
+with one limb slightly extended. The result reads as "still idle" in motion.
+
+To avoid this in each attack:
+
+- The **body posture changes** (lean angle, crouch level, weight transfer)
+- **Multiple limbs move** — not just one fist or one foot extending from
+  an otherwise-idle pose
+- **Visual effects accompany the peak frame** (motion lines, dust, weapon
+  trail, particle burst, lighting tell)
+- The peak-frame silhouette would be **recognisable in pure black-on-white
+  outline form** — if the silhouette doesn't read, the attack doesn't read
+
+If a character's idle includes a distinctive prop or pose (Blackwell's
+crossed arms, Razor's hands-behind-back), that prop/pose must **leave**
+during attacks. Otherwise every attack looks like idle.
+
+## 6. Identity items in every frame
 
 Each character's spec lists "REQUIRED IN EVERY FRAME" items. If a frame
 omits one, the frame is wrong. Hurt and dead frames count.
@@ -66,7 +89,7 @@ Common identity items:
 - Razor's dual knives
 - Kane's round wire-rim glasses + half-smile
 
-## 6. Frame layout
+## 7. Frame layout
 
 - Uniform grid: every cell is the same `cell_w × cell_h` pixels.
 - Bottom-center anchor: the character's feet (or the lowest body point in
@@ -81,14 +104,14 @@ Common identity items:
   chain), expand the cell size for the whole sheet rather than letting that
   one pose bleed into the neighboring cell.
 
-## 7. Animation ordering
+## 8. Animation ordering
 
 Frames are read **row by row, left to right**, in the order declared by the
 character's `.md` (typically `idle → walk → run → jump → atk1 → atk2 →
 atk3 → heavy → jump_atk → back_atk → special → throw → counter → hurt →
 dodge` for player characters; per-character order for enemies).
 
-## 8. Magenta against dark characters
+## 9. Magenta against dark characters
 
 Lamplight, Shade, and Razor all wear near-black clothing. Magenta `#ff00ff`
 gives the strongest possible contrast to that, which is good for the
