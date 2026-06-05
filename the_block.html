@@ -6915,18 +6915,19 @@ function renderSelect() {
   stub.animTime = stateTime;
   // Wide stage strip backdrop for the portrait.
   X.fillStyle = "rgba(0,0,0,0.55)";
-  X.fillRect(40, 86, 180, 200);
+  X.fillRect(40, 70, 180, 216);
   X.fillStyle = "rgba(255,255,255,0.05)";
-  X.fillRect(40, 86, 180, 1);
+  X.fillRect(40, 70, 180, 1);
   X.fillRect(40, 285, 180, 1);
   // Floor stripe under the portrait.
   X.fillStyle = "rgba(0,0,0,0.4)";
   X.beginPath(); X.ellipse(portraitX, portraitY + 4, 40, 4, 0, 0, Math.PI*2); X.fill();
-  // Render the portrait at 2x scale by re-using the existing renderer through
-  // a temporary ctx transform.
+  // Render the portrait. Scale is sized to fit the tallest player sprite
+  // (~95 px at game scale) inside the backdrop's usable vertical space
+  // (~190 px). 1.7x clears that with margin.
   X.save();
   X.translate(portraitX, portraitY);
-  X.scale(2, 2);
+  X.scale(1.7, 1.7);
   X.translate(-portraitX, -portraitY);
   drawCharacter(stub);
   X.restore();
