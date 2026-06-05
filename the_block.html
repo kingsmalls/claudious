@@ -6905,34 +6905,37 @@ function renderSelect() {
   X.textBaseline = "middle";
   X.fillText("CHOOSE YOUR FIGHTER", W / 2, 36);
 
-  // Big procedural portrait on the left. Build a scratch entity at a fixed
-  // anchor and let the character renderer draw it.
+  // Static portrait box on the left.
   const portraitX = 130;
   const portraitY = 250;
-  const stub = makePlayer(selectedChar, portraitX, portraitY);
-  stub.facing = 1;
-  stub.animState = "idle";
-  // Freeze on frame 0 so the character is a static portrait — no breathing
-  // cycle, no sway, no drift in or out of the backdrop.
-  stub.animTime = 0;
-  // Wide stage strip backdrop for the portrait.
+  const boxX = 40, boxY = 70, boxW = 180, boxH = 216;
   X.fillStyle = "rgba(0,0,0,0.55)";
-  X.fillRect(40, 70, 180, 216);
+  X.fillRect(boxX, boxY, boxW, boxH);
   X.fillStyle = "rgba(255,255,255,0.05)";
-  X.fillRect(40, 70, 180, 1);
-  X.fillRect(40, 285, 180, 1);
+  X.fillRect(boxX, boxY, boxW, 1);
+  X.fillRect(boxX, boxY + boxH - 1, boxW, 1);
   // Floor stripe under the portrait.
   X.fillStyle = "rgba(0,0,0,0.4)";
   X.beginPath(); X.ellipse(portraitX, portraitY + 4, 40, 4, 0, 0, Math.PI*2); X.fill();
-  // Render the portrait. Scale is sized to fit the tallest player sprite
-  // (~95 px at game scale) inside the backdrop's usable vertical space
-  // (~190 px). 1.7x clears that with margin.
-  X.save();
-  X.translate(portraitX, portraitY);
-  X.scale(1.7, 1.7);
-  X.translate(-portraitX, -portraitY);
-  drawCharacter(stub);
-  X.restore();
+  // Draw the chosen fighter as a single fixed pose. Crop idle frame 0 from
+  // the sprite atlas, scale it to fit the box with margin, bottom-anchor it
+  // on the floor stripe. Skips the in-game renderer entirely — no anim
+  // cycling, no scale transforms, no afterimage trails.
+  const sprite = SPRITES[selectedChar];
+  if (sprite && sprite.atlas && sprite.atlas.anims && sprite.atlas.anims.idle) {
+    const frameName = sprite.atlas.anims.idle[0];
+    const f = sprite.atlas.frames[frameName];
+    if (f) {
+      // Target height: 80% of the box height. Leaves margin on top + bottom.
+      const targetH = Math.floor(boxH * 0.80);
+      const sc = targetH / f.h;
+      const dw = Math.round(f.w * sc);
+      const dh = Math.round(f.h * sc);
+      const dx = Math.round(portraitX - dw / 2);
+      const dy = Math.round(portraitY - dh);
+      X.drawImage(sprite.img, f.x, f.y, f.w, f.h, dx, dy, dw, dh);
+    }
+  }
 
   // Right panel — bio and stats.
   const panelX = 250;
