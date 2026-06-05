@@ -393,17 +393,12 @@ function loadAtlasFor(key) {
 }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
-  // PLAYER ATLASES TEMPORARILY DISABLED.
-  // The new high-res master sheets produced atlas frame regions that don't
-  // crop cleanly to a single character — adjacent poses bleed into the
-  // bbox, which renders as a magenta block surrounding the player.
-  // Until the auto-atlas detector is reworked for the new tightly-packed
-  // sheets, force the player to use the procedural drawX renderer (drawRio,
-  // drawAtlas, drawDuke), which draws the character from primitives and is
-  // unaffected by atlas data.
-  // loadAtlasFor("rio");
-  // loadAtlasFor("duke");
-  // loadAtlasFor("atlas");
+  // Player atlases use column-density valley detection with a sanity check
+  // against intra-character splits, so tightly-packed player sheets produce
+  // single-character bboxes (no magenta bleed from adjacent poses).
+  loadAtlasFor("rio");
+  loadAtlasFor("duke");
+  loadAtlasFor("atlas");
   // Enemies + bosses load via the same loader. Engine renders sprite when
   // SPRITES[type] is populated, falls back to procedural drawX otherwise.
   // Sheets without an atlas JSON silently skip and stay on the procedural
