@@ -466,6 +466,9 @@ const ANIM_LOOPS = {
 // replaying the atk3 combo finisher.
 const ANIM_FALLBACK = {
   // Player anims safe to substitute when missing.
+  // special: heavy first (uppercut launcher — visually distinct from the
+  // atk3 combo finisher), then atk3 only as a last resort.
+  special:  ["heavy", "atk3", "atk2", "atk1", "idle"],
   back_atk: ["atk1", "atk2", "idle"],
   throw:    ["atk1", "atk2", "idle"],
   counter:  ["atk2", "atk1", "idle"],
@@ -529,11 +532,10 @@ const ANIM_FALLBACK = {
   //   special, jump_atk, flying_kick, flying_stab
 };
 
-// These anims have a unique procedural animation that should NEVER be
-// substituted by the atlas. Listing them here makes resolveAnim return
-// null even if the atlas has an "idle" frame, so the engine routes to
-// the procedural drawer instead of rendering a static idle pose.
-const FORCE_PROCEDURAL_ANIMS = new Set(["special"]);
+// Anims that should never route to the atlas at all (always procedural).
+// Currently empty — we prefer sprite rendering with a smart fallback chain
+// over the procedural primitives-based drawers.
+const FORCE_PROCEDURAL_ANIMS = new Set();
 
 function resolveAnim(animsObj, animName) {
   if (FORCE_PROCEDURAL_ANIMS.has(animName)) return null;
