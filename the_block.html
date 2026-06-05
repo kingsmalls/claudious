@@ -393,9 +393,17 @@ function loadAtlasFor(key) {
 }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
-  loadAtlasFor("rio");
-  loadAtlasFor("duke");
-  loadAtlasFor("atlas");
+  // PLAYER ATLASES TEMPORARILY DISABLED.
+  // The new high-res master sheets produced atlas frame regions that don't
+  // crop cleanly to a single character — adjacent poses bleed into the
+  // bbox, which renders as a magenta block surrounding the player.
+  // Until the auto-atlas detector is reworked for the new tightly-packed
+  // sheets, force the player to use the procedural drawX renderer (drawRio,
+  // drawAtlas, drawDuke), which draws the character from primitives and is
+  // unaffected by atlas data.
+  // loadAtlasFor("rio");
+  // loadAtlasFor("duke");
+  // loadAtlasFor("atlas");
   // Enemies + bosses load via the same loader. Engine renders sprite when
   // SPRITES[type] is populated, falls back to procedural drawX otherwise.
   // Sheets without an atlas JSON silently skip and stay on the procedural
@@ -6922,16 +6930,14 @@ function renderSelect() {
   // Floor stripe under the portrait.
   X.fillStyle = "rgba(0,0,0,0.4)";
   X.beginPath(); X.ellipse(portraitX, portraitY + 4, 40, 4, 0, 0, Math.PI*2); X.fill();
-  // Draw the chosen fighter as a single fixed pose. Crop idle frame 0 from
-  // the sprite atlas, scale it to fit the box with margin, bottom-anchor it
-  // on the floor stripe. Skips the in-game renderer entirely — no anim
-  // cycling, no scale transforms, no afterimage trails.
+  // Draw the chosen fighter as a static pose. Try the sprite atlas first
+  // (clean fixed image), fall back to the in-game procedural renderer at
+  // 1.7x via a context transform when the atlas isn't loaded.
   const sprite = SPRITES[selectedChar];
   if (sprite && sprite.atlas && sprite.atlas.anims && sprite.atlas.anims.idle) {
     const frameName = sprite.atlas.anims.idle[0];
     const f = sprite.atlas.frames[frameName];
     if (f) {
-      // Target height: 80% of the box height. Leaves margin on top + bottom.
       const targetH = Math.floor(boxH * 0.80);
       const sc = targetH / f.h;
       const dw = Math.round(f.w * sc);
@@ -6940,6 +6946,19 @@ function renderSelect() {
       const dy = Math.round(portraitY - dh);
       X.drawImage(sprite.img, f.x, f.y, f.w, f.h, dx, dy, dw, dh);
     }
+  } else {
+    // Procedural fallback. Build a stub and route through drawCharacter,
+    // wrapped in a 1.7x transform so the procedural drawing fills the box.
+    const stub = makePlayer(selectedChar, portraitX, portraitY);
+    stub.facing = 1;
+    stub.animState = "idle";
+    stub.animTime = 0;
+    X.save();
+    X.translate(portraitX, portraitY);
+    X.scale(1.7, 1.7);
+    X.translate(-portraitX, -portraitY);
+    drawCharacter(stub);
+    X.restore();
   }
 
   // Right panel — bio and stats.
