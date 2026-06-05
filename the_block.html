@@ -360,6 +360,10 @@ function vibrate(pattern) {
 //   }
 const SPRITES = {};
 
+// Cache-bust suffix forces the browser to re-fetch atlas PNG + JSON whenever
+// this HTML reloads, so a regenerated sheet isn't masked by a stale cached
+// copy from a previous deploy. Bumping CACHE_BUST is also valid if needed.
+const CACHE_BUST = "v=" + Date.now();
 function loadAtlasFor(key) {
   if (typeof fetch === "undefined" || typeof Image === "undefined") return;
   let atlas = null, img = null;
@@ -368,10 +372,11 @@ function loadAtlasFor(key) {
       SPRITES[key] = { atlas, img };
     }
   };
+  const bust = (p) => p + (p.indexOf("?") < 0 ? "?" : "&") + CACHE_BUST;
   // Try characters/ subdir first (current art layout), then fall back to root.
   const fetchJson = (paths, i, cb) => {
     if (i >= paths.length) { cb(null); return; }
-    fetch(paths[i]).then(r => r.ok ? r.json() : null)
+    fetch(bust(paths[i])).then(r => r.ok ? r.json() : null)
       .then(j => j ? cb(j) : fetchJson(paths, i + 1, cb))
       .catch(() => fetchJson(paths, i + 1, cb));
   };
@@ -382,7 +387,7 @@ function loadAtlasFor(key) {
     const im = new Image();
     im.onload  = () => { img = im; tryAttach(); };
     im.onerror = () => tryImg(paths, i + 1);
-    im.src = paths[i];
+    im.src = bust(paths[i]);
   };
   tryImg(["characters/" + key + ".png", key + ".png"], 0);
 }
