@@ -62,7 +62,9 @@ RED BANDANA shadow #6a1828
 - **Cocky.** Approaches with a swagger, hands low. Doesn't expect a fight.
 - **Hit-and-run.** After every swipe, backpedals 30 px. Doesn't sit in the protagonist's range.
 - **Panicked at low HP** — flees toward the screen edge, no strategy.
-- **Signature move — `wild swipe`:** A street-fighter's overhand haymaker thrown with no technique at all. **Visual signature: the body OVER-COMMITS** — front leg crosses past the body line, rear shoulder flies up, rear arm flails behind for balance. He looks like he's falling forward more than punching. **The red bicep bandana streaks horizontally** through the swing as the arm trails behind the fist.
+- **Two signature moves — wild swipe + sloppy kick. Both moves OVER-COMMIT — the character literally falls forward into his attacks because he has no training.**
+  - **`wild_swipe` — Overhand haymaker.** A street-fighter's overhand haymaker thrown with no technique at all. **Visual signature: the body OVER-COMMITS** — front leg crosses past the body line, rear shoulder flies up, rear arm flails behind for balance. He looks like he's falling forward more than punching. **The red bicep bandana streaks horizontally** through the swing as the arm trails behind the fist.
+  - **`sloppy_kick` — Untrained front kick.** A kick thrown by someone who has never been taught how. **Visual signature: F3 the kicking leg extends forward but the body LEANS BACK 30° (no balance) with both arms wildly flailing outward, the kicking foot is FLAT (not pulled back like a trained kick), and the supporting leg is visibly buckling at the knee. He'll fall on his back if he misses.** Reads as "tough-kid energy without skill." 10 dmg.
 
 ## Animations (8 frames each unless noted)
 
@@ -72,6 +74,7 @@ RED BANDANA shadow #6a1828
 | `walk`   | 6 | Loose swagger. Shoulders roll with each step. **Hands stay low**, not raised — he's not expecting to fight. |
 | `run`    | 4 | Limbs flail. Bandana visible on the back-swing of the rear arm. Body upright (not athletic crouch). |
 | `atk1`   | 4 | **Wild swipe.** F1 = shoulder DIP back and DOWN (the unmistakable wind-up). F2 = body lunges forward, front leg crossing past center. F3 = **full extension — fist 18 px past the body, rear arm flailing behind, bandana streaking horizontally through the swing**. F4 = stumble-back recovery, body over-balanced. |
+| `atk2`   | 4 | **Sloppy kick.** F1 = kicking leg starts lifting, body already leaning back 15°. F2 = leg rising, body leaning back further, arms starting to flail. F3 = **peak — kicking leg extended forward at hip height with foot FLAT (not flexed), body leaned back 30°, both arms flailing wide for balance, supporting knee visibly buckling**. F4 = stumble — kicking leg drops, body over-balanced, arms still wide. |
 | `hurt`   | 3 | Body folds at the waist. Face shows **fear** (eyebrows up, mouth open). Hands fly up. |
 | `dead`   | 3 | Falls flat onto the back, arms splayed. |
 | `flee`   | 4 | Same as run but body lower, head tucked, **looking back over the shoulder** on F2 and F4 — the panic-glance. |

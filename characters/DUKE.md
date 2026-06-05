@@ -128,13 +128,12 @@ eye whites          #f0f0f0
 - F6: hold — pose held one extra frame for the launcher feel.
 - F7: recovery — body lowers back to stance, knees absorbing.
 
-### `jump_atk` — DROP ELBOW (4 frames, 10 fps)
-- Aerial elbow drop — uses gravity, not a kick.
-- F1: airborne, right elbow cocked overhead, body still rising.
+### `jump_atk` — DIVING ELBOW DROP (4 frames, 10 fps)
+**Visual signature:** Duke isn't graceful in the air — he DIVES. Body angled forward at 45°, **right elbow cocked overhead with the FOREARM VERTICAL like a spear**, the whole body falling onto the elbow's point. **F3 the impact pose shows the entire body folded behind the descending elbow — head, shoulder, hip, and lead foot all in a diagonal line from the elbow tip to his back foot**. Not a graceful flying kick; a worn-out brawler turning gravity into a weapon. Hair strand whips upward. **Cigarette stays put** even at the apex.
+- F1: airborne, right elbow cocked overhead with forearm vertical, body still rising.
 - F2: descent begins — body angles 30° forward, elbow leading the drop.
-- F3: peak impact — elbow at chest-of-imagined-target height, body 45° forward. Hair strand whips upward.
+- F3: **peak impact — elbow at chest-of-target height, body 45° forward in a diagonal line from elbow-tip to rear foot**. Hair strand whipped up.
 - F4: recovery — body resets, elbow lowering toward landing.
-- **Cigarette stays put** even at the apex.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
 - Heavier rear-elbow strike than Rio's — Duke pivots more on the bad knee, so the move loads slow but lands hard.

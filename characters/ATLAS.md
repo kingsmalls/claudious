@@ -138,12 +138,12 @@ eye whites          #f0f0f0
 - F7: recovery — body lowers back to stance, fist coming down slowly.
 - **Tribal tattoos** prominent on the rising arm at F4–F5.
 
-### `jump_atk` — BODY SLAM (4 frames, 9 fps)
-- He doesn't kick — he uses his weight. Drops elbow-first, all 280 pounds of him.
-- F1: airborne, body angled forward 20°, right elbow lifted overhead.
-- F2: descent begins — body angles down further (45°), elbow leading the drop, weight visibly forward.
-- F3: peak impact — elbow at impact zone, body nearly horizontal, **chain has flown forward off his chest** (visible in front of the flannel, 3 px out from the body).
-- F4: recovery — body resets toward landing, chain settling back against the chest.
+### `jump_atk` — FLYING BODY SPLASH (4 frames, 9 fps)
+**Visual signature:** Atlas doesn't kick — he becomes a falling building. **F3 silhouette: body HORIZONTAL parallel to the ground at peak, arms spread out wide like a wrestler's diving splash, chest leading the descent. The wedding-band chain has flown 4 px forward off his chest from the dive momentum. Tribal forearm tattoos prominent on both spread arms.** Lands flat — both forearms and chest hit simultaneously. The most graceless aerial in the cast, intentionally.
+- F1: airborne, body still rising, arms beginning to spread.
+- F2: peak of jump — body starts rotating from vertical toward horizontal, arms spreading wider.
+- F3: **peak descent — body fully horizontal parallel to ground, both arms spread wide like a diving splash, chest leading, chain flown 4 px forward off the chest, tribal tattoos visible on both forearms**.
+- F4: landing — both arms and chest impact, **dust burst beneath the body (5–6 brown specks in a wide horizontal smear)**, chain settling back.
 - **Wedding band visible** at all four frames.
 
 ### `back_atk` — REAR ELBOW (4 frames, 11 fps)
