@@ -4,6 +4,34 @@ Universal rules for every character sheet in this project. Each character's
 own `.md` file specifies that character's appearance, identity items, and
 anim list; the rules below apply to every sheet.
 
+---
+
+## 🛑 RULE ZERO — NO TEXT IN THE OUTPUT IMAGE, EVER
+
+The output PNG must contain **ZERO text characters**. This is the rule
+most often broken by image generators. Treat it as absolute.
+
+The following must NOT appear anywhere in the sheet:
+
+- Anim-name labels: `IDLE`, `WALK`, `RUN`, `ATK1`, `ATK2`, `JAB`, `CROSS`,
+  `HAYMAKER`, `SWING`, `SPIN`, `STRIKE`, `BACKSTAB`, `HURT`, `DEAD`,
+  `KICK`, `SLAM`, `CHARGE`, `OVERHEAD`, `PUNCH`, `LUNGE`, `THROW`,
+  `SHOT`, `VANISH`, `BOW`, `COUNTER`, `DODGE`, `JUMP`, etc.
+- Frame counters: `F1`, `F2`, `F3`, `F4`, `F5`, `F6`, `F7`, `F8`, `F9`,
+  `F10`, `F11`, `F12`, `H1`, `1`, `2`, `3`, `5°`, etc.
+- Status words: `Hurt`, `Dead`, `KO`, `Idle`, etc.
+- Row / column headers, captions, titles, legends.
+- ANY letter or number anywhere in any cell, even small ones.
+
+If the generator wants to label cells for reference, it should produce a
+SEPARATE annotated proof image and discard it. The production sheet ships
+text-free.
+
+A sheet with even one piece of stray text is unusable — the engine will
+render the letters as part of the sprite.
+
+---
+
 ## 1. One character per sheet — identical across every cell
 
 Pick one specific person, lock every identity attribute, and draw THAT
@@ -22,15 +50,11 @@ Variety across spawns is handled by the engine (per-spawn tint, variant
 lookup) — never by varying the sheet itself. If you want alternate looks,
 ship them as separate sheets (`runner_a.png`, `runner_b.png`).
 
-## 2. No text inside cells
+## 2. Already-covered: no text — see Rule Zero above
 
-The cell must contain **only the character** (plus weapon, projectile,
-effect particles, etc. that are visually part of the pose). Do not include:
-
-- Anim-name labels (`idle`, `walk`, `atk1`, `JAB`, `BACKSTAB`, …)
-- Row headers
-- Frame counters (`F1`, `F2`, `F9`, …)
-- Status words (`Hurt`, `Dead`, …)
+(Kept here so section numbers in old references don't shift.) The cell
+must contain **only the character** (plus weapon, projectile, effect
+particles, etc. that are visually part of the pose).
 
 If you need to verify alignment, do it on a separate proof image and discard.
 
