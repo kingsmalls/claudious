@@ -6,13 +6,11 @@ She wears a tailored suit because she does most of her work in office buildings.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> The previous sheet had two problems:
-> 1. **A white background** instead of magenta. The chroma key didn't catch it and the engine drew big white rectangles around her.
-> 2. **Thin white vertical separator lines drawn between cells.** These lines cut through her body in motion.
+> **Sheet must be on solid magenta `#ff00ff`** (or fully transparent PNG). White backgrounds will not chroma-key out and will render as rectangles around the character.
 >
-> **Sheet must be on solid magenta `#ff00ff`** (or fully transparent PNG). **No drawn cell separators of any kind** — cells are defined by even pixel spacing, never by visible lines.
+> **No drawn cell separators of any kind** — no white lines, no borders, no grid. Cells are defined by even pixel spacing only.
 >
-> Razor stays **identical** across every cell: same bob cut, same suit colors, same dual knives, same hairstyle. Only the pose changes.
+> Razor stays **identical** across every cell: same bob cut, same suit colors, same dual knives. Only the pose changes.
 
 ## Physical
 

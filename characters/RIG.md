@@ -4,9 +4,7 @@ Kane's construction-crew muscle. These were already on Kane's payroll — labore
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> The previous sheet had two problems:
-> 1. **Anim-name text labels baked into cells** (`idle`, `walk`, `atk1`, `atk2`, `pound`, `hurt`). These render as part of the sprite.
-> 2. **The yellow hardhat disappeared in some attack frames.** Rig's identity is the hardhat — it must be on his head in EVERY frame, in EVERY animation, including hurt and dead.
+> **The yellow hardhat is on his head in EVERY frame, in EVERY animation**, including hurt and dead. The hardhat is Rig's identity item — a frame without it is a wrong frame.
 >
 > Cells must contain only the character — no labels, no row headers, no frame numbers, no cell borders.
 >

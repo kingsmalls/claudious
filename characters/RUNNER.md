@@ -4,7 +4,7 @@ Kane's bottom-tier muscle. Recruited from Kane's "neighborhood liaison" jobs pro
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> **One sheet = one specific person.** Every cell in the sheet must show the **same individual** with the same skin tone, same hair, same head silhouette, same clothing colors. The previous Runner sheet failed because hair colour and headwear changed between cells (blonde in some frames, dark in others, baseball cap in some, hood in others) — this reads as "the character is glitching" in motion.
+> **One sheet = one specific person.** Every cell in the sheet must show the **same individual** with the same skin tone, same hair, same head silhouette, same clothing colors.
 >
 > Variety across spawns is handled at runtime by the engine (per-spawn tint + variant lookup). **Do not vary the character within the sheet itself.**
 >
@@ -78,7 +78,7 @@ RED BANDANA shadow #6a1828
 
 ## DO NOT include
 
-- **Different versions of the runner across frames** — hair, headwear, skin tone, clothing colors must be identical in every cell. This is the #1 reason previous sheets read as "broken" in motion.
+- **Different versions of the runner across frames** — hair, headwear, skin tone, clothing colors must be identical in every cell.
 - **Baked-in text** — no animation labels (`idle`, `walk`, `atk1`), no frame numbers (`F1`, `F2`), no row headers. The cell must contain ONLY the character.
 - **Cell separator lines** — no grid lines, no borders. Cells are defined by even spacing, not drawn lines.
 - Tactical gear / military look — these are *kids*, not soldiers.

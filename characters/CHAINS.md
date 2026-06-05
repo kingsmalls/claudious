@@ -4,8 +4,6 @@ Kane's crowd-control specialists. Recruited from biker gangs and salvage-yard wo
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> The previous sheet had faint **anim-name text labels** (`idle`, `walk`, `swing`) in the top-left of the first cell of each row. These render as floating text above the character.
->
 > Cells must contain only the character — no labels, no row headers, no frame numbers, no cell borders.
 >
 > One specific Chains across every cell: same beard, same vest, same arm-wrap of chain. Only the pose changes.

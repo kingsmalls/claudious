@@ -6,8 +6,6 @@ He fights like a boxer because he was one in college. The brass knuckles are for
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> The previous sheet had **anim-name text** baked into the first frame of each attack row (`JAB`, `CROSS`, `HAYMAKER`). These render as labels stuck above Baron's head in motion.
->
 > Cells must contain only the character — no anim labels, no row headers, no frame numbers, no cell borders.
 >
 > Baron is **the same man** across every cell: same face, same hair, same suit, same brass knuckles. Only the pose changes.

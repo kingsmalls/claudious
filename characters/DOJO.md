@@ -6,9 +6,7 @@ Of all Kane's crews, Dojo is the only one who *bows* before the fight.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> In the previous sheet, the `bow` row was drawn as a **completely different character** from the other rows — different hair (ponytail vs short slicked-back), different proportions, different colour cast. This reads as "Dojo glitches into someone else when bowing."
->
-> **One specific Dojo across the entire sheet.** Pick once:
+> **One specific Dojo across the entire sheet** — bow, walk, kick, hurt are all the same person. Pick once:
 > - **Hair:** short black slicked back, OR short black topknot — choose ONE for the whole sheet.
 > - **Build:** lean and athletic, identical proportions in every frame.
 > - **Skin tone:** pick one and lock it.

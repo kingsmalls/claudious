@@ -6,8 +6,6 @@ In the engine: BLACKWELL spawns as an extra wave on stages 7 and 8 in **brutal**
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
-> The previous sheet had **frame counter text baked into the image** (`F1`, `F2`, `F9`, `F10`, `Hurt`, `8`, `9`, `10`). This is the #1 reason the rendered character looks "broken" — the engine slices the cell and renders the text along with the body.
->
 > **The cells must contain ONLY the character.** No text. No labels. No frame numbers. No row headers. No anim names.
 >
 > If you need to verify cell alignment, do it on a separate proof sheet — the production sheet must be clean.
