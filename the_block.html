@@ -453,15 +453,98 @@ const ANIM_LOOPS = {
 // Choose the right frame for an entity's anim state and draw it. Falls back
 // to the procedural renderer when the atlas is missing the requested anim.
 // Works for both player (p.char) AND enemies (p.type) — same atlas format.
+// When an animation isn't present in a character's atlas, fall back to a
+// visually-similar anim that IS present. Keeps the sprite look during
+// special / throw / hurt / dodge frames instead of jumping to procedural.
+// Resolved at draw time via resolveAnim() below.
+const ANIM_FALLBACK = {
+  // Player-spec anims not always sheet-supported.
+  jump_atk: ["jump", "atk1", "idle"],
+  back_atk: ["atk1", "atk2", "idle"],
+  special:  ["atk3", "heavy", "atk2", "atk1", "idle"],
+  throw:    ["atk1", "atk2", "idle"],
+  counter:  ["atk2", "atk1", "idle"],
+  hurt:     ["idle"],
+  dodge:    ["walk", "run", "idle"],
+  dead:     ["hurt", "idle"],
+  down:     ["hurt", "idle"],
+  air:      ["jump", "idle"],
+  grabbed:  ["hurt", "idle"],
+  // Per-enemy attack names mapped to generic slots so enemies with only
+  // {idle, walk, atk1...} atlases still sprite-render their custom moves.
+  jab:        ["atk1", "idle"],
+  cross:      ["atk2", "atk1", "idle"],
+  haymaker:   ["atk3", "atk2", "atk1", "idle"],
+  swing:      ["atk1", "idle"],
+  spin:       ["atk2", "atk1", "idle"],
+  slam:       ["atk1", "idle"],
+  lunge:      ["atk1", "idle"],
+  shock:      ["atk2", "atk1", "idle"],
+  strike:     ["atk1", "idle"],
+  slash:      ["atk1", "idle"],
+  charge:     ["atk2", "atk1", "idle"],
+  charged:    ["atk2", "atk1", "idle"],
+  overhead:   ["atk3", "atk2", "atk1", "idle"],
+  punch:      ["atk1", "idle"],
+  dash:       ["atk2", "run", "walk", "idle"],
+  throwknife: ["atk3", "atk1", "idle"],
+  shot:       ["atk1", "idle"],
+  backstab:   ["atk1", "idle"],
+  pound:      ["atk2", "atk1", "idle"],
+  uppercut:   ["atk3", "atk1", "idle"],
+  taunt:      ["idle"],
+  swipe:      ["atk1", "idle"],
+  grab:       ["atk1", "idle"],
+  atk:        ["atk1", "idle"],
+  knee:       ["atk2", "atk1", "idle"],
+  leap:       ["jump", "atk3", "atk1", "idle"],
+  front_kick: ["atk1", "idle"],
+  roundhouse: ["atk2", "atk1", "idle"],
+  axe_kick:   ["atk3", "atk2", "atk1", "idle"],
+  flying_kick:["jump_atk", "jump", "atk1", "idle"],
+  stomp_kick: ["atk1", "idle"],
+  fencing_kick:["atk1", "idle"],
+  cyber_axe:  ["atk3", "atk2", "atk1", "idle"],
+  sloppy_kick:["atk1", "idle"],
+  boot_stomp: ["atk1", "idle"],
+  bear_hug:   ["atk2", "atk1", "idle"],
+  belly_flop: ["jump_atk", "atk1", "idle"],
+  low_sweep:  ["atk1", "idle"],
+  flying_stab:["jump_atk", "jump", "atk1", "idle"],
+  sweep_kick: ["atk1", "idle"],
+  spin_kick:  ["atk2", "atk1", "idle"],
+  cloak_cyclone:["atk2", "atk1", "idle"],
+  vanish:     ["idle"],
+  reappear:   ["idle"],
+  draw:       ["idle"],
+  bow:        ["idle"],
+  guard:      ["idle"],
+  phase2:     ["idle"],
+  flee:       ["walk", "run", "idle"],
+  wild_swipe: ["atk1", "idle"],
+};
+
+function resolveAnim(animsObj, animName) {
+  if (animsObj[animName]) return animName;
+  const chain = ANIM_FALLBACK[animName];
+  if (chain) {
+    for (const alt of chain) {
+      if (animsObj[alt]) return alt;
+    }
+  }
+  return animsObj["idle"] ? "idle" : null;
+}
+
 function drawSpriteCharacter(p) {
   const key = p.char || p.type;
   const sprite = SPRITES[key];
   if (!sprite || !sprite.atlas || !sprite.atlas.anims) return false;
-  const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
-  // STRICT match: only sprite-render if this exact anim is in the atlas.
-  // For sparse enemy atlases (e.g., idle+walk only) the dispatcher then
-  // falls through to the per-type procedural drawer for attack frames.
-  // Players have all 15 anims so this doesn't affect them.
+  const wantedAnim = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
+  // Resolve through the fallback chain so missing anims still render as
+  // sprites (e.g. enemy "hurt" falls back to "idle" rather than dropping
+  // to the procedural drawer mid-fight).
+  const animName = resolveAnim(sprite.atlas.anims, wantedAnim);
+  if (!animName) return false;
   const frames = sprite.atlas.anims[animName];
   if (!frames || frames.length === 0) return false;
   // Per-anim fps with sensible default. Atlas can override globally via
