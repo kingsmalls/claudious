@@ -4,6 +4,14 @@ The unsettling ones. Kane hires them from somewhere none of his other crews know
 
 In the engine, Shade vanishes briefly and reappears behind the protagonist. Story-wise: it's just very fast movement through alleys and shadows. *Mechanically* it teleports.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had **anim-name labels baked into every cell** (`IDLE`, `WALK`, `BACKSTAB`, `VANISH`, `DEAD`, `K2 Backstab`, etc.). The engine renders the labels as part of the sprite, which reads as "the character is glitching."
+>
+> **Cells must contain only the character.** No anim labels, no row headers, no descriptive text overlays.
+>
+> Shade is **the same hooded figure** in every cell — same cloak, same hood draping, same eye-glow color, same purple wisp at the hem. Only the pose changes.
+
 ## Physical
 
 - **Age range:** Indeterminate. Body looks 25–35 but the eyes look older.
@@ -67,6 +75,9 @@ smoke trail edge   #1a0e22
 
 ## DO NOT include
 
+- **Any text inside cells** — no `IDLE` / `WALK` / `BACKSTAB` / `VANISH` / row headers / anim names / frame numbers. Text in cells is the #1 sheet-quality bug.
+- **Cell separator lines or borders.**
+- **Different shade designs across frames** — same cloak silhouette, same eye-glow placement, same wisp colour in every cell.
 - Visible scifi / glowing energy weapons — Shade is *grounded*. The only glow is the eyes.
 - Capes / dramatic flowing robes — the cloak is fitted utility, not a costume.
 - Bright colors anywhere — black, grey, dark purple ONLY.

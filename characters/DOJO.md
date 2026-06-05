@@ -4,6 +4,18 @@ The disciplined ones. Kane found them at a martial-arts studio in financial trou
 
 Of all Kane's crews, Dojo is the only one who *bows* before the fight.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> In the previous sheet, the `bow` row was drawn as a **completely different character** from the other rows — different hair (ponytail vs short slicked-back), different proportions, different colour cast. This reads as "Dojo glitches into someone else when bowing."
+>
+> **One specific Dojo across the entire sheet.** Pick once:
+> - **Hair:** short black slicked back, OR short black topknot — choose ONE for the whole sheet.
+> - **Build:** lean and athletic, identical proportions in every frame.
+> - **Skin tone:** pick one and lock it.
+> - **Gi:** plain black with white belt — same shade of black in every cell, no purple/maroon shifts.
+>
+> Frame-to-frame, **only pose changes**. The same person stands up, bows, walks, kicks, gets hurt.
+
 ## Physical
 
 - **Age range:** 24–35
@@ -65,9 +77,12 @@ toenails           #c8a890     (1px detail)
 
 ## DO NOT include
 
+- **Different Dojo designs across rows** — the bowing Dojo, the walking Dojo, and the kicking Dojo are all the SAME person. Same hair, same proportions, same skin tone, same gi.
+- **Text inside cells** — no anim labels, no row headers, no frame numbers.
+- **Cell separator lines.**
 - Modern street clothes — Dojo always wears the gi.
 - Visible weapons — empty hands, bare feet, no knife / chain / gun.
-- Bright colors — black gi, white belt, that's it.
+- Bright colors — black gi, white belt, that's it. No purple/maroon tint shifts between rows.
 - Tattoos.
 - Loose, untied hair (always tied back).
 - Footwear of any kind.

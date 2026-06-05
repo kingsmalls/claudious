@@ -4,6 +4,16 @@ Kane's personal bodyguard. Real name **Marcus Blackwell** (no relation to Rio's 
 
 In the engine: BLACKWELL spawns as an extra wave on stages 7 and 8 in **brutal** difficulty only. He's a wall between the player and the final stage. If you can beat him on brutal, you've earned the run.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had **frame counter text baked into the image** (`F1`, `F2`, `F9`, `F10`, `Hurt`, `8`, `9`, `10`). This is the #1 reason the rendered character looks "broken" — the engine slices the cell and renders the text along with the body.
+>
+> **The cells must contain ONLY the character.** No text. No labels. No frame numbers. No row headers. No anim names.
+>
+> If you need to verify cell alignment, do it on a separate proof sheet — the production sheet must be clean.
+>
+> Blackwell himself stays **identical** across every frame: same bald head, same suit, same shoulder holster, same arm tattoo silhouette. Only the pose changes.
+
 ## Physical
 
 - **Age:** 44
@@ -76,6 +86,9 @@ ring engraving     #1a1a22
 
 ## DO NOT include
 
+- **Frame numbers, anim names, or any text inside cells.** No `F1`, no `Hurt`, no row headers. The cell contains the character and nothing else.
+- **Cell separator lines / grid borders.** Cells are defined by even spacing only.
+- **Variation of Blackwell across frames** — same head, same suit, same proportions in every cell.
 - Visible weapons — empty holsters only.
 - A scowl or any visible emotion — Blackwell is *blank*.
 - Loose, unfitted clothing.

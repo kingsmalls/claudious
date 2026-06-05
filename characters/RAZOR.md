@@ -4,6 +4,16 @@ Kane's white-collar specialist. Real name **Eliza Park.** Came up through corpor
 
 She wears a tailored suit because she does most of her work in office buildings. The Block is the first job in years where she's had to use the knives.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had two problems:
+> 1. **A white background** instead of magenta. The chroma key didn't catch it and the engine drew big white rectangles around her.
+> 2. **Thin white vertical separator lines drawn between cells.** These lines cut through her body in motion.
+>
+> **Sheet must be on solid magenta `#ff00ff`** (or fully transparent PNG). **No drawn cell separators of any kind** — cells are defined by even pixel spacing, never by visible lines.
+>
+> Razor stays **identical** across every cell: same bob cut, same suit colors, same dual knives, same hairstyle. Only the pose changes.
+
 ## Physical
 
 - **Age:** 38
@@ -78,6 +88,10 @@ lapel pin shadow   #8a6020
 
 ## DO NOT include
 
+- **White background** — must be magenta `#ff00ff` or transparent. White is NOT chroma-keyed by the importer.
+- **Drawn cell separator lines / borders / grid lines** of any color. Cells are spaced, not bordered.
+- **Frame numbers, anim names, or any text inside cells.**
+- **Variation of Razor across frames** — same bob, same suit, same knives in every cell.
 - Disheveled hair / wrinkled suit — Razor is *poised*. Even when hurt, she's neat.
 - Visible piercings or tattoos — corporate-clean.
 - Heavy makeup — minimal, sharp.

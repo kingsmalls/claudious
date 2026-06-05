@@ -2,6 +2,14 @@
 
 Kane's crowd-control specialists. Recruited from biker gangs and salvage-yard work crews. They swing a chain because it makes a wide hitbox, keeps everyone at arm's length, and looks like the kind of thing someone walks into a Block fight expecting to lose.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had faint **anim-name text labels** (`idle`, `walk`, `swing`) in the top-left of the first cell of each row. These render as floating text above the character.
+>
+> Cells must contain only the character — no labels, no row headers, no frame numbers, no cell borders.
+>
+> One specific Chains across every cell: same beard, same vest, same arm-wrap of chain. Only the pose changes.
+
 ## Physical
 
 - **Age range:** 30–45
@@ -65,6 +73,9 @@ chain link shadow  #3a3a40
 
 ## DO NOT include
 
+- **Text inside cells** — no anim labels, no row headers, no frame numbers.
+- **Cell separator lines.**
+- **Variation of Chains across frames** — same person, same arm-wrap, same beard.
 - Multiple chains / nunchaku style — single chain only.
 - Spike studs on the chain — keep it industrial, not cartoony fantasy.
 - Tactical / military gear — Chains are blue-collar, not soldiers.

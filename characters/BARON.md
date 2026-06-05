@@ -4,6 +4,14 @@ Kane's old-school enforcer. Real name **William "Baron" Halsey.** Ex-cop. Took a
 
 He fights like a boxer because he was one in college. The brass knuckles are for the people who don't know that.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had **anim-name text** baked into the first frame of each attack row (`JAB`, `CROSS`, `HAYMAKER`). These render as labels stuck above Baron's head in motion.
+>
+> Cells must contain only the character — no anim labels, no row headers, no frame numbers, no cell borders.
+>
+> Baron is **the same man** across every cell: same face, same hair, same suit, same brass knuckles. Only the pose changes.
+
 ## Physical
 
 - **Age:** 52
@@ -78,6 +86,9 @@ badge gold         #f4c860
 
 ## DO NOT include
 
+- **Text inside cells** — no `JAB` / `CROSS` / `HAYMAKER` / row headers / frame numbers.
+- **Cell separator lines.**
+- **Variation of Baron across frames.**
 - Visible firearm — Baron is brass-knuckles-only on the streets.
 - Wrinkled or dirty trench coat — clean, even mid-fight.
 - A scowl — he never *looks* angry. The polite smile is the menace.

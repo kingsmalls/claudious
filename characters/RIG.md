@@ -2,6 +2,16 @@
 
 Kane's construction-crew muscle. These were already on Kane's payroll — laborers and demolition workers who knew what would happen to a holdout block long before anyone else did. They show up to fights in the same hard hats and steel-toes they wore on shift. Most of them are just *doing the job*.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> The previous sheet had two problems:
+> 1. **Anim-name text labels baked into cells** (`idle`, `walk`, `atk1`, `atk2`, `pound`, `hurt`). These render as part of the sprite.
+> 2. **The yellow hardhat disappeared in some attack frames.** Rig's identity is the hardhat — it must be on his head in EVERY frame, in EVERY animation, including hurt and dead.
+>
+> Cells must contain only the character — no labels, no row headers, no frame numbers, no cell borders.
+>
+> Rig is **one specific worker** across every cell — same face, same beard / clean-shaven choice (pick one), same hardhat, same orange vest, same brown pants. Only the pose changes.
+
 ## Physical
 
 - **Age range:** 28–45
@@ -69,7 +79,10 @@ beard              #4a3a28
 
 ## DO NOT include
 
-- Hard hat falling off — it stays on every frame.
+- **Text labels inside cells** — no `idle`, no `walk`, no `atk1`, no row headers, no frame numbers.
+- **Cell separator lines or borders.**
+- **A bareheaded Rig in any frame** — yellow hardhat is on the head in every single cell, including hurt/dead.
+- **A different worker across frames** — same face, same beard choice, same hat, same vest, same pants in every cell.
 - Tactical / military gear — Rigs are construction workers, not soldiers.
 - Visible weapons — bare fists only. (Ironic that the most dangerous AOE in the game is empty-handed.)
 - Clean, pressed clothing — everything is worn-in and stained.
