@@ -455,13 +455,18 @@ const ANIM_LOOPS = {
 // Works for both player (p.char) AND enemies (p.type) — same atlas format.
 // When an animation isn't present in a character's atlas, fall back to a
 // visually-similar anim that IS present. Keeps the sprite look during
-// special / throw / hurt / dodge frames instead of jumping to procedural.
-// Resolved at draw time via resolveAnim() below.
+// hurt / dodge / minor attack-name variants without the procedural jump.
+//
+// IMPORTANT: anims with a UNIQUE choreographed procedural animation (the
+// player specials — Sunset Spin / Rolling Thunder / Foundation Stone —
+// and the jump attacks) are deliberately NOT in this table. When the
+// atlas lacks them, drawSpriteCharacter returns false and the engine
+// routes to the procedural drawer, which has the actual unique animation.
+// That's what gives the special its distinct look instead of just
+// replaying the atk3 combo finisher.
 const ANIM_FALLBACK = {
-  // Player-spec anims not always sheet-supported.
-  jump_atk: ["jump", "atk1", "idle"],
+  // Player anims safe to substitute when missing.
   back_atk: ["atk1", "atk2", "idle"],
-  special:  ["atk3", "heavy", "atk2", "atk1", "idle"],
   throw:    ["atk1", "atk2", "idle"],
   counter:  ["atk2", "atk1", "idle"],
   hurt:     ["idle"],
@@ -497,20 +502,18 @@ const ANIM_FALLBACK = {
   grab:       ["atk1", "idle"],
   atk:        ["atk1", "idle"],
   knee:       ["atk2", "atk1", "idle"],
-  leap:       ["jump", "atk3", "atk1", "idle"],
+  leap:       ["atk3", "atk1", "idle"],
   front_kick: ["atk1", "idle"],
   roundhouse: ["atk2", "atk1", "idle"],
   axe_kick:   ["atk3", "atk2", "atk1", "idle"],
-  flying_kick:["jump_atk", "jump", "atk1", "idle"],
   stomp_kick: ["atk1", "idle"],
   fencing_kick:["atk1", "idle"],
   cyber_axe:  ["atk3", "atk2", "atk1", "idle"],
   sloppy_kick:["atk1", "idle"],
   boot_stomp: ["atk1", "idle"],
   bear_hug:   ["atk2", "atk1", "idle"],
-  belly_flop: ["jump_atk", "atk1", "idle"],
+  belly_flop: ["atk1", "idle"],
   low_sweep:  ["atk1", "idle"],
-  flying_stab:["jump_atk", "jump", "atk1", "idle"],
   sweep_kick: ["atk1", "idle"],
   spin_kick:  ["atk2", "atk1", "idle"],
   cloak_cyclone:["atk2", "atk1", "idle"],
@@ -522,6 +525,8 @@ const ANIM_FALLBACK = {
   phase2:     ["idle"],
   flee:       ["walk", "run", "idle"],
   wild_swipe: ["atk1", "idle"],
+  // NOT mapped (intentional procedural fallback for unique animation):
+  //   special, jump_atk, flying_kick, flying_stab
 };
 
 function resolveAnim(animsObj, animName) {
