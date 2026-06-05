@@ -45,20 +45,26 @@ knife handle       #0a0a10
 ## Personality / fighting style
 
 - **Always in motion.** Hit-and-run — lunges in, knife flicks, dashes back 35 px. Never sits in melee range.
-- **One attack: `lunge`** — fast forward stab. 14 dmg + 120 knockback + self-pushes 220 px forward (the lunge itself is movement).
+- **Three signature moves — lunge / flying stab / sweep kick.**
+  - **`lunge`** — A fencer's forward thrust executed with a knife instead of a foil. **Visual signature: at peak extension the body is fully horizontal** — front leg fully extended forward, rear leg straight back, torso flat parallel to the ground, knife-arm leading like a spear. The pose is unmistakably an **arrow shape** pointing at the target. 14 dmg + 120 knockback. Self-pushes 220 px.
+  - **`flying_stab`** — Mid-air leaping stab. **Visual signature: F3 silhouette is body AIRBORNE and tilted DIAGONAL (45° downward), knife held in OVERHEAD reverse grip (icepick grip pointing DOWN from the fist), free arm trailing behind — the body is a falling dart with the blade leading**. Lands and rolls to recover. 16 dmg + 100 knockback.
+  - **`sweep_kick`** — Low spinning leg sweep. **Visual signature: F3 the body is LOW to the ground, supporting hand braced on the floor for balance, free leg swept in a horizontal arc at ankle height to trip the target. Knife held in the hand on the floor (still reverse grip).** 12 dmg + 60 knockback. Knocks the target down.
 - **Crossup-prone.** If protagonist faces away, Slice routes around to attack from the back.
+- **Knife grip:** reverse / icepick grip (blade along the forearm) in idle and walk. **Flips to forward grip (blade leading)** on the lunge wind-up — the visible flip is part of the visual identity. Reverse grip returns on the flying stab.
 
 ## Animations
 
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
-| `idle`   | 4 | Bouncing weight shift. Knife held against forearm. |
-| `walk`   | 6 | Light, fast steps. |
-| `run`    | 4 | Sprint with motion lines behind heels. Knife arm forward. |
-| `atk1`   | 6 | Lunge: F1 = wind-up coil, F2 = launch (body extends fully), F3–F4 = active stab (knife forward), F5 = miss-pose, F6 = recoil. |
-| `dash`   | 4 | Backward dash after lunge. Body low, knife out for guard. |
-| `hurt`   | 3 | Body folds. Knife arm drops. |
-| `dead`   | 3 | Crumples. Knife falls beside body. |
+| `idle`   | 4 | **Bouncing weight shift** — never still. Knife reverse-grip against the right forearm. Body angled 30° toward the camera (boxer's blade-stance). |
+| `walk`   | 6 | Light, prowling steps. **Knife arm forward, free hand low** as counter-weight. Feet barely lift. |
+| `run`    | 4 | Sprint with **2-px motion lines behind both heels**. Knife extended forward like a spear-tip. |
+| `atk1`   | 6 | **Lunge.** F1 = coil (knees deep bent, knife at hip, **blade flips to forward grip**). F2 = launch (front leg explodes forward, rear leg extends back). F3 = **arrow pose — body fully horizontal, knife leading 24 px past the front foot, rear leg straight, 4-px motion-line streak behind the knife**. F4 = active stab held one frame. F5 = miss-pose (body extended, blade swung past). F6 = recoil pull-back. |
+| `atk2`   | 5 | **Sweep kick.** F1 = body drops low, supporting hand reaches for the floor. F2 = body crouched, **supporting hand braced on the floor (knife in that hand, blade still reverse-grip)**, free leg starts sweeping. F3 = **peak — body low, supporting hand on floor, free leg horizontal at ankle height sweeping in a 90° arc**. F4 = follow-through, leg past midline. F5 = recovery, back to stance. |
+| `jump_atk` | 5 | **Flying stab.** F1 = coil-and-leap (knees bend then explode upward). F2 = airborne, body rotating to diagonal, **knife arm rising overhead, blade in reverse grip pointing DOWN like an icepick**. F3 = **peak airborne — body diagonal at 45° downward angle, knife in icepick grip held overhead pointing down, free arm trailing behind, falling toward the target like a dart**. F4 = descent, blade leading downward. F5 = land + recover. |
+| `dash`   | 4 | Backward dash after lunge. Body low (knees deep), **knife held across the chest** as a guard. Motion lines trail FORWARD from the heels because he's reversing direction. |
+| `hurt`   | 3 | Body folds. Knife arm drops to hip. |
+| `dead`   | 3 | Crumples sideways. **Knife slides 6 px from the open hand** on F3. |
 
 ## DO NOT include
 

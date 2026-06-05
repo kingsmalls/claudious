@@ -95,48 +95,45 @@ eye whites          #f0f0f0
 - **Cigarette stays put.** Hair strand whips upward at the apex.
 
 ### `atk1` — BOXING JAB (4 frames, 12 fps)
-- Classic boxer's lead jab — front (left) hand, minimal body twist, snap-quick.
-- F1: load — front shoulder pulls back 2 px, fist near the chin level. Eyes lock forward.
+**Visual signature:** textbook boxer's lead jab — sharp snap-back is the tell that this is a trained fighter, not a brawler. **Cigarette stays put on the ear** even through the snap. Hair strand falls across the forehead and re-settles each cycle.
+- F1: load — front shoulder pulls back 2 px, fist near chin level. Eyes lock forward.
 - F2: extend — left fist drives forward ~14 px, body twist minimal (5°), back foot stays planted.
 - F3: peak — fist fully extended, knuckles vertical (boxing form), shoulder rolled forward to protect the chin.
-- F4: snap-back — fist retracts 80% of the way back sharply (the boxer detail; not a slow draw-back). Body returns to stance.
-- **Cigarette stays put** even on the snap-back.
+- F4: **snap-back — fist retracts 80% sharply** (the boxer detail; not a slow draw-back). Body returns to stance.
 
 ### `atk2` — CROSS (5 frames, 11 fps)
-- Right cross with full hip rotation — Duke's weight transfer move.
+**Visual signature:** full-body weight transfer cross — body rotates 45° as the rear fist crosses the centerline. **F4 the mouth tightens 1 px** (the rare focus expression). The hair strand whips with the rotation and settles back on the snap-back.
 - F1: hip cocks back, weight shifts to back foot, right (rear) fist near jaw.
 - F2: hip drives forward, rear shoulder rotates — torque visibly winding.
 - F3: extend — rear fist crosses the center line, reaching ~18 px forward. Front (left) hand stays up at chin height for guard.
-- F4: peak — fist fully extended, body rotated 45°, weight on front foot. Mouth tightens 1 px (the rare focus expression).
-- F5: snap-back, body unwinds back to neutral stance. Hair strand settles back across the forehead.
+- F4: peak — fist fully extended, body rotated 45°, weight on front foot. **Mouth tightens 1 px**.
+- F5: snap-back, body unwinds. Hair strand settles back across the forehead.
 
 ### `atk3` — HOOK + STOMP (6 frames, 11 fps) — combo finisher
-- Front hand hooks horizontally while the right foot stomps for power transfer.
+**Visual signature:** the **STOMP**. Duke transfers power through a hard right-foot stomp on the same frame the hook lands, and the **dust puff at his right foot is unique to Duke** — no other character generates ground dust from a footstrike during a punch. **F5 the half-grin appears for one frame** — the cynic's "I shouldn't be enjoying this" tell.
 - F1: load — body coils, front foot lifts 2 px off the ground, left (front) fist at hip height.
 - F2: stomp wind-up — right foot drives downward.
 - F3: hook arc — left fist swings inward in a horizontal arc as the right foot lands.
-- F4: contact + stomp landing — fist at impact point, **dust puff at right foot** (1–2 px brown specks).
-- F5: follow-through — body tilted 10° forward, fist past the impact line, the half-grin appears for one frame.
-- F6: recovery — body unwinds back toward stance, hair strand falls back across forehead.
+- F4: **contact + stomp landing — fist at impact, DUST PUFF at right foot (1–2 brown specks)**.
+- F5: **HALF-GRIN appears for one frame**. Body tilted 10° forward, fist past the impact line.
+- F6: recovery — body unwinds, hair strand falls back.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 9 fps)
-- The launcher. Slow load, explosive rise — Duke putting his whole worn-out body into one shot.
-- F1: deep crouch — both knees bend, both fists at hip. The **bad right knee is visibly strained** (1 px tilt).
+**Visual signature:** the **strained bad knee** is the tell on F1 — a 1-px tilt that says "this is going to hurt him too." F5 peak shows the half-grin AND the cigarette unmoved AND the fist 16 px above his head. The whole pose is "worn-out man putting his whole body into one shot." Slowest player attack — the load takes time.
+- F1: deep crouch — both knees bend, both fists at hip. **The bad right knee is visibly strained (1-px tilt outward)**.
 - F2: load — front fist near belly, body coiled like a spring.
 - F3: rise begins — knees start straightening, fist starts climbing.
-- F4: drive — explosive vertical rise, front fist 16 px above the head height.
-- F5: peak — body fully extended skyward, fist directly above body line, **half-grin visible** (this is the moment — he's enjoying it despite himself).
+- F4: drive — explosive vertical rise, front fist 16 px above head height.
+- F5: peak — body fully extended skyward, fist directly above body line, **HALF-GRIN visible**. **Cigarette stays put**.
 - F6: hold — pose held one extra frame for the launcher feel.
 - F7: recovery — body lowers back to stance, knees absorbing.
-- **Cigarette stays put** through the full extension.
 
-### `jump_atk` — DROP ELBOW (4 frames, 10 fps)
-- Aerial elbow drop — uses gravity, not a kick.
-- F1: airborne, right elbow cocked overhead, body still rising.
+### `jump_atk` — DIVING ELBOW DROP (4 frames, 10 fps)
+**Visual signature:** Duke isn't graceful in the air — he DIVES. Body angled forward at 45°, **right elbow cocked overhead with the FOREARM VERTICAL like a spear**, the whole body falling onto the elbow's point. **F3 the impact pose shows the entire body folded behind the descending elbow — head, shoulder, hip, and lead foot all in a diagonal line from the elbow tip to his back foot**. Not a graceful flying kick; a worn-out brawler turning gravity into a weapon. Hair strand whips upward. **Cigarette stays put** even at the apex.
+- F1: airborne, right elbow cocked overhead with forearm vertical, body still rising.
 - F2: descent begins — body angles 30° forward, elbow leading the drop.
-- F3: peak impact — elbow at chest-of-imagined-target height, body 45° forward. Hair strand whips upward.
+- F3: **peak impact — elbow at chest-of-target height, body 45° forward in a diagonal line from elbow-tip to rear foot**. Hair strand whipped up.
 - F4: recovery — body resets, elbow lowering toward landing.
-- **Cigarette stays put** even at the apex.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
 - Heavier rear-elbow strike than Rio's — Duke pivots more on the bad knee, so the move loads slow but lands hard.
@@ -147,7 +144,8 @@ eye whites          #f0f0f0
 - **Cigarette stays put** through the rotation.
 
 ### `special` — ROLLING THUNDER (12 frames, 11 fps)
-The signature. Three rapid forward elbows finishing with a haymaker that ends fights.
+The signature.
+**Visual signature:** **THREE FORWARD ELBOWS** (left, right, left) each with its own speedline (3 px → 4 px → 5 px, growing), body torquing further with each one, then a haymaker that lands with the **half-grin at full visibility** AND a dust puff at the feet. Duke's elbows are HIS move — no other player uses elbows. **Cigarette stays put through all 12 frames** (this is the gag — even on the haymaker, the cigarette is still behind his ear).
 - F1: stance — body coils, hands at chin, weight loading on the left leg.
 - F2: **first elbow (left)** — left elbow drives forward 8 px, body rotates 15°. 3-px speedline streak behind the elbow.
 - F3: first elbow continues into the next windup, right arm drawing back.

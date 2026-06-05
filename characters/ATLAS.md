@@ -101,7 +101,7 @@ eye whites          #f0f0f0
 - **Wedding band stays visible** at all three frames.
 
 ### `atk1` — OPEN-PALM SHOVE (4 frames, 11 fps)
-- Front arm extends as a palm-strike, fingers splayed — Atlas doesn't waste energy throwing fists for jabs. The shove sets up combos by knocking enemies back.
+**Visual signature:** **OPEN PALM, fingers visibly splayed** — Atlas's jab is not a fist. Front arm extends as a palm-strike. The tribal forearm tattoos are prominent on the striking arm. The wedding band on its chain shifts against the chest as the body shoves forward. This is the only "jab" in the cast that isn't a fist — instantly readable as Atlas.
 - F1: load — front (left) palm at chest level, fingers loose. Body weight forward 5°.
 - F2: drive — palm extends forward, body weight transfers to front foot.
 - F3: peak — palm fully extended ~16 px forward, **fingers visibly splayed** (open hand, not a fist), body angled 10° forward.
@@ -109,7 +109,7 @@ eye whites          #f0f0f0
 - Wedding band catches a small movement against the chest.
 
 ### `atk2` — REAR HEAVY SLAP (5 frames, 10 fps)
-- Rear arm sweeps across in a heavy backhand slap, palm leading — heavier than a hook because the whole body torques.
+**Visual signature:** **massive backhand slap with the WHOLE BODY torquing** — rear arm crosses the entire screen from one side to the other (a 60°+ body rotation), palm leading. The beard whips 2 px with the rotation. Tribal tattoos prominent on the bare striking forearm throughout the arc. Unmistakable "wide arc, not a punch" silhouette.
 - F1: load — right arm wound up across the body to the left side, body torqued back.
 - F2: hip rotates forward, right shoulder begins arcing across.
 - F3: sweep — right arm crosses the center line, palm leading at face-of-imagined-target height.
@@ -118,7 +118,7 @@ eye whites          #f0f0f0
 - **Tribal tattoos** prominent on the bare striking forearm.
 
 ### `atk3` — OVERHEAD CHOPPING SMASH (6 frames, 10 fps) — combo finisher
-- Both hands clasp together overhead, then drive downward like a hammer-fist — Atlas's signature combo finisher, ends with the gentle parental smile.
+**Visual signature:** **BOTH HANDS CLASPED TOGETHER overhead** (like swinging an invisible sledgehammer), driven downward in a vertical chopping motion. Body folds forward at the waist on impact, **dust burst at his feet (4–5 brown specks)**. F6 the **brief parental smile** appears for one frame — the only soft moment in the whole cast.
 - F1: load — both fists rise overhead, clasped together, body coiling.
 - F2: rise complete — both hands above head, body extended skyward, ribs visibly out.
 - F3: pause — slight 1-frame hold at the peak (the load before the drop).
@@ -128,7 +128,7 @@ eye whites          #f0f0f0
 - **Wedding band on chain visible** throughout, swinging with the body.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 8 fps — slowest in the cast)
-- Massive uppercut. Both legs braced, fist rises slowly but with terrifying weight.
+**Visual signature:** the **WEDDING-BAND GLINT on F4** is the tell — a 1-px highlight on the silver band as the chain swings with the rising fist. When the band glints, the launcher is about to hit. Both legs braced flat (Atlas never goes up on his toes). Slowest attack in the cast — held one extra frame at the peak.
 - F1: deep crouch — both knees bend, right (rear) fist drops below the knee, body coils. Beard tucks down.
 - F2: load — body fully coiled, fist near hip, weight evenly on both feet.
 - F3: rise begins — body slowly straightens, fist starts climbing.
@@ -138,12 +138,12 @@ eye whites          #f0f0f0
 - F7: recovery — body lowers back to stance, fist coming down slowly.
 - **Tribal tattoos** prominent on the rising arm at F4–F5.
 
-### `jump_atk` — BODY SLAM (4 frames, 9 fps)
-- He doesn't kick — he uses his weight. Drops elbow-first, all 280 pounds of him.
-- F1: airborne, body angled forward 20°, right elbow lifted overhead.
-- F2: descent begins — body angles down further (45°), elbow leading the drop, weight visibly forward.
-- F3: peak impact — elbow at impact zone, body nearly horizontal, **chain has flown forward off his chest** (visible in front of the flannel, 3 px out from the body).
-- F4: recovery — body resets toward landing, chain settling back against the chest.
+### `jump_atk` — FLYING BODY SPLASH (4 frames, 9 fps)
+**Visual signature:** Atlas doesn't kick — he becomes a falling building. **F3 silhouette: body HORIZONTAL parallel to the ground at peak, arms spread out wide like a wrestler's diving splash, chest leading the descent. The wedding-band chain has flown 4 px forward off his chest from the dive momentum. Tribal forearm tattoos prominent on both spread arms.** Lands flat — both forearms and chest hit simultaneously. The most graceless aerial in the cast, intentionally.
+- F1: airborne, body still rising, arms beginning to spread.
+- F2: peak of jump — body starts rotating from vertical toward horizontal, arms spreading wider.
+- F3: **peak descent — body fully horizontal parallel to ground, both arms spread wide like a diving splash, chest leading, chain flown 4 px forward off the chest, tribal tattoos visible on both forearms**.
+- F4: landing — both arms and chest impact, **dust burst beneath the body (5–6 brown specks in a wide horizontal smear)**, chain settling back.
 - **Wedding band visible** at all four frames.
 
 ### `back_atk` — REAR ELBOW (4 frames, 11 fps)
@@ -155,7 +155,8 @@ eye whites          #f0f0f0
 - **Tribal tattoos** visible on the striking forearm at F3.
 
 ### `special` — FOUNDATION STONE (12 frames, 10 fps)
-The signature. Running shoulder charge, picks the enemy off the ground, two-handed overhead slam — Atlas asserting that this block is his.
+The signature.
+**Visual signature:** THREE distinct phases readable from across the room. (1) **Forward shoulder charge** — body angled 25° forward, speed-lines growing from 3 → 5 lines as he sprints. (2) **Pickup grapple** — both arms reach forward, lift the imagined enemy chest-high, tribal tattoos prominent on both bare forearms, wedding-band chain swinging. (3) **Overhead two-handed slam** — both fists clasped above the head, then DRIVEN STRAIGHT DOWN into the ground with a **massive dust burst (8–10 brown specks in a wide half-circle reaching 40 px each side)** plus a 1-frame screen-shake suggestion. The slam pose plants both feet wide. The only grapple-into-slam move in the cast.
 - F1: stance — shoulder lowered (charge prep), body coiled, weight loading on the back leg.
 - F2: forward step — leading (left) leg plants 6 px ahead, body angled 15° forward.
 - F3: charge — body angled 20° forward, **shoulder leading** the run. **Three 4-px speedlines** behind him at body height.

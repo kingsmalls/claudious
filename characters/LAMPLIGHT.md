@@ -60,12 +60,12 @@ muzzle flash edge  #ff8a40
 charged glow blue  #4a8ad0    (telegraph during charged shot wind-up)
 ```
 
-## Personality / fighting style — unchanged
+## Personality / fighting style
 
 - **Holds 70–110 px range** from the protagonist. Backs up if you close in.
-- **Two attacks:**
-  - `shot` (regular) — 9 dmg straight bullet. Fired roughly every 1.2 s.
-  - `charged` (every 4th attack) — 36-frame telegraphed wind-up with growing blue glow at the barrel, fires a heavy 18-dmg orange-tracer projectile. Devastating if it lands.
+- **Signature moves — shot + charged. The fedora + white scarf + pistol silhouette is the visual identity at rest; the muzzle flash is the identity in combat.**
+  - **`shot` (regular) — Aimed pistol shot.** **Visual signature: F2 the fedora tilts DOWN 1 px** as he sights along the barrel (the aiming tell). F3 muzzle flash — a **4-px orange-yellow burst at the barrel tip**, visible past the scarf. Two-handed grip stays steady. 9 dmg.
+  - **`charged` (every 4th attack) — Heavy tracer.** **Visual signature: F1–F4 the barrel develops a GROWING BLUE GLOW** (2 px → 3 px → 5 px → 7 px) — a charging blue orb at the muzzle that tints the white scarf one shade cooler for one frame at peak charge. F5 release is a **bigger muzzle flash (8 px, white-orange core)** and the body rocks back. The coat flares behind him on the recoil. 36-frame telegraph. 18 dmg + orange tracer projectile.
 - **Never melees.** If pinned, dashes back to range first.
 - **Calm.** Doesn't talk during combat.
 

@@ -4,6 +4,14 @@ Kane's personal bodyguard. Real name **Marcus Blackwell** (no relation to Rio's 
 
 In the engine: BLACKWELL spawns as an extra wave on stages 7 and 8 in **brutal** difficulty only. He's a wall between the player and the final stage. If you can beat him on brutal, you've earned the run.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> **The cells must contain ONLY the character.** No text. No labels. No frame numbers. No row headers. No anim names.
+>
+> If you need to verify cell alignment, do it on a separate proof sheet — the production sheet must be clean.
+>
+> Blackwell himself stays **identical** across every frame: same bald head, same suit, same shoulder holster, same arm tattoo silhouette. Only the pose changes.
+
 ## Physical
 
 - **Age:** 44
@@ -55,10 +63,12 @@ ring engraving     #1a1a22
 
 ## Personality / fighting style
 
-- **Three attacks:**
-  - `punch` — heavy single straight punch. 16 dmg, 140 knockback.
-  - `charge` — massive shoulder-tackle with super-armor + 240 px self-push. 24 dmg, 220 knockback. Telegraphed by 14-frame stance shift.
-  - `overhead` — both fists raised overhead, smashes downward. 32 dmg, 260 knockback. **Super-armored** through the entire wind-up. The protagonist can't trade with this; has to dodge.
+- **Four signature moves — hook / stomp kick / charge / overhead. Every move must have an obviously different POSTURE from idle — no "subtle" attacks. Blackwell stands with arms crossed in idle; the SECOND he attacks the silhouette changes completely. Idle reads as "wall of muscle," attacks read as "wall of muscle in motion."**
+  - **`hook` — Stepping hook.** Heavy looping hook with full body torque. **Visual signature: F2 the body STEPS FORWARD with the lead foot (16 px advance), arms FULLY UNCROSS, rear arm cocked back at the shoulder. F3 peak — torso rotated 60°, rear fist sweeping in a horizontal arc at chest-of-target height with the GOLD WEDDING RING catching the only bright pixel in the frame, free arm flung across the body for balance. Body LEANS 15° into the punch.** The silhouette is unmistakably "throwing a hook" — no crossed arms anywhere. 16 dmg, 140 knockback.
+  - **`stomp_kick` — Front-thrust steel-toe.** Heavy front kick with the lead foot. **Visual signature: F2–F3 the lead leg drives STRAIGHT FORWARD at hip height with the SOLE OF THE BOOT leading (flat boot-print pointing at the target), supporting leg planted, body LEANED BACK 20° to counter-weight the kick, both arms thrown back wide for balance. The silhouette is a literal capital-T shape — vertical body, horizontal boot.** Massive front kick from a man who weighs 280 lbs. 18 dmg + 180 knockback.
+  - **`charge` — Freight-train shoulder-tackle.** Massive shoulder-led charge. **Visual signature: F1–F4 he WIDENS into a sprinter's stance, lowering the lead shoulder until it's nearly horizontal — body angled at 35° forward, both arms swept behind for aerodynamics**. F5–F8 the charge has **4-px motion lines and a 2-px GROUND CRACK trailing behind each footstep** (small jagged dark lines on the floor). F9 impact, body upright. Super-armored. 24 dmg, 220 knockback. Self-pushes 240 px.
+  - **`overhead` — Question-mark smash.** Both fists raised overhead, then driven into the ground. **Visual signature: F5–F8 silhouette is a question mark — body fully vertical, both arms straight UP with fists clasped at the apex, body slightly arched backwards. The pose is held for FOUR FRAMES — twice as long as anyone else's wind-up — because Blackwell can.** F12 impact creates a **huge dust burst (10–12 brown specks in a half-circle reaching 50 px out each side) plus a vertical dust plume rising past his head**. Super-armored throughout. 32 dmg, 260 knockback.
+- **Crossed-arms is the IDLE pose only.** In every attack the arms uncross immediately (F1 or F2 at latest). The "crossed-arm to attack" transition should happen FAST — one frame max — so the bulk of each attack reads clearly as that attack and not as more idle.
 - **Doesn't talk.** Ever. Not at start, not on hits, not on defeat.
 - **Patient.** Waits for the protagonist to commit before acting.
 
@@ -66,16 +76,20 @@ ring engraving     #1a1a22
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Crossed arms. Subtle chest rise. Eyes track. |
-| `walk`     | 6 | Slow, deliberate. Arms stay crossed for the first 4 frames; uncross on F5 if approaching to attack. |
-| `atk1`     | 6 | Punch: F1 = arm uncoils, F2 = step forward, F3 = peak extension (gold ring catches light), F4–F6 recovery. |
-| `atk2`     | 12 | Charge: F1–F4 = stance widens, shoulder lowers (super-armor active), F5–F8 = forward charge with motion lines, F9 = impact, F10–F12 = recovery. |
-| `atk3`     | 13 | Overhead: F1–F4 = both arms rise overhead, body coils, F5–F8 = body extends fully skyward, F9–F11 = drive downward, F12 = ground impact (huge burst), F13 = recovery. |
-| `hurt`     | 3 | Body absorbs. Almost no flinch. (At full HP, he barely registers hits.) |
-| `dead`     | 7 | The first significant flinch is also the death animation. He goes down slowly, in stages — first to one knee, then to all fours, then onto his side. Stays unconscious. |
+| `idle`     | 4 | **Arms crossed tight over chest** — the iconic pose. Subtle chest rise on breath. Gold ring catches a 1-px highlight on F2. **Only the idle uses the crossed-arm pose.** |
+| `walk`     | 6 | **Slow, deliberate stride.** Arms stay crossed on F1–F3 only, then **uncross on F4 to swing naturally with the stride for F4–F6** (so the walk reads as different from idle). Hands open and loose at the sides on F4–F6. |
+| `atk1`     | 6 | **Stepping hook.** F1 = arms uncross fully (BOTH arms uncrossed by end of F1 — no slow-cross-reveal). F2 = **lead foot steps forward 16 px, rear arm cocks back behind the shoulder, body coiling**. F3 = **peak — torso rotated 60°, rear fist mid-arc at chest height with gold ring glint, free arm across the body, body leaned 15° into the punch**. F4 = follow-through, fist past the impact line, body fully torqued. F5 = retract, body unwinding. F6 = arms re-cross back to idle. |
+| `atk2`     | 5 | **Stomp kick.** F1 = arms uncross, lead knee starts lifting toward chest. F2 = knee at chest height (chamber). F3 = **peak — lead leg fully extended straight forward at hip height, BOOT SOLE leading flat at the target, supporting leg planted, body leaned BACK 20°, both arms thrown back wide — capital-T silhouette**. F4 = leg retracts to chamber. F5 = boot plants back, arms re-cross. |
+| `atk3`     | 12 | **Freight-train charge.** F1 = arms uncross. F2 = stance widens. F3 = **lead shoulder LOWERS toward horizontal**, body angled 25° forward. F4 = **fully horizontal forward, body at 35°, both arms swept behind**. F5 = launch (4-px motion lines behind shoulders). F6 = mid-charge (first ground-crack at the rear boot). F7 = continuing charge (second ground-crack). F8 = approaching impact. F9 = **impact, body upright, dust burst at contact**. F10 = follow-through. F11 = stance recovery. F12 = arms re-cross. |
+| `atk4`     | 13 | **Question-mark overhead.** F1 = arms uncross fast. F2 = both arms start rising at sides. F3 = arms continuing up, body coiling. F4 = arms approaching vertical. F5 = **peak A — body fully vertical, both arms straight UP, fists clasped at apex, body arched slightly backwards (question-mark silhouette)**. F6 = held peak (1). F7 = held peak (2). F8 = **held peak (3) — FOUR-FRAME apex hold**. F9 = body folds forward at the waist, fists arcing down. F10 = fists past the head. F11 = fists at chest height, body fully bent forward. F12 = **impact — fists driving into the ground, MASSIVE dust burst (10–12 brown specks reaching 50 px out, vertical dust plume past head height), body fully folded forward**. F13 = straighten, dust settling. |
+| `hurt`     | 3 | **Body absorbs, almost no flinch.** Head turns 5°. Crossed arms stay crossed even on hit. (At full HP, he barely registers.) |
+| `dead`     | 7 | The first significant flinch IS the death animation — he goes down slowly, in stages. F1 = body folds at the waist. F2 = falls to one knee, arms uncross. F3 = onto both knees. F4 = forward to all fours. F5 = elbows give. F6 = forehead touches the ground. F7 = settled, face down. Stays unconscious. |
 
 ## DO NOT include
 
+- **Frame numbers, anim names, or any text inside cells.** No `F1`, no `Hurt`, no row headers. The cell contains the character and nothing else.
+- **Cell separator lines / grid borders.** Cells are defined by even spacing only.
+- **Variation of Blackwell across frames** — same head, same suit, same proportions in every cell.
 - Visible weapons — empty holsters only.
 - A scowl or any visible emotion — Blackwell is *blank*.
 - Loose, unfitted clothing.

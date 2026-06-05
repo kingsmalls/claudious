@@ -79,12 +79,12 @@ desk shadow         #1a0e08
 ## Personality / fighting style
 
 - **Polite, patient, lethal.** Speaks calmly during the fight — no shouting.
-- **Three combat patterns:**
-  - `atk1` — **cane thrust.** Front-foot stab forward with the sword. Long reach (cane + arm + ~80 px blade).
-  - `atk2` — **cross sweep.** Horizontal cane-sword slash from the right side, parried with the sheath in the off-hand on miss.
-  - `atk3` — **lunge thrust.** Full fencing-lunge body extension; longest reach in the game. Heavily telegraphed but punishing if it connects.
-- **Special:** `chain_whip` — the pocket-watch chain swings in a wide horizontal arc across the entire screen at chest height. Player must duck (back row) or jump.
-- **Counter:** `parry_riposte` — when player attacks at close range, Kane parries with the cane-sheath and ripostes with the sword.
+- **Three combat patterns — fencing master with sword-cane + sheath in off-hand. Every move is fencing form, not brawler form. The asymmetric half-smile NEVER drops, not even at impact.**
+  - **`atk1` — cane thrust.** Front-foot stab forward with the sword. **Visual signature: classic fencing en garde transition — front foot steps 1 unit forward, rear leg straight, sword arm fully extended at shoulder height with the silver blade leading, sheath-hand cocked at the hip in en garde guard**. Long reach (cane + arm + 80 px blade). The pose is unmistakably a fencer, not a swordsman.
+  - **`atk2` — cross sweep.** Horizontal sword-cane slash from the right side. **Visual signature: F2 the sword arcs across the body from right shoulder to left hip, blade tracing a thin silver crescent — the long charcoal jacket FLARES BEHIND in a 45° fan from the body torque**. Sheath stays in en garde guard. Parried with the sheath on miss.
+  - **`atk3` — lunge thrust.** Full fencing-lunge body extension. **Visual signature: F3 silhouette is a perfect Y — front leg extended fully forward (knee bent at 90°), rear leg straight back, body angled 30° forward, sword arm fully extended forward at shoulder height (longest reach in the game), sheath flung BEHIND for counter-balance**. Heavily telegraphed (F1–F2 = coiled load) but punishing if it connects.
+- **Special — `chain_whip`. The pocket-watch chain is the unique signature.** Kane pulls the gold pocket-watch from his vest pocket, swings it in a half-circle to load, then whips it in a wide horizontal arc across the entire screen at chest height. **Visual signature: F5–F7 the brass chain traces a screen-wide horizontal motion-blur with the weighted gold watch-fob visible at the chain's tip** — across the entire arc. Player must duck (back row) or jump.
+- **Counter:** `parry_riposte` — when player attacks at close range, **F1 the sheath rises diagonally to deflect the incoming blow (visible 4-px spark at the deflection point)**, F2–F3 the sword immediately ripostes forward in a thrust. Counter is one continuous motion — deflect + thrust in 5 frames.
 - **Dialog while fighting** (mid-fight pool, picked at random by the engine):
   - "I have lawyers on retainer for situations exactly like this."
   - "The Block was always going to fall."

@@ -82,39 +82,44 @@ eye whites          #ffffff
 - F3: landing — knees absorb, body re-collapsing toward idle.
 
 ### `atk1` — JAB (4 frames, 12 fps)
-- F1: wind-up — front arm cocks back 4–6 px, body rotates slightly.
-- F2: extend — front fist reaches forward to ~14 px past the body. Bandana trails behind the fist.
-- F3: peak — fist fully extended, knuckles forward, bandana fully forward.
-- F4: retract — fist returns 75% of the way back. Body returns to neutral.
+**Visual signature:** quick straight punch — **the yellow wrist bandana trails behind the fist in a 12-px horizontal ribbon** through F2–F3. This is the move's identity; the bandana is what reads as "Rio's jab" from across the screen.
+- F1: wind-up — front arm cocks back 4–6 px, body rotates slightly. Bandana hangs at the wrist.
+- F2: extend — front fist reaches forward to ~14 px past the body. **Yellow bandana streaks behind the fist as a 12-px horizontal ribbon trail**.
+- F3: peak — fist fully extended, knuckles forward, **bandana fully extended forward like a yellow comet tail**.
+- F4: retract — fist returns 75%, bandana settling back to the wrist.
 
 ### `atk2` — CROSS (5 frames, 11 fps)
-- F1: wind-up — REAR arm cocks back, hip rotates back.
-- F2: rotation — hip drives forward, rear shoulder rotates over.
-- F3: extend — rear fist crosses the body line, reaching ~18 px forward. Bandana stays at hip on the now-back arm.
+**Visual signature:** the rear fist drives across the body line — the bandana is on the NOW-RETREATING front arm, so it whips behind the body in the OPPOSITE direction from the cross fist (creating an X of motion).
+- F1: wind-up — REAR arm cocks back, hip rotates back. Bandana hangs.
+- F2: rotation — hip drives forward, rear shoulder rotates over. Bandana arm pulls back, **bandana whipping backward**.
+- F3: extend — rear fist crosses the body line, reaching ~18 px forward. **Bandana streaks BEHIND the body on the retreating front arm — opposite direction from the cross fist**.
 - F4: peak — fist fully extended, body rotated ~45°.
-- F5: retract — body unwinds back toward forward stance.
+- F5: retract — body unwinds back toward forward stance, bandana settles.
 
-### `atk3` — HOOK (6 frames, 11 fps) — combo finisher
-- F1: wind-up — front fist drops slightly, body coils.
-- F2: hip drive — body torque begins, hand starts arcing inward.
-- F3: arc — fist sweeps in a horizontal arc, knuckles leading.
-- F4: contact — fist at impact point, body fully torqued.
-- F5: BRIEF SMILE — barely 1-pixel-changed mouth corner.
-- F6: recovery — body returns toward stance.
+### `atk3` — ROUNDHOUSE KICK (6 frames, 11 fps) — combo finisher
+**Visual signature:** the COMBO FINISHER IS A KICK, not a punch. **F3 silhouette is unmistakable — supporting leg planted, kicking leg horizontal at chest height with the shin parallel to the ground, top-of-foot leading, body torqued 90° showing the full hip drive. Yellow bandana whips through the kick arc as a horizontal yellow streak following the kicking foot.** F5 the reserved smile appears — the combo-finisher tell.
+- F1: wind-up — body coils, kicking (rear) leg starts lifting, supporting foot pivots.
+- F2: chamber — kicking knee rises to chest height to the side, body torquing back.
+- F3: **peak kick — kicking leg horizontal at chest-of-target height, shin parallel to ground, top-of-foot leading, body rotated 90°. Yellow bandana streaks behind the kicking foot as a 14-px horizontal yellow ribbon (tracing the kick arc)**.
+- F4: follow-through — leg past target, body fully torqued.
+- F5: **BRIEF SMILE — mouth corner lifts 1 px. The only frame in the cast where Rio smiles**. Bandana still trailing.
+- F6: recovery — leg returns to stance, body unwinds, bandana settles.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 10 fps)
+**Visual signature:** vertical upward fist drive — **the bandana rockets STRAIGHT UP with the rising fist, creating a vertical yellow streak from wrist to above her head**. The only vertical-bandana move.
 - F1: deep crouch — body drops, weight on rear leg, front fist drops to hip.
 - F2: load — front fist near hip, body coiled.
-- F3–F4: rise — body straightens explosively, front fist drives upward in a vertical line.
-- F5: peak — fist directly above body line, arm fully extended skyward.
+- F3–F4: rise — body straightens explosively, front fist drives upward in a vertical line. **Bandana trails STRAIGHT UP as a vertical yellow streak following the rising wrist**.
+- F5: peak — fist directly above body line, arm fully extended skyward. **Bandana drawn as a vertical streak from her wrist to 14 px above her head**.
 - F6: hold — pose held for emphasis (1 frame).
-- F7: recovery — body lowers back to stance, fist comes down.
+- F7: recovery — body lowers back to stance, fist comes down, bandana settles.
 
-### `jump_atk` — AERIAL KNEE (4 frames, 10 fps)
-- F1: airborne preparation — body airborne, front knee lifts toward chest.
-- F2: extend — front knee extends downward + forward, body angles 30° forward.
-- F3: peak — knee at full extension, foot pointing down-forward.
-- F4: recovery — body resets toward landing pose.
+### `jump_atk` — FLYING KNEE (4 frames, 10 fps)
+**Visual signature:** mid-air diving knee strike. **F3 silhouette is body airborne at peak height, lead knee driven HIGH and FORWARD with the lower leg tucked under for compactness, both arms thrown wide for balance, bandana streaking behind the leading wrist as a downward diagonal ribbon**. Knee-leading shape reads from across the screen.
+- F1: airborne preparation — body airborne and rising, front knee lifts toward chest.
+- F2: extend — front knee drives forward and slightly downward, body angles 30° forward.
+- F3: **peak — knee fully forward at chest-of-target height, lower leg tucked, body airborne, arms wide. Bandana trails behind the wrist as a diagonal yellow ribbon**.
+- F4: recovery — body resets toward landing.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
 - F1: wind-up — body turns slightly toward the rear, rear elbow lifts.
@@ -123,17 +128,18 @@ eye whites          #ffffff
 - F4: recovery — body unwinds.
 
 ### `special` — SUNSET SPIN (12 frames, 12 fps)
-The signature. Spinning leg sweep into rising double-fist uppercut.
+The signature.
+**Visual signature:** TWO distinct phases. First the spinning leg sweep — the bandana traces a complete **horizontal yellow halo** around her body (motion-blurred ribbon at ankle level). Then the rising double-fist uppercut — both bandana and both fists rocket UP, and on F10 the **bandana is drawn ABOVE her head as a free-floating yellow streak**, having flown off the wrist trajectory.
 - F1: low crouch, weight loaded on the back foot.
 - F2: pivot — front foot plants, body begins to rotate.
-- F3–F4: leg sweep (lower body) — back leg sweeps in a 180° arc at ankle height. Bandana trails wide (drawn as a smear/streak across two frames).
+- F3–F4: **leg sweep — back leg sweeps in a 180° arc at ankle height. Bandana trails wide tracing a horizontal yellow halo around her at hip level (motion-blurred ribbon)**.
 - F5: rotation continues — body fully rotated, leg planting.
 - F6: recovery from sweep — body straightens.
 - F7: load — feet plant wide, both fists drop to hips.
 - F8: BOTH ARMS RISE — vertical fist drive, both fists rocketing upward.
-- F9: peak — both arms fully extended overhead, body slightly leaning into the upward motion.
-- F10: bandana trail — bandana drawn as a streak ABOVE her, having flown skyward.
-- F11: hold — pose for emphasis.
+- F9: peak — both arms fully extended overhead, body leaning slightly into the upward motion.
+- F10: **bandana trail — bandana drawn as a free yellow streak 8 px above her head, separated from the wrist as if it has flown upward off her arm**.
+- F11: hold — pose for emphasis. **Brief smile (1 px corner lift)**.
 - F12: recovery — arms come down, body returns to stance.
 
 ### `throw` (5 frames, 11 fps)

@@ -4,6 +4,14 @@ Kane's white-collar specialist. Real name **Eliza Park.** Came up through corpor
 
 She wears a tailored suit because she does most of her work in office buildings. The Block is the first job in years where she's had to use the knives.
 
+> ## ⚠️ SHEET CONSISTENCY RULES — read first
+>
+> **Sheet must be on solid magenta `#ff00ff`** (or fully transparent PNG). White backgrounds will not chroma-key out and will render as rectangles around the character.
+>
+> **No drawn cell separators of any kind** — no white lines, no borders, no grid. Cells are defined by even pixel spacing only.
+>
+> Razor stays **identical** across every cell: same bob cut, same suit colors, same dual knives. Only the pose changes.
+
 ## Physical
 
 - **Age:** 38
@@ -55,10 +63,11 @@ lapel pin shadow   #8a6020
 ## Personality / fighting style
 
 - **Calm. Polite. Lethal.**
-- **Three attacks:**
-  - `slash` — quick single-knife slash, 10 dmg, fast 4-frame startup.
-  - `dash` — telegraphed forward dash with both blades extended. 16 dmg + 160 knockback. **Self-pushes 240 px.** She becomes a missile.
-  - `throw` — at low HP (<40%), starts throwing knives. Spawns a `knife` projectile (12 dmg, 240 px/s).
+- **Four signature moves — slash / fencing kick / dash / throw. The dual blades are the visual identity. Both knives are visible in every combat frame.**
+  - **`slash` — Cross-cut.** Single-knife forward slash drawn DIAGONALLY across the body. **Visual signature: F2–F3 shows a 28-px diagonal red-tinted arc from upper-right to lower-left** drawn by the blade tip (motion-blur tracing). The other knife stays in fencing-guard at the hip. Body in fencing posture — front foot leading, rear arm angled behind. 10 dmg. Fast 4-frame startup.
+  - **`fencing_kick` — Heel-thrust to chest.** A fencer's straight kick — the same forward thrust as her lunge but with the LEAD FOOT. **Visual signature: F3 silhouette is unmistakably en garde with the foot — front leg extended straight forward at hip height, foot FLEXED with HEEL leading (like stomping forward), supporting leg straight, BOTH blades held in fencing guard (one forward, one at the hip). Body upright, posture immaculate.** A surgical fencing kick from a poised swordswoman, not a martial-artist kick. 12 dmg + 100 knockback.
+  - **`dash` — Missile.** Telegraphed forward dash with BOTH blades extended. **Visual signature: F4–F6 silhouette is an X-shape — body fully horizontal at chest height, both arms extended forward with blades leading, legs trailing horizontally behind**. Two horizontal motion-line streaks behind the heels. 16 dmg + 160 knockback. Self-pushes 240 px.
+  - **`throw` — Released knife.** At low HP (<40%), starts throwing knives. **Visual signature: F3 the knife has just released — drawn 18 px ahead of her hand with a thin 6-px motion-line behind it, blade angled at 30° pointing forward**. She remains in throwing stance with the released arm forward, rear arm cocked. Spawns a `knife` projectile (12 dmg, 240 px/s).
 - **Pattern:** mostly slash-slash-dash, occasional throws in phase 2.
 - **Talks during fights:** "We could have done this in your kitchen." / "You're making this so much harder than it needs to be."
 
@@ -66,18 +75,23 @@ lapel pin shadow   #8a6020
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Hands clasped behind back. Suit perfectly clean. Subtle breath. |
-| `walk`     | 6 | Heel-toe walk, steady tempo. Suit trails 1 px. |
-| `draw`     | 4 | F1 = body shifts into fencing stance, F2–F3 = knives drawn from belt, F4 = ready pose with both blades forward. (Plays once on combat start.) |
-| `atk1`     | 4 | Slash: fast forward cut with one blade. |
-| `atk2`     | 9 | Dash: F1–F2 wind-up, F3 launch (motion lines), F4–F6 active (both blades extended), F7–F9 recovery. |
-| `atk3`     | 5 | Throw: F1–F2 = arm cocked back, F3 = release (knife projectile spawned), F4–F5 = retract. |
-| `hurt`     | 3 | Body twists. Suit stays clean. |
-| `dead`     | 5 | Falls to one knee, then to the floor. Knives clatter. |
-| `phase2`   | 4 | Brief tell when she crosses 40% HP — wipes blood off one knife with her sleeve, returns to stance. |
+| `idle`     | 4 | **Hands clasped behind back, knives concealed.** Suit perfectly clean. Subtle breath (1-px shoulder rise on F2). Heels together, toes splayed slightly (formal posture). |
+| `walk`     | 6 | **Heel-toe walk, steady tempo.** Suit trails 1 px. Hands stay clasped behind back. |
+| `draw`     | 4 | F1 = body shifts into **fencing stance** (front foot lead, rear foot perpendicular). F2 = knives drawn from belt sheaths. F3 = **ready pose — front blade horizontal forward at hip height, rear blade vertical guard at the shoulder**. F4 = settle into stance. (Plays once on combat start.) |
+| `atk1`     | 4 | **Cross-cut slash.** F1 = front blade cocks back over right shoulder. F2 = **diagonal slash begins, blade tip tracing 14 px down-and-left across the body**. F3 = peak — blade extended at hip level on the left, **28-px diagonal red-tinted motion arc visible from upper-right to lower-left**. F4 = return to fencing stance, both blades visible. |
+| `atk2`     | 5 | **Fencing kick.** F1 = front foot lifts, knee chambered toward chest, both blades held in fencing guard. F2 = leg begins extending forward. F3 = **peak — front leg fully extended straight forward at hip height, foot FLEXED with HEEL leading, supporting leg straight, body upright in immaculate fencing posture, both blades still in guard (one forward, one at hip)**. F4 = leg retracts to chamber. F5 = foot plants back, return to stance. |
+| `atk3`     | 9 | **Missile dash.** F1 = stance widens, both blades raise. F2 = body coils, blades fully forward. F3 = launch (body angles 45°, both knives leading). F4 = **body fully horizontal mid-air, both blades extended, legs trailing horizontally — X-shape**. F5 = held missile pose. F6 = X-shape continues. F7 = land, blades still extended. F8 = stance recovery. F9 = back to ready. |
+| `atk4`     | 5 | **Knife throw.** F1 = body squares to target, rear arm cocks the knife at ear height. F2 = arm begins forward motion. F3 = **release — knife drawn 18 px ahead of the throwing hand, 6-px motion-line trail behind it, blade angled 30° pointing forward**. F4 = follow-through, throwing arm fully extended. F5 = return to stance. |
+| `hurt`     | 3 | Body twists. **Suit stays clean.** Both knives stay in hand. |
+| `dead`     | 5 | F1 = body folds. F2 = falls to one knee. F3 = collapses to side. **F4 = both knives slide 8 px from open hands.** F5 = settled. |
+| `phase2`   | 4 | **Brief tell when she crosses 40% HP** — F1 = lifts one blade to her sleeve. F2 = wipes blood off the blade with the sleeve. F3 = examines the blade. F4 = returns to stance. |
 
 ## DO NOT include
 
+- **White background** — must be magenta `#ff00ff` or transparent. White is NOT chroma-keyed by the importer.
+- **Drawn cell separator lines / borders / grid lines** of any color. Cells are spaced, not bordered.
+- **Frame numbers, anim names, or any text inside cells.**
+- **Variation of Razor across frames** — same bob, same suit, same knives in every cell.
 - Disheveled hair / wrinkled suit — Razor is *poised*. Even when hurt, she's neat.
 - Visible piercings or tattoos — corporate-clean.
 - Heavy makeup — minimal, sharp.
