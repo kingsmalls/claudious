@@ -6912,7 +6912,9 @@ function renderSelect() {
   const stub = makePlayer(selectedChar, portraitX, portraitY);
   stub.facing = 1;
   stub.animState = "idle";
-  stub.animTime = stateTime;
+  // Freeze on frame 0 so the character is a static portrait — no breathing
+  // cycle, no sway, no drift in or out of the backdrop.
+  stub.animTime = 0;
   // Wide stage strip backdrop for the portrait.
   X.fillStyle = "rgba(0,0,0,0.55)";
   X.fillRect(40, 70, 180, 216);
