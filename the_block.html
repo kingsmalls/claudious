@@ -529,7 +529,14 @@ const ANIM_FALLBACK = {
   //   special, jump_atk, flying_kick, flying_stab
 };
 
+// These anims have a unique procedural animation that should NEVER be
+// substituted by the atlas. Listing them here makes resolveAnim return
+// null even if the atlas has an "idle" frame, so the engine routes to
+// the procedural drawer instead of rendering a static idle pose.
+const FORCE_PROCEDURAL_ANIMS = new Set(["special"]);
+
 function resolveAnim(animsObj, animName) {
+  if (FORCE_PROCEDURAL_ANIMS.has(animName)) return null;
   if (animsObj[animName]) return animName;
   const chain = ANIM_FALLBACK[animName];
   if (chain) {
