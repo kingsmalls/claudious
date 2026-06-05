@@ -4,6 +4,19 @@ Kane's ranged threat. Old-school hired guns — the kind who learned the trade f
 
 Visually they read **immediately as noir**: long dark trench coat, fedora pulled low, scarf across the lower face. The silhouette is the threat — you see the hat from across the screen and you know a gun's coming out.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **6 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — pistol shot (5 frames)
+> 4. `atk2` — charged shot (8 frames)
+> 5. `hurt` (3 frames)
+> 6. `dead` (4 frames)
+>
+> **Total: 30 frames in 6 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 ## Physical
 
 - **Age range:** 35–50 — old enough to have done this for a long time.

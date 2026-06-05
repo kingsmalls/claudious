@@ -4,6 +4,23 @@ Kane's white-collar specialist. Real name **Eliza Park.** Came up through corpor
 
 She wears a tailored suit because she does most of her work in office buildings. The Block is the first job in years where she's had to use the knives.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **10 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `draw` (4 frames)
+> 4. `atk1` — cross-cut slash (4 frames)
+> 5. `atk2` — fencing kick (5 frames)
+> 6. `atk3` — missile dash (9 frames)
+> 7. `atk4` — knife throw (5 frames)
+> 8. `hurt` (3 frames)
+> 9. `dead` (5 frames)
+> 10. `phase2` (4 frames)
+>
+> **Total: 49 frames in 10 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **Sheet must be on solid magenta `#ff00ff`** (or fully transparent PNG). White backgrounds will not chroma-key out and will render as rectangles around the character.

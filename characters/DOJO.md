@@ -4,6 +4,23 @@ The disciplined ones. Kane found them at a martial-arts studio in financial trou
 
 Of all Kane's crews, Dojo is the only one who *bows* before the fight.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **10 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — front kick (4 frames)
+> 4. `atk2` — roundhouse kick (5 frames)
+> 5. `atk3` — axe kick (6 frames)
+> 6. `jump_atk` — flying side kick (5 frames)
+> 7. `guard` (3 frames)
+> 8. `bow` (6 frames)
+> 9. `hurt` (3 frames)
+> 10. `dead` (4 frames)
+>
+> **Total: 46 frames in 10 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **One specific Dojo across the entire sheet** — bow, walk, kick, hurt are all the same person. Pick once:

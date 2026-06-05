@@ -4,6 +4,21 @@ Kane's personal bodyguard. Real name **Marcus Blackwell** (no relation to Rio's 
 
 In the engine: BLACKWELL spawns as an extra wave on stages 7 and 8 in **brutal** difficulty only. He's a wall between the player and the final stage. If you can beat him on brutal, you've earned the run.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **8 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — stepping hook (6 frames)
+> 4. `atk2` — stomp kick (5 frames)
+> 5. `atk3` — freight-train charge (12 frames)
+> 6. `atk4` — overhead (13 frames)
+> 7. `hurt` (3 frames)
+> 8. `dead` (7 frames)
+>
+> **Total: 56 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **The cells must contain ONLY the character.** No text. No labels. No frame numbers. No row headers. No anim names.

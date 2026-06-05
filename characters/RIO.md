@@ -1,5 +1,27 @@
 # RIO
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **15 distinct animation rows** in this exact order, one anim per row, no skipping, no merging:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `run` (6 frames)
+> 4. `jump` (3 frames)
+> 5. `atk1` — JAB (4 frames)
+> 6. `atk2` — CROSS (5 frames)
+> 7. `atk3` — ROUNDHOUSE KICK (6 frames)
+> 8. `heavy` — UPPERCUT LAUNCHER (7 frames)
+> 9. `jump_atk` — FLYING KNEE (4 frames)
+> 10. `back_atk` — REAR ELBOW (4 frames)
+> 11. `special` — SUNSET SPIN (12 frames) — **the signature move, must be visually distinct from atk3**
+> 12. `throw` (5 frames)
+> 13. `counter` (6 frames)
+> 14. `hurt` (3 frames)
+> 15. `dodge` — backward roll (5 frames)
+>
+> **Total: 80 frames in 10 rows × 8 columns.** If any row is missing, the engine substitutes a fallback that looks wrong (e.g. special replaying the atk3 combo finisher). Every row matters.
+
 ## Physical
 
 - **Age:** 24

@@ -2,6 +2,21 @@
 
 Kane's bottom-tier muscle. Recruited from Kane's "neighborhood liaison" jobs program — a euphemism for a paycheck in exchange for nights like this one. Most of them are going to wake up tomorrow regretting being here. They don't know that yet.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **8 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `run` (4 frames)
+> 4. `atk1` — wild swipe (4 frames)
+> 5. `atk2` — sloppy kick (4 frames)
+> 6. `hurt` (3 frames)
+> 7. `dead` (3 frames)
+> 8. `flee` (4 frames)
+>
+> **Total: 32 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **One sheet = one specific person.** Every cell in the sheet must show the **same individual** with the same skin tone, same hair, same head silhouette, same clothing colors.

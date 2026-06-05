@@ -4,6 +4,21 @@ Kane's loyal lieutenant. Real name **Daniel Vega.** Lost both legs and his left 
 
 He guards Kane's tower because Kane gave him the legs back. He'll fight whoever climbs the building, no questions, until he can't anymore.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **8 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — cyber-haymaker (6 frames)
+> 4. `atk2` — twin-fist launcher (8 frames)
+> 5. `atk3` — plasma orb (8 frames)
+> 6. `atk4` — cyber axe kick (5 frames)
+> 7. `hurt` (3 frames)
+> 8. `dead` (6 frames)
+>
+> **Total: 46 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 ## Physical
 
 - **Age:** 34

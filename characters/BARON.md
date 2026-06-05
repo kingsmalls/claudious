@@ -6,6 +6,24 @@ He fights like a boxer because he was one. The brass knuckles are for the people
 
 > **NOTE FOR ARTISTS / AI GENERATORS:** Baron is **explicitly fictional** — a Dick-Tracy-villain-style caricature, not a real-world person. Lean into the **caricature**: brick-shaped body, neck wider than the head, jaw exaggeratedly square, comically broad shoulders, slightly stylised proportions like a 1940s noir comic panel. **Avoid any resemblance to actual public figures.** If a draft looks like a known person, exaggerate further — make the jaw squarer, the neck thicker, the shoulders wider, the scar more obvious — until it doesn't. The point of reference is **Flattop / Pruneface / The Brow from Dick Tracy, or the Kingpin's enforcers in 60s/70s comics**, not a real cop or real boxer.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **11 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — jab (4 frames)
+> 4. `atk2` — cross (5 frames)
+> 5. `atk3` — haymaker (9 frames)
+> 6. `knee` — rising knee (5 frames)
+> 7. `leap` — leaping double-smash (6 frames)
+> 8. `jump_atk` — aerial knee (4 frames)
+> 9. `hurt` (3 frames)
+> 10. `taunt` (5 frames)
+> 11. `dead` (5 frames)
+>
+> **Total: 56 frames in 11 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > Cells must contain only the character — no anim labels, no row headers, no frame numbers, no cell borders.

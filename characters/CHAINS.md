@@ -2,6 +2,20 @@
 
 Kane's crowd-control specialists. Recruited from biker gangs and salvage-yard work crews. They swing a chain because it makes a wide hitbox, keeps everyone at arm's length, and looks like the kind of thing someone walks into a Block fight expecting to lose.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **7 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — bullwhip swing (6 frames)
+> 4. `atk2` — boot-sweep (5 frames)
+> 5. `atk3` — centrifuge spin (12 frames)
+> 6. `hurt` (3 frames)
+> 7. `dead` (3 frames)
+>
+> **Total: 39 frames in 7 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > Cells must contain only the character — no labels, no row headers, no frame numbers, no cell borders.

@@ -2,6 +2,22 @@
 
 Kane's knife specialists. Hit-and-run fighters who never hold ground — lunge, cut, dash out, reposition. Recruited from street fights and underground knife clubs. They're the ones who *enjoy* this work.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **9 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `run` (4 frames)
+> 4. `atk1` — lunge (6 frames)
+> 5. `atk2` — sweep kick (5 frames)
+> 6. `jump_atk` — flying stab (5 frames)
+> 7. `dash` (4 frames)
+> 8. `hurt` (3 frames)
+> 9. `dead` (3 frames)
+>
+> **Total: 40 frames in 9 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 ## Physical
 
 - **Age range:** 22–32

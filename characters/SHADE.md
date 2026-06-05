@@ -4,6 +4,22 @@ The unsettling ones. Kane hires them from somewhere none of his other crews know
 
 In the engine, Shade vanishes briefly and reappears behind the protagonist. Story-wise: it's just very fast movement through alleys and shadows. *Mechanically* it teleports.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **9 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — shadow chop (4 frames)
+> 4. `atk2` — backstab (4 frames)
+> 5. `atk3` — cloak-cyclone hook kick (5 frames)
+> 6. `vanish` (5 frames)
+> 7. `reappear` (3 frames)
+> 8. `hurt` (3 frames)
+> 9. `dead` (4 frames)
+>
+> **Total: 38 frames in 9 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **Cells must contain only the character.** No anim labels, no row headers, no descriptive text overlays, no frame numbers.

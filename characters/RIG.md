@@ -2,6 +2,20 @@
 
 Kane's construction-crew muscle. These were already on Kane's payroll — laborers and demolition workers who knew what would happen to a holdout block long before anyone else did. They show up to fights in the same hard hats and steel-toes they wore on shift. Most of them are just *doing the job*.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **7 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — hardhat headbutt-and-jab (5 frames)
+> 4. `atk2` — steel-toe boot stomp kick (5 frames)
+> 5. `atk3` — pneumatic-drill pound (12 frames)
+> 6. `hurt` (3 frames)
+> 7. `dead` (4 frames)
+>
+> **Total: 39 frames in 7 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
 > **The yellow hardhat is on his head in EVERY frame, in EVERY animation**, including hurt and dead. The hardhat is Rig's identity item — a frame without it is a wrong frame.

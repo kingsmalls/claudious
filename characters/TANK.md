@@ -2,6 +2,21 @@
 
 Kane's heavy enforcer. Ex-prison-yard fighters and former bouncers Kane bought out of debt. They don't move fast and they don't talk much. Their job is to be the wall between Kane's interests and anyone who won't move.
 
+> ## 🛑 REQUIRED ANIMATION ROWS — read first
+>
+> The sheet must contain **8 distinct animation rows** in this exact order, one anim per row, no skipping:
+>
+> 1. `idle` (4 frames)
+> 2. `walk` (6 frames)
+> 3. `atk1` — sledgehammer slam (7 frames)
+> 4. `atk2` — shoulder charge (8 frames)
+> 5. `atk3` — bear hug (6 frames)
+> 6. `atk4` — belly flop (6 frames)
+> 7. `hurt` (3 frames)
+> 8. `dead` (4 frames)
+>
+> **Total: 44 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+
 > ## 🛑 ABSOLUTE RULE — DO NOT WRITE ANY TEXT INTO THE SHEET
 >
 > The output PNG **must contain ZERO text characters**. No `IDLE`, no `WALK`, no `ATK1`, no `F1` / `F2` / `F3` / `F4` / `F5` / `F6` / `F7`, no `HURT`, no `H1`, no `DEAD`, no `5°`, no row labels, no column labels, no frame counters, no annotations of any kind. Every cell must contain ONLY Tank — no captions, no diagrams, no overlays.
