@@ -52,22 +52,22 @@ chain link shadow  #3a3a40
 
 ## Personality / fighting style
 
-- **Holds ground.** Doesn't chase the protagonist; lets them come.
+- **Holds ground.** Doesn't chase the protagonist; lets them come. Plants his feet wide and dares you to walk into the chain's reach.
 - **Two attacks:**
-  - `swing` (default) — long-reach horizontal swing. Chain extends 28–38 px forward.
-  - `spin` (every 3rd attack) — full 360° spin with the chain at full extension. Hitbox covers BOTH sides of Chains' body simultaneously. Multi-hit (3 hits across the active window). The protagonist can't sidestep through it — must jump or back away.
+  - **`swing` (default) — Bullwhip arc.** Side-armed horizontal swing. **Visual signature: at peak, the chain forms a full taut arc from his fist out 36 px past his body**, links visibly stretched in the apex curve. Body torques 45° with the swing, far shoulder pulled back, near shoulder thrown forward. The chain is the obvious silhouette — read from across the screen. 12 dmg, 140 knockback.
+  - **`spin` (every 3rd attack) — Centrifuge.** Full 360° spin with the chain at full extension. **Visual signature: across F4–F11 the chain traces a complete halo around his body** — a circle of motion-blur, with the chain itself visible at 4 cardinal points (12 / 3 / 6 / 9 o'clock) across the eight active frames. His head stays facing forward (spotting like a dancer) while the body rotates underneath. Hits BOTH sides simultaneously. Multi-hit (3 across the window). 14 dmg per hit. Protagonist can't sidestep — must jump or back away.
 - **Doesn't talk much.** Grunts on swings.
 
 ## Animations
 
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
-| `idle`   | 4 | Slow shoulder rise on breath. Chain swings 1–2 px with each breath. |
-| `walk`   | 6 | Heavy gait. Chain trails behind 1 frame. |
-| `atk1`   | 6 | Swing: F1–F2 = arm cocks back, chain pools, F3 = forward arc with chain fully extended, F4–F6 = follow-through. |
-| `atk2`   | 12 | Spin: F1–F3 = body coils, F4–F11 = body rotates 360° once, chain traces full arc all around (motion-blur on chain), F12 = recovery. |
-| `hurt`   | 3 | Stagger. Chain drops slack 4 px. |
-| `dead`   | 3 | Falls. Chain pools beneath body. |
+| `idle`   | 4 | **Wide planted stance** — feet shoulder-width plus. Slow shoulder rise on breath. Chain hangs from the wrist-wrap and swings 1–2 px with each breath. Free hand on his hip. |
+| `walk`   | 6 | Heavy gait. **Chain trails 1 frame behind** the rear-swinging arm. Boots strike flat-footed. |
+| `atk1`   | 6 | **Bullwhip swing.** F1 = arm cocks back, chain pools at the rear. F2 = shoulder rotates back further, chain pulled tight behind. F3 = **forward arc — chain fully extended in a horizontal taut line 36 px past body, body torqued 45°**. F4 = chain past target (3-px motion blur on the tip). F5 = arm follow-through across body. F6 = recovery, chain re-pools. |
+| `atk2`   | 12 | **Centrifuge spin.** F1–F3 = body coils, chain starts swinging up (chain at 9 o'clock, then 12). F4 = chain at 12, body starts spinning. F5–F11 = full 360° rotation — at each frame the chain visible at one cardinal point with motion blur tracing the arc (3 → 6 → 9 → 12 → 3). **Head faces forward through the entire spin** — spotted like a ballet turn. F12 = stop, chain re-pools at the side. |
+| `hurt`   | 3 | Stagger. Chain drops slack 4 px on F2. |
+| `dead`   | 3 | Falls forward to one knee, then onto the side. **Chain pools beneath body in a coiled S-shape.** |
 
 ## DO NOT include
 

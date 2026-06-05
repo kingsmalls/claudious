@@ -45,20 +45,21 @@ knife handle       #0a0a10
 ## Personality / fighting style
 
 - **Always in motion.** Hit-and-run — lunges in, knife flicks, dashes back 35 px. Never sits in melee range.
-- **One attack: `lunge`** — fast forward stab. 14 dmg + 120 knockback + self-pushes 220 px forward (the lunge itself is movement).
+- **Signature move — `lunge`:** A fencer's forward thrust executed with a knife instead of a foil. **Visual signature: at peak extension the body is fully horizontal** — front leg fully extended forward, rear leg straight back, torso flat parallel to the ground, knife-arm leading like a spear. The pose is unmistakably an **arrow shape** pointing at the target. 14 dmg + 120 knockback + self-pushes 220 px forward (the lunge itself is movement).
 - **Crossup-prone.** If protagonist faces away, Slice routes around to attack from the back.
+- **Knife grip:** reverse / icepick grip (blade along the forearm) in idle and walk. **Flips to forward grip (blade leading)** on the lunge wind-up — the visible flip is part of the visual identity.
 
 ## Animations
 
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
-| `idle`   | 4 | Bouncing weight shift. Knife held against forearm. |
-| `walk`   | 6 | Light, fast steps. |
-| `run`    | 4 | Sprint with motion lines behind heels. Knife arm forward. |
-| `atk1`   | 6 | Lunge: F1 = wind-up coil, F2 = launch (body extends fully), F3–F4 = active stab (knife forward), F5 = miss-pose, F6 = recoil. |
-| `dash`   | 4 | Backward dash after lunge. Body low, knife out for guard. |
-| `hurt`   | 3 | Body folds. Knife arm drops. |
-| `dead`   | 3 | Crumples. Knife falls beside body. |
+| `idle`   | 4 | **Bouncing weight shift** — never still. Knife reverse-grip against the right forearm. Body angled 30° toward the camera (boxer's blade-stance). |
+| `walk`   | 6 | Light, prowling steps. **Knife arm forward, free hand low** as counter-weight. Feet barely lift. |
+| `run`    | 4 | Sprint with **2-px motion lines behind both heels**. Knife extended forward like a spear-tip. |
+| `atk1`   | 6 | **Lunge.** F1 = coil (knees deep bent, knife at hip, **blade flips to forward grip**). F2 = launch (front leg explodes forward, rear leg extends back). F3 = **arrow pose — body fully horizontal, knife leading 24 px past the front foot, rear leg straight, 4-px motion-line streak behind the knife**. F4 = active stab held one frame. F5 = miss-pose (body extended, blade swung past). F6 = recoil pull-back. |
+| `dash`   | 4 | Backward dash after lunge. Body low (knees deep), **knife held across the chest** as a guard. Motion lines trail FORWARD from the heels because he's reversing direction. |
+| `hurt`   | 3 | Body folds. Knife arm drops to hip. |
+| `dead`   | 3 | Crumples sideways. **Knife slides 6 px from the open hand** on F3. |
 
 ## DO NOT include
 

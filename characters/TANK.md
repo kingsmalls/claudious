@@ -45,18 +45,18 @@ strap brown        #4a3a28
 
 - **Slow and inevitable.** Walks at half speed. Doesn't run.
 - **Super-armor through hits.** Takes 3 hits before flinching (engine: `staggerN: 3`). The protagonist learns to commit to a heavy or wait for the wind-up gap.
-- **One attack: telegraphed slam.** 14-frame wind-up with visible ground-rumble particles. If it lands, big knockback and big damage.
-- **Doesn't speak.** Grunts on impact.
+- **Signature move — `slam`: Two-handed sledgehammer drop.** Both massive arms raise OVERHEAD with **fists clasped together**, body coils backward like a question mark, then crashes down. **Visual signature: at peak the silhouette reads as a pyramid — wide feet planted, both arms straight up overhead, fists meeting at the top, body arched slightly backwards**. The pose is unmistakable from across the screen — "incoming danger." Dust falls *downward* from his boots during the wind-up because the ground is already shaking under him. Ground-rumble specks radiate from his stance on F2–F3.
+- **Doesn't speak.** Loud nasal grunts on the slam impact.
 
 ## Animations
 
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
-| `idle`   | 4 | Slow chest rise. Stance wide. |
-| `walk`   | 6 | Heavy stomp gait — boots strike flat-footed on each step. |
-| `atk1`   | 7 | Slam: F1–F3 wind-up (arm raised overhead, body coiled), F4 swing peak, F5–F7 recovery. Ground rumble particles during F2–F3. |
-| `hurt`   | 3 | Body absorbs, barely flinches. Head turns 5°. |
-| `dead`   | 4 | Falls hard. Drop shadow grows. |
+| `idle`   | 4 | **Wide planted stance** — feet outside shoulder width. Slow chest rise on breath. Arms hang loose, fists half-clenched. Vest **badge catches a 1-px gold highlight**. |
+| `walk`   | 6 | **Heavy stomp gait** — boots flat-footed. Body barely sways. **Dust puff (1–2 brown specks) at the planted heel on every step**. Vest jiggles 1 px on impact. |
+| `atk1`   | 7 | **Sledgehammer slam.** F1 = both arms start rising, knees bending. F2 = arms above head, fists clasping, body coiled back (ground-rumble specks at his feet). F3 = **peak pyramid pose — feet wide, both arms vertical overhead, fists meeting, body arched backwards**. F4 = drive down (body folds at the waist, both fists crash at chest-height of target) — **dust burst, 5–6 brown specks in a half-circle at his feet**. F5 = follow-through, body bent forward, fists at thigh height. F6 = straighten. F7 = recovery to stance, badge re-catches highlight. |
+| `hurt`   | 3 | Body absorbs, **barely flinches** — head turns 5°, vest doesn't move. (At full HP he's almost unimpressed.) |
+| `dead`   | 4 | Falls hard like a tree — F1 folds at the knees, F2 falls to one knee (dust puff), F3 collapses sideways, F4 face down. |
 
 ## DO NOT include
 

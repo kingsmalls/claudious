@@ -53,10 +53,10 @@ power pack body    #1a1a22
 
 ## Personality / fighting style
 
-- **Three attacks:**
-  - `strike` — heavy cybernetic punch with the left arm. 14 dmg, 130 knockback.
-  - `uppercut` — telegraphed launcher, both organic + cyber arms. 22 dmg, 80 knockback, **launches the protagonist into the air** for juggle followups.
-  - `shock` — fires a `shock` projectile (electric ball, 14 dmg, 120 knockback). Used at long range.
+- **Three signature moves — strike / uppercut / shock. The cyber-arm BLUE POWERLINES are the visual identity — every move involves them brightening, dimming, or arcing.**
+  - **`strike` — Cyber-haymaker.** Heavy cybernetic punch with the cyber arm. **Visual signature: F1–F2 the blue power-lines on the cyber arm BRIGHTEN from dim cyan to electric-bright white** (the charge tell — visible from across the screen). F3 the cyber fist drives forward leaving a 4-px blue plasma trail behind the knuckles. F4 the powerlines dim back. Organic arm stays back as counter-weight. 14 dmg, 130 knockback.
+  - **`uppercut` — Twin-fist launcher.** Telegraphed launcher with both arms driving upward. **Visual signature: F3–F5 silhouette is an upward V — both arms vertical above the head, organic fist on one side, cyber fist on the other, body extended fully. F5 peak has a WHITE LIGHTNING FLASH erupting from the cyber elbow's joint** (a 6-px star-burst, white core fading to blue). 22 dmg, 80 knockback. Launches the protagonist into the air for juggle followups.
+  - **`shock` — Plasma orb.** Fires a glowing ball of electricity. **Visual signature: F1–F4 the cyber palm cradles a GROWING BLUE ORB** — 2 px on F1, 4 px on F2, 6 px on F3, 8 px on F4 (peak charge). The orb has a white-hot core and a blue-cyan halo, with 2–3 small lightning arcs jumping from the orb to the cyber forearm. F5 release — orb leaves the hand traveling forward, cyber palm still glowing faintly. 14 dmg, 120 knockback. Used at long range.
 - **Phase 2 (<50% HP):** more shock spam, mixes uppercut into combos.
 - **Quiet during fights.** Speaks only at start: "Kane built me. So I owe him a building."
 
@@ -64,13 +64,13 @@ power pack body    #1a1a22
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Heavy stance. Power-lines pulse. Right shoulder rises and falls on breath. |
-| `walk`     | 6 | Cyber-leg stomp. Each footstep should clearly read as METAL on concrete. |
-| `atk1`     | 6 | Cybernetic strike. F1–F2 = wind-up (power-lines on cyber arm BRIGHT), F3 = drive forward, F4–F6 recovery. |
-| `atk2`     | 8 | Uppercut: F1–F2 deep crouch, F3–F4 explosive rise (both arms drive up), F5 peak, F6–F8 recovery. Power-lines flash white at peak. |
-| `atk3`     | 8 | Shock: F1–F4 charge (cyber arm raised, growing blue glow at palm), F5 release (projectile spawns), F6–F8 recovery. |
-| `hurt`     | 3 | Body recoils. Cyber limbs less affected — they don't flinch the way organic does. |
-| `dead`     | 6 | Falls. Cyber limbs spasm briefly (sparks at the joints). Power-lines fade to dark over the death frames. |
+| `idle`     | 4 | **Heavy planted stance**, organic arm relaxed, cyber arm slightly raised (always at the ready). **Power-lines pulse blue** — dim on F1/F3, brighter cyan on F2/F4 (heartbeat rhythm). Shoulder rises 1 px on breath. |
+| `walk`     | 6 | **Cyber-leg stomp** — the metal leg lands heavy with a 1-px highlight on the joint, the organic leg lands soft. Asymmetric gait. Power-lines pulse with each cyber-leg step. |
+| `atk1`     | 6 | **Cyber-haymaker.** F1 = cyber arm cocks back, **powerlines start brightening from dim to bright white**. F2 = arm fully cocked, **powerlines at peak white intensity**. F3 = forward drive (cyber fist forward, **4-px blue plasma trail behind the knuckles**). F4 = peak punch, fist 18 px past body. F5 = retract. F6 = powerlines dim back to idle cyan. |
+| `atk2`     | 8 | **Twin-fist launcher.** F1 = deep crouch (both arms drop, knees bend). F2 = load (both fists at hip, body coiled). F3 = explosive rise begins, both arms swinging up. F4 = both arms rising past chest. F5 = **peak — upward V silhouette, both fists vertical above head, body fully extended skyward, WHITE LIGHTNING STAR-BURST erupting from the cyber elbow joint (6-px white core fading to blue)**. F6 = held peak. F7 = arms lowering. F8 = recovery. |
+| `atk3`     | 8 | **Plasma orb.** F1 = cyber arm raises, palm forward, **2-px blue orb forming at palm center**. F2 = orb grows to 4 px, first lightning arc visible from orb to forearm. F3 = orb at 6 px, 2 lightning arcs. F4 = **peak charge — orb at 8 px, white-hot core, blue-cyan halo, 3 lightning arcs jumping to forearm**. F5 = release — orb leaves the palm 12 px ahead, cyber palm still glowing faintly. F6–F7 = recovery, palm dimming. F8 = back to stance. |
+| `hurt`     | 3 | Body recoils. **Cyber limbs less affected** — organic side flinches harder. Powerlines flicker on F2. |
+| `dead`     | 6 | F1 = falls to knees. F2 = collapses forward. F3–F4 = **cyber limbs spasm — small white sparks at the cyber elbow and knee joints** (3-pixel star-bursts). F5 = sparks fading. F6 = powerlines fully dark, body settled. |
 
 ## DO NOT include
 

@@ -57,21 +57,22 @@ toenails           #c8a890     (1px detail)
 ## Personality / fighting style
 
 - **Active guard.** While `guardActive` is on (1.0 s armed / 1.4 s open cycle), Dojo *parries* incoming player hits and immediately counters. Forces the protagonist to pick their moments, not button-mash.
-- **One attack:** `counter` — a fast straight punch deflected through the guard. 11 dmg + 110 knockback.
-- **Bows before combat.** The first frame of `idle` after spawn shows a quick formal bow — head tilts forward 8° for 6 frames, then resumes stance.
+- **Signature move — `counter`: Parry-strike (one-frame deflection + open-palm strike in a single motion).** This is NOT a boxer's straight punch — it's a karate technique. **Visual signature: F2 shows BOTH hands working at once — the rear hand sweeping outward to deflect (palm out, fingers up), the lead hand simultaneously driving forward in an open-palm strike (heel-of-palm leading, fingers angled up).** Body in a deep front stance (bent front knee, straight back leg) — VERY different from any boxer in the cast. **Belt tails snap forward** with the strike. 11 dmg + 110 knockback.
+- **Stance and posture are the visual identity** — narrow blade-stance with one foot leading, shoulders square, chin tucked. He never stands square-on like a brawler.
+- **Bows before combat.** The first idle cycle on spawn includes a quick formal bow — head tilts forward 15°, hands at sides, then resumes stance.
 - **Speaks short formal phrases:** "Begin." or "Show me." Rare — only at fight start.
 
 ## Animations
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Stance held. Belt tails sway 1 px. |
-| `walk`     | 6 | Light, balanced steps. Front foot leads. |
-| `atk1`     | 4 | Counter punch. F1 = guard tightens, F2 = forward step + punch extend, F3 = peak (knuckles forward), F4 = retract to stance. |
-| `guard`    | 3 | Hands raised tighter, body angled 30° away from camera. Belt tails STILL. |
-| `bow`      | 6 | Formal bow on first idle. Head + torso tilt forward, then return. |
-| `hurt`     | 3 | Body folds. Belt tails swing wide. Recovers fast. |
-| `dead`     | 4 | Falls to one knee first, then to the ground. (Dojos die with composure.) |
+| `idle`     | 4 | **Karate front-stance** — narrow front-back foot placement, front knee bent, back leg straight. Hands in **knife-hand guard** (open palms vertical, fingers up, one forward at chin height, one at hip). Belt tails sway 1 px on breath. |
+| `walk`     | 6 | Light gliding steps in stance — front foot slides forward, rear foot follows. **Never crosses center line** (no boxer's stride). Hands stay in guard. |
+| `atk1`     | 4 | **Parry-strike.** F1 = guard tightens, rear hand cocks. F2 = **rear hand sweeps OUT/DOWN in a deflecting arc, lead hand simultaneously drives forward in an open-palm strike (palm heel leading, fingers angled up)** — both arms active in the SAME frame. F3 = peak (lead palm fully extended at chest-of-target height, rear hand returned to guard, **belt tails snapped forward 6 px**). F4 = retract to stance. |
+| `guard`    | 3 | Both hands in tight knife-hand guard, body angled 30° away from camera (blade-stance). **Belt tails ABSOLUTELY STILL** — the stillness is intentional. |
+| `bow`      | 6 | Formal bow. F1–F2 = head + torso tilt forward 15°, hands flat at thighs. F3 = held bow (1 frame). F4–F6 = return to stance. |
+| `hurt`     | 3 | Body folds. **Belt tails swing wide and snap**. Recovers fast — by F3, back in guard. |
+| `dead`     | 4 | F1 = body folds. F2 = falls to one knee (composed, not collapsed). F3 = forward to all fours. F4 = settles. (Dojos die with composure.) |
 
 ## DO NOT include
 

@@ -62,19 +62,19 @@ RED BANDANA shadow #6a1828
 - **Cocky.** Approaches with a swagger, hands low. Doesn't expect a fight.
 - **Hit-and-run.** After every swipe, backpedals 30 px. Doesn't sit in the protagonist's range.
 - **Panicked at low HP** — flees toward the screen edge, no strategy.
-- One attack: a wild forward swipe (a haymaker, telegraphed by a shoulder dip).
+- **Signature move — `wild swipe`:** A street-fighter's overhand haymaker thrown with no technique at all. **Visual signature: the body OVER-COMMITS** — front leg crosses past the body line, rear shoulder flies up, rear arm flails behind for balance. He looks like he's falling forward more than punching. **The red bicep bandana streaks horizontally** through the swing as the arm trails behind the fist.
 
 ## Animations (8 frames each unless noted)
 
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
-| `idle`   | 4 | Slight sway. Hands at hip level. Cocky tilt. |
-| `walk`   | 6 | Loose stride. |
-| `run`    | 4 | Limbs flail. Bandana visible on the rear arm during the back-swing. |
-| `atk1`   | 4 | Forward swipe. Frame 1 = wind-up shoulder dip; frame 3 = full extension. |
-| `hurt`   | 3 | Body folds. Face shows fear. |
-| `dead`   | 3 | Falls flat onto back, knockback drift. |
-| `flee`   | 4 | Same as run but body lower, head ducked. |
+| `idle`   | 4 | Cocky tilt. Hands at hip level, palms loose (not fists). Weight on the back foot, **front foot tapping** — itchy energy. |
+| `walk`   | 6 | Loose swagger. Shoulders roll with each step. **Hands stay low**, not raised — he's not expecting to fight. |
+| `run`    | 4 | Limbs flail. Bandana visible on the back-swing of the rear arm. Body upright (not athletic crouch). |
+| `atk1`   | 4 | **Wild swipe.** F1 = shoulder DIP back and DOWN (the unmistakable wind-up). F2 = body lunges forward, front leg crossing past center. F3 = **full extension — fist 18 px past the body, rear arm flailing behind, bandana streaking horizontally through the swing**. F4 = stumble-back recovery, body over-balanced. |
+| `hurt`   | 3 | Body folds at the waist. Face shows **fear** (eyebrows up, mouth open). Hands fly up. |
+| `dead`   | 3 | Falls flat onto the back, arms splayed. |
+| `flee`   | 4 | Same as run but body lower, head tucked, **looking back over the shoulder** on F2 and F4 — the panic-glance. |
 
 ## DO NOT include
 

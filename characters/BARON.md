@@ -62,10 +62,10 @@ badge gold         #f4c860
 
 ## Personality / fighting style
 
-- **Three attacks:**
-  - `jab` — fast left-hand boxing jab. 11 dmg.
-  - `cross` — heavy right-hand straight, full hip rotation. 16 dmg.
-  - `haymaker` — telegraphed overhand. 28 dmg + 250 knockback. **Super-armored** — Baron eats hits during the wind-up.
+- **Three signature moves — jab / cross / haymaker. Brass knuckles glint gold on every punch — the colour tell.**
+  - **`jab` — Pistoning lead.** Fast left-hand boxer's jab. **Visual signature: F2 shows the fist mid-extension with a 1-px GOLD GLINT on the brass knuckles** — the only bright colour in the frame. Body barely twists (real-boxer economy). Coat doesn't move. 11 dmg.
+  - **`cross` — Hip-driven straight.** Heavy right-hand straight. **Visual signature: F3 the long coat FLARES WIDE behind him in a 45° fan** as the body rotates fully, gold knuckles forward at peak. Front foot rooted, rear heel rising. 16 dmg.
+  - **`haymaker` — Looping overhand.** Telegraphed wind-up overhand. **Visual signature: F1–F4 the coat OPENS FULLY (both panels swept aside) revealing the vest + brass badge underneath — a 4-frame "I'm about to end this" tell.** F5 = peak with the right arm at full overhand extension, body rotated past 90°, gold knuckles tracing a comet arc from shoulder-high down to chest-of-target. 28 dmg + 250 knockback. **Super-armored** — eats hits during the wind-up.
 - **Boxing patterns.** Strings 2–3 jabs, then a cross, occasional haymaker. Reads like a real fighter.
 - **Talks during the fight.** Calm and even-toned: "You don't have to do this." / "Walk away. I'll tell Kane it was nothing." / "This is the last time I ask."
 
@@ -73,14 +73,14 @@ badge gold         #f4c860
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Boxer's bounce on the balls of the feet. Coat sways. |
-| `walk`     | 6 | Casual approach. Coat trails. |
-| `atk1`     | 4 | Jab. Fast snap-back. |
-| `atk2`     | 5 | Cross. Body rotates 45°. Coat flares wide on F3. |
-| `atk3`     | 9 | Haymaker. F1–F4 = wind-up (coat opens, badge visible briefly), F5 = peak (full extension), F6–F9 = recovery. |
-| `hurt`     | 3 | Body folds. Hair stays neat. |
-| `taunt`    | 5 | Combs hair with one hand. Smiles politely. (Plays once during the fight.) |
-| `dead`     | 5 | Falls hard. Coat splays open. Knuckles fall from his hands. |
+| `idle`     | 4 | **Boxer's bounce on the balls of the feet** (1 px up/down). Hands at chin in textbook guard, gold knuckles catching highlight on F2. Coat sways 1 px at the hem. |
+| `walk`     | 6 | Casual approach, almost a stroll. Coat trails 2 px behind. Hands at chin, low guard. |
+| `atk1`     | 4 | **Jab.** F1 = lead shoulder cocks back 2 px. F2 = **fist extends with gold-knuckle glint at peak**. F3 = full extension, knuckles vertical. F4 = sharp snap-back to guard. |
+| `atk2`     | 5 | **Cross.** F1 = hip cocks back, rear heel grounded. F2 = hip rotation begins. F3 = **peak — rear fist crosses the centerline, coat flares behind in a 45° fan, gold knuckles forward, body rotated 45°**. F4 = body rotation continues, fist held forward. F5 = snap-back, coat resettles. |
+| `atk3`     | 9 | **Haymaker.** F1–F4 = wind-up — body coils, rear arm draws back behind shoulder, **coat OPENS FULLY across all four frames, vest + brass badge visible underneath, free hand drops to hip for balance**. F5 = peak — right arm at full overhand extension above the shoulder, body rotated past 90°, **gold-knuckle trail (3-px arc of comet glint)** from shoulder-high down to target chest-height. F6–F8 = follow-through, body fully torqued. F9 = recovery, coat closing back. |
+| `hurt`     | 3 | Body folds. **Hair stays neat.** Hands drop briefly from guard. |
+| `taunt`    | 5 | **Combs hair with one hand**. F1–F2 = right hand rises to hair. F3 = held comb pose. F4–F5 = hand returns to guard. Polite smile throughout. (Plays once during the fight.) |
+| `dead`     | 5 | Falls hard. F3 = on his side. F4 = coat splays open, **brass knuckles fall from his hands and roll out 8 px ahead of him** — the iconic image. F5 = settled. |
 
 ## DO NOT include
 

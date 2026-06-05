@@ -56,20 +56,24 @@ smoke trail edge   #1a0e22
 - **Silent.** Never talks.
 - **Vanishes every 2–3 seconds.** During vanish: cloak shimmers, body fades over ~0.4s. Reappears behind the protagonist (other side of screen if center, or opposite side from where Shade was).
 - **Backstab on reappear.** 0.2s after reappearing, automatic forward strike — fast 3-frame startup. The protagonist learns to turn around the *moment* Shade disappears.
+- **Signature moves — strike + backstab.**
+  - **`strike` — Shadow chop.** Front hand drives forward as an open-palm knife-hand chop (fingers extended, edge of hand leading), the cloak **swirls wide behind** in a half-circle from the motion. **Visual signature: F3 shows the chopping hand fully extended forward while the cloak hem fans outward to the rear in a 180° arc — like a comet tail**. 13 dmg.
+  - **`backstab` — Materialising blade.** The strike that comes RIGHT after the reappear. **Visual signature: F1 shows only the eye-glow + cloak silhouette with the BLADE EMERGING FIRST from a wisp of purple smoke** (the blade is visible before the body), F2 the body solidifies behind the blade, F3 the forward thrust. 18 dmg + 80 knockback.
 - **No ranged attacks.** Pure melee + teleport.
+- **Eye-glow color is the only saturation** in the sprite — pick one (cyan `#5acfff`, ice blue `#8accff`, or pale violet `#cfaaff`) and use it on every frame, every animation, every time. The two eye-dots are the **only thing that should be visible** during the vanish frames.
 
 ## Animations
 
 | Slot       | Frames | Notes |
 |------------|-------:|-------|
-| `idle`     | 4 | Subtle. Hood breathes. Eyes glow steady. |
-| `walk`     | 6 | Smooth glide. Cloak trails. Smoke wisps from hem on each step. |
-| `atk1`     | 4 | Strike: front arm extends in a straight chop. Fast (16 fps). |
-| `atk2`     | 4 | Backstab — same beats as `atk1` but cloak still trailing reappear smoke for 2 frames. |
-| `vanish`   | 5 | F1 = inhale, F2–F3 = body fades to outline, F4–F5 = only the eye-glow + smoke remain. |
-| `reappear` | 3 | F1 = smoke + eye-glow only, F2 = body reforms at low alpha, F3 = full opacity. |
-| `hurt`     | 3 | Body folds. Hood briefly drops back, exposing more of the mask. |
-| `dead`     | 4 | Body crumples. Cloak pools. Eye-glow fades over the death frames. |
+| `idle`     | 4 | Subtle. Hood breathes (rises 1 px on F2). **Eye-glow steady.** Cloak hem sways 1 px. Purple wisp curls from the hem on F3. |
+| `walk`     | 6 | **Smooth glide** — feet barely visible under the cloak hem (almost reads as hovering). Cloak trails 2 px behind the body. **Smoke wisps from the hem on each step** (small purple curls). |
+| `atk1`     | 4 | **Shadow chop.** F1 = front hand cocks back across the chest, cloak gathers behind. F2 = forward drive (chopping hand starts extending, cloak begins fanning). F3 = **peak — chopping hand fully extended forward, cloak hem fanned 180° behind in a comet-tail arc**. F4 = retract, cloak resettles. |
+| `atk2`     | 4 | **Materialising backstab.** F1 = **blade visible first** emerging from a purple smoke wisp, body still partially translucent. F2 = body solidifies fully, blade leading. F3 = forward thrust (blade 18 px past body, free arm flung back for balance). F4 = retract. |
+| `vanish`   | 5 | F1 = inhale, cloak puffs outward. F2 = body fades to 60% alpha, hem dissolving into smoke. F3 = body 30% alpha, only the head/cloak outline + eye-glow legible. F4 = body gone, just eye-glow + thick purple smoke. F5 = **eye-glow alone, no body** — the iconic vanish frame. |
+| `reappear` | 3 | F1 = eye-glow + smoke only. F2 = body reforms at 50% alpha behind the smoke. F3 = full opacity, smoke dissipating. |
+| `hurt`     | 3 | Body folds. **Hood briefly drops back 4 px on F2**, exposing more of the upper mask (but never the face below the eyes). |
+| `dead`     | 4 | Body crumples. **Cloak pools out around the body in a wide circle.** Eye-glow fades — bright on F1, dim on F2, gone by F3. Purple smoke dissipates upward over the death frames. |
 
 ## DO NOT include
 
