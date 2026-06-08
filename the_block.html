@@ -4744,9 +4744,25 @@ function approachOrAttack(e, dx, dy, dist, dt) {
 function runRunnerAI(e, dx, dy, dist, dt) {
   if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
   if (e.fleeing) {
+    // Cornered: if player is close OR runner is jammed against the stage
+    // edge, drop the flee and swing back. Otherwise he becomes uncatchable
+    // (especially against slow characters like Atlas) and the wave never
+    // clears because he can't be reached.
+    const atEdge = (e.x <= STAGE_LEFT_PAD + 4) || (e.x >= W - STAGE_RIGHT_PAD - 4);
+    const playerClose = dist < e.range + 8;
+    if (atEdge || playerClose) {
+      // Turn and fight — desperate-mook mode.
+      e.vx = 0; e.vy = 0;
+      e.facing = (player.x > e.x) ? 1 : -1;
+      e.animState = "idle";
+      if (e.aiCooldown <= 0) {
+        startEnemyAttack(e, "swipe");
+      }
+      return;
+    }
     const fleeDir = (player.x > e.x) ? -1 : 1;
     e.facing = fleeDir;
-    e.vx = fleeDir * e.runSpeed;
+    e.vx = fleeDir * e.walkSpeed * 1.2;   // was runSpeed — too fast to catch
     e.vy = (e.y < STAGE_TOP + 20) ? 30 : (e.y > STAGE_BOT - 20 ? -30 : 0);
     e.x += e.vx * dt; e.y += e.vy * dt;
     e.animState = "walk";
