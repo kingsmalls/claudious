@@ -8,19 +8,41 @@
 > 2. `walk` (6 frames)
 > 3. `run` (6 frames)
 > 4. `jump` (3 frames)
-> 5. `atk1` — OPEN-PALM SHOVE (4 frames)
-> 6. `atk2` — REAR HEAVY SLAP (5 frames)
-> 7. `atk3` — OVERHEAD CHOPPING SMASH (6 frames)
-> 8. `heavy` — UPPERCUT LAUNCHER (7 frames)
-> 9. `jump_atk` — FLYING BODY SPLASH (4 frames)
-> 10. `back_atk` — REAR ELBOW (4 frames)
-> 11. `special` — FOUNDATION STONE (12 frames) — **the signature move, must be visually distinct from atk3**
-> 12. `throw` (5 frames)
-> 13. `counter` (6 frames)
+> 5. `atk1` — OPEN-PALM SHOVE (4 frames) — **forward HORIZONTAL palm, fingers splayed**
+> 6. `atk2` — CHARGING HEADBUTT (5 frames) — **body LUNGES head-first**, two hands gripping forward
+> 7. `atk3` — OVERHEAD CHOPPING SMASH (6 frames) — **TWO fists clasped, DESCENDING vertically**
+> 8. `heavy` — UPPERCUT LAUNCHER (7 frames) — **ONE rear fist, ASCENDING vertically** from below knee
+> 9. `jump_atk` — FLYING BODY SPLASH (4 frames) — **body HORIZONTAL mid-air**, arms spread wide
+> 10. `back_atk` — REAR ELBOW (4 frames) — **elbow back BEHIND** body, body twisted sideways
+> 11. `special` — FOUNDATION STONE (12 frames) — **CHARGE → grab → lift OVERHEAD → SLAM** (multi-phase)
+> 12. `throw` — LIFTING SUPLEX (5 frames) — **body ARCHES BACKWARD**, enemy overhead
+> 13. `counter` — STOMP CRUSH (6 frames) — **LEG raised knee-to-chest, BOOT drops down** (the only leg-attack in his kit)
 > 14. `hurt` (3 frames)
 > 15. `dodge` (5 frames)
 >
-> **Total: 80 frames in 10 rows × 8 columns.** If any row is missing, the engine substitutes a fallback that looks wrong (e.g. special replaying the atk3 combo finisher). Every row matters.
+> **Total: 80 frames in 10 rows × 8 columns.** If any row is missing, the engine substitutes a fallback that looks wrong. Every row matters.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Atlas's biggest sheet-generation failure is **attacks blurring together** because the generator falls back to "big man swinging arms" for every move. To prevent that, **each attack must occupy a DIFFERENT silhouette quadrant**. If two attacks share a silhouette, redraw one:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` shove | Vertical | Front hand (open palm) | Horizontal forward | Fingers visibly splayed (only "open hand" attack) |
+> | `atk2` headbutt | Lunging forward 30° | Head (hands grip forward) | Horizontal forward, low | Head leading the body, both hands occupied gripping |
+> | `atk3` chop | Vertical folding forward | Both fists (clasped) | Descending vertical | TWO fists clasped together — no other attack clasps |
+> | `heavy` uppercut | Vertical, extending up | ONE rear fist | Ascending vertical | Single rising fist (atk3 has two; this has one) |
+> | `jump_atk` splash | Body HORIZONTAL in air | Whole chest/arms wide | Falling | Body parallel to ground, arms spread like a cross — only aerial attack |
+> | `back_atk` elbow | Twisted 70° sideways | Rear elbow | Backward | Elbow behind body, body turned away — only rear-facing attack |
+> | `special` foundation | Charge → upright → fold | Both arms (grab → slam) | Multi-phase | Only attack that LIFTS another body overhead |
+> | `throw` suplex | Body BENT BACKWARD | Both arms wrap | Backward arch | Body bent BACKWARD (special bends FORWARD) — only back-arch pose |
+> | `counter` stomp | Vertical, ONE leg raised | Boot | Descending vertical (leg) | Only attack that uses the LEG; raised knee silhouette at peak |
+>
+> Cross-checks before approving the sheet:
+> - **atk3 vs heavy:** atk3 = two fists going DOWN; heavy = one fist going UP. If both look like "fist over head," redraw heavy with the fist clearly BELOW the knee on F1–F2 so the ascent is visible.
+> - **atk3 vs counter:** atk3 = arms drop; counter = LEG drops. If counter shows arms overhead, it's wrong — counter is leg-only.
+> - **atk1 vs atk2:** atk1 = arm extends, body stays vertical. atk2 = body LUNGES forward head-first, both hands are already forward-gripping. If atk2 looks like atk1 with a different arm, redraw.
+> - **special vs throw:** special folds FORWARD (slam forward); throw arches BACKWARD (suplex). If both look like the same arc, one is wrong.
 
 ## Physical
 
@@ -134,14 +156,14 @@ eye whites          #f0f0f0
 - F4: retract — palm pulls back 70%, body returns to neutral. **Tribal tattoos** visible on the forward forearm during the extension.
 - Wedding band catches a small movement against the chest.
 
-### `atk2` — REAR HEAVY SLAP (5 frames, 10 fps)
-**Visual signature:** **massive backhand slap with the WHOLE BODY torquing** — rear arm crosses the entire screen from one side to the other (a 60°+ body rotation), palm leading. The beard whips 2 px with the rotation. Tribal tattoos prominent on the bare striking forearm throughout the arc. Unmistakable "wide arc, not a punch" silhouette.
-- F1: load — right arm wound up across the body to the left side, body torqued back.
-- F2: hip rotates forward, right shoulder begins arcing across.
-- F3: sweep — right arm crosses the center line, palm leading at face-of-imagined-target height.
-- F4: peak — palm fully across the body, body rotated 60°, **beard moves 2 px with the strike** (the head whips slightly with the rotation).
-- F5: recovery — body unwinds back to stance, chain swinging back to neutral.
-- **Tribal tattoos** prominent on the bare striking forearm.
+### `atk2` — CHARGING HEADBUTT (5 frames, 10 fps)
+**Visual signature:** **the BODY itself is the weapon** — Atlas lunges 6–8 px forward with his HEAD leading, both massive hands gripping forward at chest height (mimicking grabbing an enemy's shoulders). The beard tilts forward, head-first into the strike. This is the **only attack in his kit where the head leads the body** — instantly readable from across the screen because no other Atlas attack lunges horizontally. **Must NOT look like atk1** (atk1's body stays vertical and just an arm extends; atk2's whole body shifts forward into a battering-ram pose).
+- F1: load — body coils back 4 px, both hands rise to chest height, fingers half-closed (about to grip). Head tucks down slightly so the crown leads.
+- F2: lunge begins — front foot plants 4 px forward, body angling 15° forward, head tucked, both hands extending forward.
+- F3: **drive — body LUNGED 8 px forward, head LEADING the body at chest-of-imagined-target height, both hands gripping forward (palms down, fingers curled around imagined collar). Body angled 30° forward with the brow leading**. Beard tilted forward. Body silhouette is a horizontal battering-ram, totally different from atk1's vertical pose.
+- F4: peak impact — **forehead at the imagined target's face**, both hands still gripping forward at chest. Body fully extended in the lunge. 1-px white impact spark at the brow. Wedding band swung 3 px forward off the chest from the lunge momentum.
+- F5: recovery — body straightens, pulls back 4 px, hands lower. Chain settles back against chest.
+- **Tribal tattoos** visible on both forward-gripping forearms.
 
 ### `atk3` — OVERHEAD CHOPPING SMASH (6 frames, 10 fps) — combo finisher
 **Visual signature:** **BOTH HANDS CLASPED TOGETHER overhead** (like swinging an invisible sledgehammer), driven downward in a vertical chopping motion. Body folds forward at the waist on impact, **dust burst at his feet (4–5 brown specks)**. F6 the **brief parental smile** appears for one frame — the only soft moment in the whole cast.
@@ -205,14 +227,14 @@ The signature.
 - F5: recovery — Atlas planting his hands, pushing back up to standing. Body upright again, chain back against the chest.
 - **Tribal tattoos** visible on both forearms throughout the lift.
 
-### `counter` — counter-special (6 frames, 10 fps)
-- The free counter-special at full parry meter. A bigger, meaner atk3 (the overhead chopping smash) with double the dust burst — the counter that ends fights.
-- F1: load — both fists clasped overhead, body coiled deeper than atk3 (knees bending more), weight loading.
-- F2: rise to peak — both hands above head, body extended fully skyward, **wedding band glint visible** (the tell).
-- F3: pause — 1-frame hold at peak, the kill-shot windup.
-- F4: descent — body folds forward at the waist, both hands drive downward together with maximum force.
-- F5: impact — hands at chest-of-imagined-target height, **MASSIVE DUST BURST at his feet** (8–10 brown specks in a wide half-circle, twice the size of atk3's). The parental smile is at full visibility.
-- F6: recovery — body straightens, hands lowering. Chain settling.
+### `counter` — STOMP CRUSH (6 frames, 10 fps)
+**Visual signature:** the **ONLY leg-attack in Atlas's kit**. Atlas raises his right boot knee-to-chest, then DRIVES it straight down onto the imagined floored enemy. F3 silhouette is unmistakable — body vertical, ONE leg raised so the knee is at chest height with the boot dangling below. F5 silhouette is the boot crashing into the ground with the **biggest dust burst in the cast** (8–10 brown specks in a half-circle 40 px wide). Hands stay LOW at the hips throughout (the arms are NOT the weapon — emphasizes the legs). **Must NOT show clasped hands overhead** — if it does, the generator confused it with atk3. The leg is the silhouette.
+- F1: load — body rises 2 px taller, right knee starts lifting. Hands drop to hips and stay there.
+- F2: knee rising — right knee at hip height now, supporting (left) leg straightens fully. Body posture vertical, arms LOW.
+- F3: **peak — right knee LIFTED to chest height, right boot dangling below the knee, body fully vertical and tall, both hands STILL AT HIPS (not overhead, not clasped). The raised-knee silhouette is the move's tell**. Wedding-band glint visible on the chain.
+- F4: drive — knee drives downward, right boot accelerating toward the ground, body weight transferring through the hip.
+- F5: **STOMP IMPACT — right boot crashes into the ground, body settles in a hard vertical landing, MASSIVE DUST BURST at the right boot (8–10 brown specks in a half-circle 40 px wide). The parental smile is at full visibility for one frame**. Beard tilts down with the impact. Hands still at hips throughout.
+- F6: recovery — right leg returns to stance position next to the left, body settles. Chain stops swinging.
 
 ### `hurt` (3 frames, 12 fps)
 - F1: impact — body absorbs, doesn't fold much (he's heavy and built for it). Head turns 5° with the strike, beard tilts.
@@ -240,13 +262,17 @@ The signature.
 
 ## Visual VFX summary
 
-Atlas's identity in motion is the **wedding-band glint on the launcher + brown dust burst on heavy impacts + the parental smile reserved for the combo finisher**. Pure mass, no finesse.
+Atlas's identity in motion is the **wedding-band glint on the launcher + brown dust burst on heavy impacts + the parental smile reserved for the combo finisher**. Pure mass, no finesse. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `atk1` OPEN-PALM SHOVE — fingers visibly splayed (not a fist) + tribal forearm tattoos prominent
-- `atk2` BACKHAND SLAP — whole-body torque, beard whips 2 px with the rotation
-- `atk3` OVERHEAD CHOPPING SMASH — clasped hands drop, brown dust burst at his feet (4–5 specks), parental smile
-- `heavy` UPPERCUT LAUNCHER — 1-px white GLINT on the silver wedding band as the chain swings with the rising fist
-- `special` FOUNDATION STONE — speedlines on the charge (3 → 5 growing), tribal-tattoo arms grappling, massive dust burst on the slam (8–10 brown specks half-circle)
+- `atk1` OPEN-PALM SHOVE — vertical body, forward arm, fingers visibly splayed (not a fist)
+- `atk2` CHARGING HEADBUTT — body LUNGES forward head-first, both hands gripping forward at chest height, beard tilted forward (the only attack where the head leads)
+- `atk3` OVERHEAD CHOPPING SMASH — TWO fists clasped together going DOWN, brown dust burst at his feet (4–5 specks), parental smile
+- `heavy` UPPERCUT LAUNCHER — ONE rear fist rising vertically from below the knee to overhead, 1-px white GLINT on the silver wedding band
+- `jump_atk` FLYING BODY SPLASH — body horizontal in air, arms spread wide like a cross (the only aerial attack)
+- `back_atk` REAR ELBOW — body twisted 70° sideways, elbow back behind body (the only rear-facing attack)
+- `special` FOUNDATION STONE — speedlines on the charge (3 → 5 growing), tribal-tattoo arms grappling, enemy LIFTED OVERHEAD then SLAMMED FORWARD (8–10 dust specks half-circle)
+- `throw` LIFTING SUPLEX — body ARCHES BACKWARD (the only back-arch pose in his kit)
+- `counter` STOMP CRUSH — ONE leg raised knee-to-chest, BOOT drops vertically with the biggest dust burst in the cast (the only leg-attack in his kit; hands stay at hips, NOT overhead)
 
 **Hurt / flinch:** F1 body absorbs but barely flinches (he's the biggest player — takes hits like a wall). 1-px white impact spark + the wedding-band chain swings 2 px. F2 head turns 5°. F3 returns to stance.
 
