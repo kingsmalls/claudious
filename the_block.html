@@ -433,6 +433,8 @@ const ANIM_FPS = {
   whip: 14, hipfire: 14, coat_kick: 12,
   // Rig's new bare-fist construction-site moves.
   boot_kick: 12, clap: 12,
+  // Shade's new moves.
+  cyclone: 12, twin_blade: 13, phantom: 9, materialise: 14,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
@@ -450,6 +452,7 @@ const ANIM_LOOPS = {
   flurry: false, sweep: false, roundhouse: false, flying_knee: false,
   whip: false, hipfire: false, coat_kick: false,
   boot_kick: false, clap: false,
+  cyclone: false, twin_blade: false, phantom: false, materialise: false,
 };
 
 // When the engine asks for an anim that's not in this character's atlas
@@ -480,6 +483,10 @@ const ANIM_FALLBACK = {
   lunge:      ["atk1", "idle"],
   flurry:     ["atk2", "atk1", "idle"],
   backstab:   ["atk1", "idle"],
+  materialise:["atk2", "atk1", "idle"],
+  cyclone:    ["atk3", "atk2", "atk1", "idle"],
+  twin_blade: ["atk5", "atk2", "atk1", "idle"],
+  phantom:    ["atk6", "atk2", "atk1", "idle"],
   swing:      ["atk1", "idle"],
   spin:       ["atk2", "atk1", "idle"],
   sweep:      ["atk2", "atk1", "idle"],
@@ -4205,11 +4212,32 @@ const ENEMY_ATK = {
     damage: 10, knockback: 80, hitstop: 4,
     hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
-  // Shade addition: low cloak-sweep chop (different angle than strike).
+  // Shade addition: low cloak-whip sweep at ankle height.
   shade_sweep: {
     startup: 6, active: 5, recovery: 14,
-    damage: 12, knockback: 100, hitstop: 5,
-    hit: { fwd: 18, hw: 13, hd: 13, lo: 0, hi: 20 },
+    damage: 12, knockback: 80, hitstop: 5,
+    hit: { fwd: 22, hw: 14, hd: 13, lo: 0, hi: 18 },
+  },
+  // Shade addition: cloak-cyclone hook kick. Head-height kick with cloak halo.
+  shade_cyclone: {
+    startup: 7, active: 5, recovery: 16,
+    damage: 15, knockback: 110, hitstop: 6,
+    hit: { fwd: 20, hw: 14, hd: 12, lo: 16, hi: 42 },
+  },
+  // Shade addition: twin-blade fan. Both arms slash outward simultaneously,
+  // hitting both flanks. Wider lateral hitbox covers both sides via hw.
+  shade_twin_blade: {
+    startup: 6, active: 5, recovery: 14,
+    damage: 14, knockback: 100, hitstop: 6,
+    hit: { fwd: 0, hw: 22, hd: 12, lo: 0, hi: 36 },
+    multiHit: 5,
+  },
+  // Shade addition: phantom-clone backstab. Longer startup (the deception
+  // window) but heavy payoff; chosen as the "every Nth" big attack.
+  shade_phantom: {
+    startup: 12, active: 4, recovery: 16,
+    damage: 17, knockback: 120, hitstop: 7,
+    hit: { fwd: 16, hw: 12, hd: 11, lo: 0, hi: 36 },
   },
   dojo_counter: {
     startup: 4, active: 3, recovery: 14,
@@ -4307,8 +4335,10 @@ const ENEMY_ATK = {
     hit: { fwd: 22, hw: 13, hd: 11, lo: 8, hi: 30 },
   },
   // Shade's quick backstab after reappear. Very short startup since it's
-  // already 'free' (player is facing the wrong way).
-  shade_backstab: {
+  // already 'free' (player is facing the wrong way). Engine name is
+  // 'materialise' so the materialising-blade atlas slot (atk2) is picked
+  // via fallback, distinct from Slice's behind-the-back stab.
+  shade_materialise: {
     startup: 3, active: 3, recovery: 12,
     damage: 14, knockback: 120, hitstop: 6,
     hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
@@ -4993,9 +5023,16 @@ function runShadeAI(e, dx, dy, dist, dt) {
   e.vx = 0; e.vy = 0;
   e.animState = "idle";
   if (e.aiCooldown <= 0) {
+    // Six-attack rotation. Backstab auto-fires after reappear (handled
+    // elsewhere). Phantom-clone is the big "every Nth" deception; cyclone
+    // and twin_blade are mid-tier; strike/sweep are the basic poke pair.
+    // Phase 2 (under 50% HP) leans on the cyclone + twin_blade + phantom
+    // for more pressure.
     const pattern = (e.hp < e.hpMax * 0.5)
-      ? ["strike", "sweep", "backstab", "sweep", "strike", "backstab"]
-      : ["strike", "strike", "sweep", "strike", "backstab"];
+      ? ["strike", "cyclone", "sweep", "twin_blade", "cyclone",
+         "phantom", "twin_blade", "strike", "phantom"]
+      : ["strike", "sweep", "strike", "cyclone",
+         "sweep", "twin_blade", "strike", "phantom"];
     const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
     startEnemyAttack(e, atk);
   }
@@ -5057,7 +5094,7 @@ function updateShadeVanish(e, dt) {
   if (e.shadeBackstabIn > 0 && !e.vanishing) {
     e.shadeBackstabIn -= dt;
     if (e.shadeBackstabIn <= 0 && !e.attacking && e.hitstun === 0) {
-      startEnemyAttack(e, "backstab");
+      startEnemyAttack(e, "materialise");
     }
   }
 }
