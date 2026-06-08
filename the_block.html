@@ -360,10 +360,6 @@ function vibrate(pattern) {
 //   }
 const SPRITES = {};
 
-// Cache-bust suffix forces the browser to re-fetch atlas PNG + JSON whenever
-// this HTML reloads, so a regenerated sheet isn't masked by a stale cached
-// copy from a previous deploy. Bumping CACHE_BUST is also valid if needed.
-const CACHE_BUST = "v=" + Date.now();
 function loadAtlasFor(key) {
   if (typeof fetch === "undefined" || typeof Image === "undefined") return;
   let atlas = null, img = null;
@@ -372,11 +368,10 @@ function loadAtlasFor(key) {
       SPRITES[key] = { atlas, img };
     }
   };
-  const bust = (p) => p + (p.indexOf("?") < 0 ? "?" : "&") + CACHE_BUST;
   // Try characters/ subdir first (current art layout), then fall back to root.
   const fetchJson = (paths, i, cb) => {
     if (i >= paths.length) { cb(null); return; }
-    fetch(bust(paths[i])).then(r => r.ok ? r.json() : null)
+    fetch(paths[i]).then(r => r.ok ? r.json() : null)
       .then(j => j ? cb(j) : fetchJson(paths, i + 1, cb))
       .catch(() => fetchJson(paths, i + 1, cb));
   };
@@ -387,34 +382,15 @@ function loadAtlasFor(key) {
     const im = new Image();
     im.onload  = () => { img = im; tryAttach(); };
     im.onerror = () => tryImg(paths, i + 1);
-    im.src = bust(paths[i]);
+    im.src = paths[i];
   };
   tryImg(["characters/" + key + ".png", key + ".png"], 0);
 }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
-  // Player atlases use column-density valley detection with a sanity check
-  // against intra-character splits, so tightly-packed player sheets produce
-  // single-character bboxes (no magenta bleed from adjacent poses).
   loadAtlasFor("rio");
   loadAtlasFor("duke");
   loadAtlasFor("atlas");
-  // Enemies + bosses load via the same loader. Engine renders sprite when
-  // SPRITES[type] is populated, falls back to procedural drawX otherwise.
-  // Sheets without an atlas JSON silently skip and stay on the procedural
-  // renderer, so a partial roster ships cleanly.
-  loadAtlasFor("baron");
-  loadAtlasFor("chains");
-  loadAtlasFor("blackwell");
-  loadAtlasFor("tank");
-  loadAtlasFor("lamplight");
-  loadAtlasFor("slice");
-  loadAtlasFor("shade");
-  loadAtlasFor("dojo");
-  loadAtlasFor("rig");
-  loadAtlasFor("razor");
-  loadAtlasFor("runner");
-  loadAtlasFor("volt");
 }
 
 // Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
@@ -423,164 +399,39 @@ if (typeof window !== "undefined" && typeof fetch === "function") {
 // instead of restarting so the sprite doesn't visually rewind during recovery.
 const ANIM_FPS = {
   idle: 6, walk: 10, run: 14, jump: 10,
-  atk1: 16, atk2: 14, atk3: 12, atk4: 11, heavy: 10,
+  atk1: 16, atk2: 14, atk3: 12, heavy: 10,
   jump_atk: 14, back_atk: 14, special: 12,
   throw: 10, counter: 12, hurt: 12, dodge: 16,
   grabbed: 6,
-  // Enemy / boss anim names.
+  // Boss-specific attack names so the renderer paces them correctly.
+  punch: 14, charge: 12, overhead: 10,
+  knee: 11, throat_lift: 9, earthquake: 9,
+  shock: 12, strike: 12, uppercut: 10,
   jab: 14, cross: 12, haymaker: 10, taunt: 8, dead: 6,
-  swing: 11, spin: 13, slam: 10, lunge: 14,
-  shock: 12, strike: 12, slash: 14, charge: 12, overhead: 10,
-  punch: 14, dash: 14, throwknife: 12,
-  shot: 12, charged: 8, backstab: 16, pound: 9,
-  uppercut: 10,
-  // Baron's expanded boxing repertoire.
-  liver_hook: 13, clinch: 10,
-  // Razor's expanded blade-work.
-  flurry: 16, fencing_kick: 12, pirouette: 13,
-  // Volt's expanded cyber arsenal.
-  axe: 11, thunder: 11,
-  // Blackwell's expanded brutal arsenal.
-  stomp: 11, lift: 10,
+  slash: 14, dash: 14, swing: 11, spin: 13, slam: 10,
+  lunge: 14, shot: 12, charged: 8, backstab: 16, pound: 9,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
-  atk1: false, atk2: false, atk3: false, atk4: false, heavy: false,
+  atk1: false, atk2: false, atk3: false, heavy: false,
   jump_atk: false, back_atk: false, special: false,
   throw: false, counter: false, hurt: false, dodge: false,
   grabbed: true,
-  // Enemy / boss anims — attacks + hurt + dead don't loop.
+  punch: false, charge: false, overhead: false,
+  knee: false, throat_lift: false, earthquake: false,
+  shock: false, strike: false, uppercut: false,
   jab: false, cross: false, haymaker: false, taunt: false, dead: false,
-  swing: false, spin: false, slam: false, lunge: false,
-  shock: false, strike: false, slash: false, charge: false, overhead: false,
-  punch: false, dash: false, throwknife: false,
-  shot: false, charged: false, backstab: false, pound: false,
-  uppercut: false,
-  liver_hook: false, clinch: false,
-  flurry: false, fencing_kick: false, pirouette: false,
-  axe: false, thunder: false,
-  stomp: false, lift: false,
+  slash: false, dash: false, swing: false, spin: false, slam: false,
+  lunge: false, shot: false, charged: false, backstab: false, pound: false,
 };
 
 // Choose the right frame for an entity's anim state and draw it. Falls back
 // to the procedural renderer when the atlas is missing the requested anim.
-// Works for both player (p.char) AND enemies (p.type) — same atlas format.
-// When an animation isn't present in a character's atlas, fall back to a
-// visually-similar anim that IS present. Keeps the sprite look during
-// hurt / dodge / minor attack-name variants without the procedural jump.
-//
-// IMPORTANT: anims with a UNIQUE choreographed procedural animation (the
-// player specials — Sunset Spin / Rolling Thunder / Foundation Stone —
-// and the jump attacks) are deliberately NOT in this table. When the
-// atlas lacks them, drawSpriteCharacter returns false and the engine
-// routes to the procedural drawer, which has the actual unique animation.
-// That's what gives the special its distinct look instead of just
-// replaying the atk3 combo finisher.
-const ANIM_FALLBACK = {
-  // Player anims safe to substitute when missing.
-  // special: heavy first (uppercut launcher — visually distinct from the
-  // atk3 combo finisher), then atk3 only as a last resort.
-  special:  ["heavy", "atk3", "atk2", "atk1", "idle"],
-  back_atk: ["atk1", "atk2", "idle"],
-  throw:    ["atk1", "atk2", "idle"],
-  counter:  ["atk2", "atk1", "idle"],
-  hurt:     ["idle"],
-  dodge:    ["walk", "run", "idle"],
-  dead:     ["hurt", "idle"],
-  down:     ["hurt", "idle"],
-  air:      ["jump", "idle"],
-  grabbed:  ["hurt", "idle"],
-  // Per-enemy attack names mapped to generic slots so enemies with only
-  // {idle, walk, atk1...} atlases still sprite-render their custom moves.
-  jab:        ["atk1", "idle"],
-  cross:      ["atk2", "atk1", "idle"],
-  haymaker:   ["atk3", "atk2", "atk1", "idle"],
-  swing:      ["atk1", "idle"],
-  spin:       ["atk2", "atk1", "idle"],
-  slam:       ["atk1", "idle"],
-  lunge:      ["atk1", "idle"],
-  shock:      ["atk2", "atk1", "idle"],
-  strike:     ["atk1", "idle"],
-  slash:      ["atk1", "idle"],
-  charge:     ["atk2", "atk1", "idle"],
-  charged:    ["atk2", "atk1", "idle"],
-  overhead:   ["atk3", "atk2", "atk1", "idle"],
-  punch:      ["atk1", "idle"],
-  dash:       ["atk2", "run", "walk", "idle"],
-  throwknife: ["atk3", "atk1", "idle"],
-  shot:       ["atk1", "idle"],
-  backstab:   ["atk1", "idle"],
-  pound:      ["atk2", "atk1", "idle"],
-  uppercut:   ["atk3", "atk1", "idle"],
-  taunt:      ["idle"],
-  swipe:      ["atk1", "idle"],
-  grab:       ["atk1", "idle"],
-  atk:        ["atk1", "idle"],
-  knee:       ["atk2", "atk1", "idle"],
-  leap:       ["atk3", "atk1", "idle"],
-  atk4:       ["atk3", "heavy", "atk2", "atk1", "idle"],
-  liver_hook: ["atk3", "atk2", "atk1", "idle"],
-  clinch:     ["atk2", "atk1", "idle"],
-  flurry:     ["atk2", "atk1", "idle"],
-  pirouette:  ["atk3", "atk2", "atk1", "idle"],
-  axe:        ["atk3", "atk2", "atk1", "idle"],
-  thunder:    ["atk2", "atk1", "idle"],
-  stomp:      ["atk2", "atk1", "idle"],
-  lift:       ["atk3", "atk2", "atk1", "idle"],
-  front_kick: ["atk1", "idle"],
-  roundhouse: ["atk2", "atk1", "idle"],
-  axe_kick:   ["atk3", "atk2", "atk1", "idle"],
-  stomp_kick: ["atk1", "idle"],
-  fencing_kick:["atk1", "idle"],
-  cyber_axe:  ["atk3", "atk2", "atk1", "idle"],
-  sloppy_kick:["atk1", "idle"],
-  boot_stomp: ["atk1", "idle"],
-  bear_hug:   ["atk2", "atk1", "idle"],
-  belly_flop: ["atk1", "idle"],
-  low_sweep:  ["atk1", "idle"],
-  sweep_kick: ["atk1", "idle"],
-  spin_kick:  ["atk2", "atk1", "idle"],
-  cloak_cyclone:["atk2", "atk1", "idle"],
-  vanish:     ["idle"],
-  reappear:   ["idle"],
-  draw:       ["idle"],
-  bow:        ["idle"],
-  guard:      ["idle"],
-  phase2:     ["idle"],
-  flee:       ["walk", "run", "idle"],
-  wild_swipe: ["atk1", "idle"],
-  // NOT mapped (intentional procedural fallback for unique animation):
-  //   special, jump_atk, flying_kick, flying_stab
-};
-
-// Anims that should never route to the atlas at all (always procedural).
-// Currently empty — we prefer sprite rendering with a smart fallback chain
-// over the procedural primitives-based drawers.
-const FORCE_PROCEDURAL_ANIMS = new Set();
-
-function resolveAnim(animsObj, animName) {
-  if (FORCE_PROCEDURAL_ANIMS.has(animName)) return null;
-  if (animsObj[animName]) return animName;
-  const chain = ANIM_FALLBACK[animName];
-  if (chain) {
-    for (const alt of chain) {
-      if (animsObj[alt]) return alt;
-    }
-  }
-  return animsObj["idle"] ? "idle" : null;
-}
-
 function drawSpriteCharacter(p) {
-  const key = p.char || p.type;
-  const sprite = SPRITES[key];
+  const sprite = SPRITES[p.char];
   if (!sprite || !sprite.atlas || !sprite.atlas.anims) return false;
-  const wantedAnim = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
-  // Resolve through the fallback chain so missing anims still render as
-  // sprites (e.g. enemy "hurt" falls back to "idle" rather than dropping
-  // to the procedural drawer mid-fight).
-  const animName = resolveAnim(sprite.atlas.anims, wantedAnim);
-  if (!animName) return false;
-  const frames = sprite.atlas.anims[animName];
+  const animName = p.attacking ? p.attackName : (p.dodging ? "dodge" : (p.animState || "idle"));
+  const frames = sprite.atlas.anims[animName] || sprite.atlas.anims.idle;
   if (!frames || frames.length === 0) return false;
   // Per-anim fps with sensible default. Atlas can override globally via
   // sprite.atlas.fps; engine table provides per-anim tuning on top.
@@ -632,12 +483,9 @@ function drawSpriteCharacter(p) {
       X.save();
       X.translate(t.sx, t.sy);
       if (t.facing === -1) X.scale(-1, 1);
-      const trailScale = (typeof sprite.atlas.scale === "number") ? sprite.atlas.scale : 1;
-      const tdw = t.frame.w * trailScale;
-      const tdh = t.frame.h * trailScale;
       X.drawImage(sprite.img,
         t.frame.x, t.frame.y, t.frame.w, t.frame.h,
-        -tdw * ax, -tdh * ay, tdw, tdh);
+        -t.frame.w * ax, -t.frame.h * ay, t.frame.w, t.frame.h);
       X.restore();
     }
     X.globalAlpha = 1;
@@ -664,15 +512,9 @@ function drawSpriteCharacter(p) {
     p.landSquash--;
   }
 
-  // Per-atlas scale. Default 1.0. Enemy atlases use 0.5-0.8 to bring their
-  // sheets (drawn at higher pixel density than the player atlases) into
-  // proportional scale with the playable cast. Read once per draw call.
-  const atlasScale = (typeof sprite.atlas.scale === "number") ? sprite.atlas.scale : 1;
-  const dw = frame.w * atlasScale;
-  const dh = frame.h * atlasScale;
   X.drawImage(sprite.img,
     frame.x, frame.y, frame.w, frame.h,
-    -dw * ax, -dh * ay, dw, dh);
+    -frame.w * ax, -frame.h * ay, frame.w, frame.h);
 
   // ---- Hit flash: re-draw the same frame in pure white at low alpha for
   // 2-4 frames after taking damage. Reads as a clean impact pulse.
@@ -680,7 +522,7 @@ function drawSpriteCharacter(p) {
     X.globalCompositeOperation = "source-atop";
     X.globalAlpha = 0.55;
     X.fillStyle = "#ffffff";
-    X.fillRect(-dw * ax, -dh * ay, dw, dh);
+    X.fillRect(-frame.w * ax, -frame.h * ay, frame.w, frame.h);
     X.globalCompositeOperation = "source-over";
     X.globalAlpha = 1;
     p.hitFlash--;
@@ -1354,22 +1196,10 @@ const ATTACK_DATA = {
     pushSelf: 30,
   },
   rio_atk3: {
-    startup: 7, active: 5, recovery: 14,
-    damage: 11, knockback: 90, hitstop: 7,
+    startup: 7, active: 5, recovery: 18,
+    damage: 11, knockback: 160, hitstop: 7,
     hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
     pushSelf: 40,
-    chainLight: "atk4", chainHeavy: "heavy",
-  },
-  // atk4: SPIN KICK FINISHER — extends the light-attack combo by one hit.
-  // Rio's third roundhouse opens into a fourth move: a spinning back kick
-  // that launches. Different visual silhouette from atk3 (which is a chest-
-  // height side roundhouse) — atk4 is a spinning HEEL kick rotating 270°.
-  rio_atk4: {
-    startup: 8, active: 5, recovery: 22,
-    damage: 14, knockback: 220, hitstop: 8,
-    hit: { fwd: 24, hw: 14, hd: 14, lo: 0, hi: 44 },
-    pushSelf: 50,
-    launch: 80,
   },
   rio_heavy: {
     startup: 9, active: 4, recovery: 22,
@@ -1427,21 +1257,10 @@ const ATTACK_DATA = {
     pushSelf: 30,
   },
   duke_atk3: {
-    startup: 9, active: 5, recovery: 16,
-    damage: 14, knockback: 100, hitstop: 8,
+    startup: 9, active: 5, recovery: 22,
+    damage: 14, knockback: 200, hitstop: 8,
     hit: { fwd: 24, hw: 14, hd: 14, lo: 0, hi: 40 },
     pushSelf: 50,
-    chainLight: "atk4", chainHeavy: "heavy",
-  },
-  // atk4: DUKE'S OVERHAND FINISHER. Worn-out boxer drops his weight into
-  // one final looping right. Slower than atk3, far more damage, launches
-  // the target on contact.
-  duke_atk4: {
-    startup: 10, active: 5, recovery: 24,
-    damage: 18, knockback: 240, hitstop: 10,
-    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 44 },
-    pushSelf: 70,
-    launch: 120,
   },
   duke_heavy: {
     startup: 11, active: 4, recovery: 22,
@@ -4268,9 +4087,7 @@ const ENEMY_ATK = {
     damage: 14, knockback: 120, hitstop: 6,
     hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
-  // BARON — methodical boxing patterns with varied angles. Brass-knuckle
-  // hits land hard. Mixes head punches, body shots, vertical uppercuts, a
-  // clinch grapple, a coat-parry counter, and a five-hit special combo.
+  // BARON — methodical boxing patterns. Brass-knuckle hits land hard.
   baron_jab: {
     startup: 6, active: 3, recovery: 14,
     damage: 11, knockback: 110, hitstop: 5,
@@ -4281,48 +4098,11 @@ const ENEMY_ATK = {
     damage: 16, knockback: 150, hitstop: 6,
     hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 40 },
   },
-  // Liver hook — low body shot, hitbox sits LOWER than jab/cross.
-  baron_liver_hook: {
-    startup: 10, active: 4, recovery: 20,
-    damage: 18, knockback: 120, hitstop: 6,
-    hit: { fwd: 20, hw: 13, hd: 12, lo: 0, hi: 22 },
-  },
-  // Brass-knuckle uppercut — launcher, vertical hitbox.
-  baron_uppercut: {
-    startup: 12, active: 4, recovery: 20,
-    damage: 20, knockback: 80, hitstop: 7,
-    launch: 240,
-    hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 52 },
-  },
   baron_haymaker: {
     startup: 16, active: 5, recovery: 28,
     damage: 28, knockback: 250, hitstop: 9,
     hit: { fwd: 24, hw: 15, hd: 15, lo: 0, hi: 44 },
     superArmor: true,
-  },
-  // Clinch grab → rising knee. Two hits: small grab tick, big knee impact.
-  baron_clinch: {
-    startup: 8, active: 6, recovery: 22,
-    damage: 22, knockback: 100, hitstop: 8,
-    hit: { fwd: 14, hw: 11, hd: 12, lo: 0, hi: 36 },
-  },
-  // Bone-Breaker five-hit special. Multi-hit window — engine ticks damage
-  // at frames 8, 12, 16, 20, 26 (jab/cross/liver/uppercut/haymaker), final
-  // hit launches.
-  baron_special: {
-    startup: 10, active: 22, recovery: 18,
-    damage: 12, knockback: 280, hitstop: 7,
-    multiHit: true,
-    launch: 200,
-    hit: { fwd: 22, hw: 13, hd: 14, lo: 0, hi: 48 },
-    superArmor: true,
-  },
-  // Coat-parry counter — quick parry window then a riposte cross.
-  baron_counter: {
-    startup: 4, active: 5, recovery: 16,
-    damage: 18, knockback: 160, hitstop: 6,
-    hit: { fwd: 22, hw: 13, hd: 13, lo: 0, hi: 40 },
-    parryWindow: 6,
   },
   // RAZOR — fast assassin, dual-knife flurry, telegraphed dash slash.
   razor_slash: {
@@ -4341,45 +4121,6 @@ const ENEMY_ATK = {
     damage: 0,
     spawnsProjectile: "knife",
   },
-  // Twin-blade rapid flurry — left blade, right blade, alternating.
-  // Multi-hit window with quick re-tick. Mid-range cutting combo.
-  razor_flurry: {
-    startup: 5, active: 12, recovery: 14,
-    damage: 6, knockback: 70, hitstop: 4,
-    hit: { fwd: 20, hw: 13, hd: 12, lo: 0, hi: 38 },
-    multiHit: 4,
-  },
-  // Fencing kick — heel-thrust forward with lead foot.
-  razor_fencing_kick: {
-    startup: 6, active: 4, recovery: 14,
-    damage: 12, knockback: 100, hitstop: 5,
-    hit: { fwd: 20, hw: 12, hd: 11, lo: 0, hi: 28 },
-  },
-  // Spinning twin-blade — 360 rotation with both blades extended.
-  razor_pirouette: {
-    startup: 10, active: 10, recovery: 18,
-    damage: 8, knockback: 90, hitstop: 5,
-    hit: { fwd: 0, hw: 22, hd: 13, lo: 0, hi: 38 },
-    multiHit: 6,
-  },
-  // BLADE DANCE — signature special. Multi-hit ballet of slashes that
-  // ends on a launcher. Hits 6 times across the active window.
-  razor_special: {
-    startup: 8, active: 24, recovery: 20,
-    damage: 7, knockback: 100, hitstop: 5,
-    hit: { fwd: 22, hw: 14, hd: 14, lo: 0, hi: 44 },
-    multiHit: 4,
-    launch: 220,
-    superArmor: true,
-  },
-  // Parry-and-throw counter — deflects with the off-hand blade, immediately
-  // releases a thrown knife as the riposte.
-  razor_counter: {
-    startup: 3, active: 4, recovery: 14,
-    damage: 0,
-    spawnsProjectile: "knife",
-    parryWindow: 6,
-  },
   // VOLT — heavy cybernetic punches and a shock-wave projectile.
   volt_strike: {
     startup: 8, active: 4, recovery: 16,
@@ -4396,44 +4137,6 @@ const ENEMY_ATK = {
     startup: 10, active: 1, recovery: 24,
     damage: 0,
     spawnsProjectile: "shock",
-  },
-  // Cyber axe kick — cyber leg drops vertically.
-  volt_axe: {
-    startup: 12, active: 4, recovery: 22,
-    damage: 20, knockback: 160, hitstop: 8,
-    hit: { fwd: 12, hw: 11, hd: 13, lo: 0, hi: 56 },
-  },
-  // Lightning clinch — grab + electric current, multi-tick.
-  volt_clinch: {
-    startup: 8, active: 12, recovery: 22,
-    damage: 5, knockback: 80, hitstop: 5,
-    hit: { fwd: 14, hw: 11, hd: 12, lo: 0, hi: 38 },
-    multiHit: 4,
-  },
-  // Thunder clap — both fists slam together at chest height, releases a
-  // short-range concussive shockwave on both sides.
-  volt_thunder: {
-    startup: 12, active: 5, recovery: 20,
-    damage: 16, knockback: 150, hitstop: 7,
-    hit: { fwd: 0, hw: 24, hd: 14, lo: 0, hi: 44 },
-  },
-  // OVERDRIVE SURGE — signature special. Cyber arm overloads, releases an
-  // expanding lightning ring centred on Volt. Multi-hit + super-armor.
-  volt_special: {
-    startup: 14, active: 18, recovery: 24,
-    damage: 8, knockback: 140, hitstop: 6,
-    hit: { fwd: 0, hw: 32, hd: 18, lo: 0, hi: 56 },
-    multiHit: 4,
-    launch: 200,
-    superArmor: true,
-  },
-  // Cyber-reflect counter — cyber arm shields incoming projectiles, then
-  // discharges a return-shock at the source.
-  volt_counter: {
-    startup: 4, active: 6, recovery: 14,
-    damage: 18, knockback: 160, hitstop: 7,
-    hit: { fwd: 22, hw: 13, hd: 13, lo: 0, hi: 44 },
-    parryWindow: 8,
   },
   // BLACKWELL — Kane's enforcer. Heavy hands, charge attack, super-armor.
   blackwell_punch: {
@@ -4454,31 +4157,37 @@ const ENEMY_ATK = {
     hit: { fwd: 18, hw: 14, hd: 16, lo: 0, hi: 56 },
     superArmor: true,
   },
-  // Stomp kick — heavy front kick at body height.
-  blackwell_stomp: {
-    startup: 10, active: 4, recovery: 18,
-    damage: 18, knockback: 180, hitstop: 7,
-    hit: { fwd: 22, hw: 13, hd: 12, lo: 0, hi: 32 },
+  // Rising knee — wrestler-style, close-quarters move at gut height.
+  blackwell_knee: {
+    startup: 8, active: 4, recovery: 16,
+    damage: 20, knockback: 160, hitstop: 8,
+    hit: { fwd: 14, hw: 11, hd: 12, lo: 0, hi: 30 },
   },
-  // Lift-slam — pure grapple. Lifts target overhead, slams to the ground.
-  blackwell_lift: {
+  // One-handed throat lift + slam — cinematic grapple.
+  blackwell_throat_lift: {
     startup: 10, active: 6, recovery: 24,
-    damage: 26, knockback: 220, hitstop: 10,
-    hit: { fwd: 16, hw: 12, hd: 13, lo: 0, hi: 48 },
+    damage: 28, knockback: 220, hitstop: 10,
+    hit: { fwd: 16, hw: 12, hd: 13, lo: 0, hi: 52 },
     launch: 260,
   },
-  // RAMPAGE — signature special. Three consecutive shoulder charges, the
-  // target gets juggled between them. Long range, super-armored.
-  blackwell_special: {
-    startup: 12, active: 20, recovery: 26,
-    damage: 12, knockback: 200, hitstop: 8,
-    hit: { fwd: 22, hw: 18, hd: 16, lo: 0, hi: 48 },
-    multiHit: 7,
-    pushSelf: 260,
+  // Double-foot earth stomp — AOE with both-side hitbox (shockwave rings).
+  blackwell_earthquake: {
+    startup: 14, active: 6, recovery: 24,
+    damage: 22, knockback: 180, hitstop: 9,
+    hit: { fwd: 0, hw: 36, hd: 18, lo: 0, hi: 24 },
+    shockwave: true,
     superArmor: true,
   },
-  // Iron Wall counter — crossed-arm guard catches the incoming hit, then
-  // throws a single devastating counter-punch.
+  // JUGGERNAUT — charge-grab-spin-throw signature special.
+  blackwell_special: {
+    startup: 12, active: 22, recovery: 26,
+    damage: 36, knockback: 320, hitstop: 12,
+    hit: { fwd: 22, hw: 18, hd: 16, lo: 0, hi: 50 },
+    pushSelf: 200,
+    launch: 280,
+    superArmor: true,
+  },
+  // IRON WALL counter — parry + ghost-fist trail riposte.
   blackwell_counter: {
     startup: 3, active: 7, recovery: 16,
     damage: 28, knockback: 240, hitstop: 11,
@@ -4496,9 +4205,8 @@ const ENEMY_DEFAULT_ATTACK = {
   razor: "slash", volt: "strike", blackwell: "punch",
 };
 
-function makeEnemy(type, x, y, opts) {
+function makeEnemy(type, x, y) {
   const stats = ENEMY_STATS[type] || ENEMY_STATS.runner;
-  const o = opts || {};
   // Difficulty: scale enemy HP at spawn so the toughness curve matches the
   // tier the player chose. Bosses scale slightly less so cinematic-feel HP
   // bars stay readable across difficulty.
@@ -4525,6 +4233,7 @@ function makeEnemy(type, x, y, opts) {
     vx: 0, vy: 0, vz: 0,
     airborne: false,
     knockdownFrames: 0,
+    facing: -1,
     animState: "idle",
     animTime: 0,
     walkSpeed: stats.walkSpeed * vSpeed,
@@ -4560,14 +4269,6 @@ function makeEnemy(type, x, y, opts) {
     hitboxes: [],
     hurtboxes: [],
     attackHits: null,
-    // Ambient: enemy is "hanging out" at a scene prop. AI is suspended until
-    // the player closes within wakeRange or the enemy is hit. ambientPose
-    // picks a flavour-idle (e.g. "crouch" for fixing a car, "lean" for
-    // hanging by a streetlight); falls back to plain idle if unknown.
-    ambient: !!o.ambient,
-    wakeRange: typeof o.wakeRange === "number" ? o.wakeRange : 170,
-    ambientPose: o.ambientPose || null,
-    facing: typeof o.facing === "number" ? o.facing : -1,
   };
 }
 
@@ -4644,25 +4345,6 @@ function updateEnemy(e, dt) {
     e.hurtboxes.length = 0;
     e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi });
     return;
-  }
-
-  // Ambient: enemy waits at a scene prop until player gets close or it's hit.
-  if (e.ambient) {
-    if (e.hp < e.hpMax) {
-      e.ambient = false;
-    } else if (player && !player.dead) {
-      const dx = player.x - e.x;
-      const dy = player.y - e.y;
-      if (dx * dx + dy * dy < e.wakeRange * e.wakeRange) e.ambient = false;
-    }
-    if (e.ambient) {
-      e.animState = e.ambientPose || "idle";
-      e.animTime += dt;
-      e.hitboxes.length = 0;
-      e.hurtboxes.length = 0;
-      e.hurtboxes.push({ cx: e.x, cy: e.y, hw: e.hurtHw, hd: e.hurtHd, lo: 0, hi: e.hurtHi });
-      return;
-    }
   }
 
   e.aiCooldown -= dt;
@@ -5040,13 +4722,9 @@ function runRazorAI(e, dx, dy, dist, dt) {
     e.x += e.vx * dt; e.y += e.vy * dt;
     e.animState = "walk";
   } else if (e.aiCooldown <= 0) {
-    // Phase 1: mix single slashes, flurries, fencing kick, and dash.
-    // Phase 2: introduces the spinning pirouette + Blade Dance special.
     const pattern = phase2
-      ? ["slash", "flurry", "fencing_kick", "dash", "pirouette",
-         "throw", "slash", "special", "flurry", "dash"]
-      : ["slash", "slash", "flurry", "fencing_kick", "slash",
-         "dash", "throw", "slash", "flurry"];
+      ? ["slash", "throw", "dash", "slash", "slash", "throw"]
+      : ["slash", "slash", "dash", "slash"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
@@ -5070,13 +4748,9 @@ function runVoltAI(e, dx, dy, dist, dt) {
       startEnemyAttack(e, "shock");
     }
   } else if (e.aiCooldown <= 0) {
-    // Phase 1: punches + plasma orb + axe kick.
-    // Phase 2: adds thunder clap, lightning clinch, and Overdrive Surge.
     const pattern = phase2
-      ? ["strike", "axe", "clinch", "thunder", "uppercut",
-         "shock", "special", "strike", "axe", "shock"]
-      : ["strike", "strike", "axe", "uppercut", "shock",
-         "strike", "thunder", "axe"];
+      ? ["strike", "uppercut", "strike", "shock", "uppercut"]
+      : ["strike", "strike", "uppercut", "shock"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
@@ -5099,13 +4773,17 @@ function runBlackwellAI(e, dx, dy, dist, dt) {
       startEnemyAttack(e, "charge");
     }
   } else if (e.aiCooldown <= 0) {
-    // Phase 1: hook + stomp + charge + overhead.
-    // Phase 2: adds lift-slam and Rampage triple-charge special.
+    // Phase 1: hook + knee + charge + overhead + throat_lift.
+    // Phase 2: adds earthquake AOE and JUGGERNAUT special. The patterns
+    // mix VFX-heavy moves (concrete-breaker charge, apocalypse overhead,
+    // earthquake stomp) so every couple of attacks something visually
+    // distinctive happens.
     const pattern = phase2
-      ? ["punch", "stomp", "lift", "overhead", "charge",
-         "punch", "special", "stomp", "overhead", "lift"]
-      : ["punch", "stomp", "punch", "charge", "stomp",
-         "punch", "overhead", "lift"];
+      ? ["punch", "knee", "throat_lift", "overhead", "earthquake",
+         "charge", "special", "punch", "knee", "earthquake",
+         "overhead", "throat_lift"]
+      : ["punch", "knee", "punch", "charge", "knee",
+         "punch", "overhead", "throat_lift"];
     const atk = pattern[e.bossPatternStep % pattern.length];
     e.bossPatternStep++;
     startEnemyAttack(e, atk);
@@ -5131,18 +4809,14 @@ function runBaronAI(e, dx, dy, dist, dt) {
     e.vx = 0; e.vy = 0;
     e.animState = "idle";
     if (e.aiCooldown <= 0) {
-      // Eight-move pattern mixes head shots, body shots, vertical uppercut,
-      // grapple, and the haymaker. Phase 2 adds clinch + special + counter
-      // to make the back half of the fight feel different from the front.
       const pattern = phase2
-        ? ["jab", "liver_hook", "uppercut", "cross", "clinch",
-           "jab", "haymaker", "liver_hook", "special",
-           "cross", "uppercut", "haymaker"]
-        : ["jab", "jab", "cross", "liver_hook", "jab", "haymaker",
-           "cross", "uppercut", "jab", "liver_hook", "cross", "haymaker"];
+        ? ["jab", "cross", "jab", "haymaker", "cross", "haymaker"]
+        : ["jab", "jab", "cross", "haymaker", "jab", "cross"];
       const atk = pattern[e.bossPatternStep % pattern.length];
       e.bossPatternStep++;
       startEnemyAttack(e, atk);
+      // Cooldowns set when the attack ends in advanceEnemyAttack; for telegraphed
+      // haymakers we reduce the post-cooldown so the player gets a window.
     }
   }
 }
@@ -6318,11 +5992,6 @@ function drawBlackwell(e) {
 
 // Dispatcher.
 function drawEnemy(e) {
-  // Sprite atlas takes precedence if one is loaded for this enemy type.
-  // drawSpriteCharacter returns true on a successful sprite draw, false if
-  // the atlas or the requested anim is missing — then we fall through to
-  // the per-type procedural renderer below.
-  if (SPRITES[e.type] && drawSpriteCharacter(e)) return;
   switch (e.type) {
     case "tank":      return drawTank(e);
     case "lamplight": return drawLamplight(e);
@@ -7218,48 +6887,31 @@ function renderSelect() {
   X.textBaseline = "middle";
   X.fillText("CHOOSE YOUR FIGHTER", W / 2, 36);
 
-  // Static portrait box on the left.
+  // Big procedural portrait on the left. Build a scratch entity at a fixed
+  // anchor and let the character renderer draw it.
   const portraitX = 130;
   const portraitY = 250;
-  const boxX = 40, boxY = 70, boxW = 180, boxH = 216;
+  const stub = makePlayer(selectedChar, portraitX, portraitY);
+  stub.facing = 1;
+  stub.animState = "idle";
+  stub.animTime = stateTime;
+  // Wide stage strip backdrop for the portrait.
   X.fillStyle = "rgba(0,0,0,0.55)";
-  X.fillRect(boxX, boxY, boxW, boxH);
+  X.fillRect(40, 86, 180, 200);
   X.fillStyle = "rgba(255,255,255,0.05)";
-  X.fillRect(boxX, boxY, boxW, 1);
-  X.fillRect(boxX, boxY + boxH - 1, boxW, 1);
+  X.fillRect(40, 86, 180, 1);
+  X.fillRect(40, 285, 180, 1);
   // Floor stripe under the portrait.
   X.fillStyle = "rgba(0,0,0,0.4)";
   X.beginPath(); X.ellipse(portraitX, portraitY + 4, 40, 4, 0, 0, Math.PI*2); X.fill();
-  // Draw the chosen fighter as a static pose. Try the sprite atlas first
-  // (clean fixed image), fall back to the in-game procedural renderer at
-  // 1.7x via a context transform when the atlas isn't loaded.
-  const sprite = SPRITES[selectedChar];
-  if (sprite && sprite.atlas && sprite.atlas.anims && sprite.atlas.anims.idle) {
-    const frameName = sprite.atlas.anims.idle[0];
-    const f = sprite.atlas.frames[frameName];
-    if (f) {
-      const targetH = Math.floor(boxH * 0.80);
-      const sc = targetH / f.h;
-      const dw = Math.round(f.w * sc);
-      const dh = Math.round(f.h * sc);
-      const dx = Math.round(portraitX - dw / 2);
-      const dy = Math.round(portraitY - dh);
-      X.drawImage(sprite.img, f.x, f.y, f.w, f.h, dx, dy, dw, dh);
-    }
-  } else {
-    // Procedural fallback. Build a stub and route through drawCharacter,
-    // wrapped in a 1.7x transform so the procedural drawing fills the box.
-    const stub = makePlayer(selectedChar, portraitX, portraitY);
-    stub.facing = 1;
-    stub.animState = "idle";
-    stub.animTime = 0;
-    X.save();
-    X.translate(portraitX, portraitY);
-    X.scale(1.7, 1.7);
-    X.translate(-portraitX, -portraitY);
-    drawCharacter(stub);
-    X.restore();
-  }
+  // Render the portrait at 2x scale by re-using the existing renderer through
+  // a temporary ctx transform.
+  X.save();
+  X.translate(portraitX, portraitY);
+  X.scale(2, 2);
+  X.translate(-portraitX, -portraitY);
+  drawCharacter(stub);
+  X.restore();
 
   // Right panel — bio and stats.
   const panelX = 250;
@@ -8341,15 +7993,9 @@ const STAGES = [
     drawBg: function() { drawStageBlock(); },
     hazard: "taxi",
     waves: [
-      // Heroes arrive: two Kane crew already on-scene — one crouched fixing
-      // a car at the curb, one leaning against the streetlight. They wake
-      // when the player closes. Backup rolls in from the right.
-      [["runner", 340, 318, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
-       ["runner", 420, 282, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
-       ["runner", 560, 320]],
-      // Two-sided: one circles in from behind (left), two from the right.
-      [["runner", 80, 320, { facing: 1 }], ["runner", 460, 290], ["slice", 600, 285]],
-      // Mini-boss climax: Chains in the middle, Tank backup from the right.
+      [["runner", 440, 280], ["runner", 520, 320]],
+      [["runner", 460, 290], ["runner", 540, 310], ["slice", 600, 285]],
+      // Section 3 = mini-boss climax: a Chains brawler backed by a Tank.
       [["chains", 480, 300], ["tank", 580, 320]],
     ],
     boss: null,
@@ -8359,13 +8005,9 @@ const STAGES = [
     drawBg: function() { drawStageTunnels(); },
     hazard: "train",
     waves: [
-      // One Slice is already leaning against the tunnel wall when heroes
-      // round the corner.
-      [["slice", 360, 295, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
-       ["runner", 540, 320]],
-      // Pincer: Slice rushes from the dark behind (left), another from ahead.
-      [["slice", 70, 290, { facing: 1 }], ["slice", 580, 310]],
-      // Mini-boss: Chains middle, Slice flank, Lamplight cover-fire.
+      [["slice", 440, 280], ["runner", 520, 320]],
+      [["slice", 460, 290], ["slice", 580, 310]],
+      // Section 3 mini-boss: Chains + Slice + a final ranged Lamplight.
       [["chains", 480, 295], ["slice", 560, 320], ["lamplight", 600, 285]],
     ],
     boss: null,
@@ -8374,12 +8016,8 @@ const STAGES = [
     name: "RIVER ROW",
     drawBg: function() { drawStageRiver(); },
     waves: [
-      // A Tank leans on the railing watching the water. He turns when heroes
-      // get close.
-      [["tank", 360, 322, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
-       ["runner", 540, 280]],
-      // Two-sided: ranged Lamplight from behind, runner from ahead.
-      [["lamplight", 60, 290, { facing: 1 }], ["runner", 540, 320]],
+      [["runner", 440, 280], ["tank", 540, 322]],
+      [["lamplight", 580, 290], ["runner", 460, 320]],
       [["tank", 480, 290], ["lamplight", 600, 320]],
     ],
     boss: "baron",
@@ -8390,12 +8028,10 @@ const STAGES = [
     drawBg: function() { drawStageLantern(); },
     hazard: "lanterns",
     waves: [
-      // A Chains hangs out under a lantern; Slice arrives from down the row.
-      [["chains", 350, 320, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
-       ["slice", 560, 282]],
-      [["shade", 480, 298], ["chains", 90, 320, { facing: 1 }]],
-      // Section 3 mini-boss climax: two Shades + Slice flankers from both sides.
-      [["shade", 440, 290], ["shade", 580, 320], ["slice", 60, 285, { facing: 1 }], ["slice", 600, 320]],
+      [["chains", 440, 282], ["slice", 540, 320]],
+      [["shade", 480, 298], ["chains", 600, 320]],
+      // Section 3 mini-boss climax: two Shades + a Slice flanker.
+      [["shade", 440, 290], ["shade", 580, 320], ["slice", 540, 285], ["slice", 600, 320]],
     ],
     boss: null,
   },
@@ -8404,12 +8040,10 @@ const STAGES = [
     drawBg: function() { drawStageCage(); },
     hazard: "spikes",
     waves: [
-      // A Dojo is already inside the cage, practicing forms. Chains stalks in.
-      [["dojo", 360, 305, { ambient: true, ambientPose: "kata", wakeRange: 140, facing: -1 }],
-       ["chains", 560, 318]],
-      [["dojo", 80, 290, { facing: 1 }], ["dojo", 560, 318]],
-      // Mini-boss climax: Rig + Dojos closing from both ends.
-      [["rig", 480, 300], ["dojo", 580, 320], ["dojo", 60, 285, { facing: 1 }]],
+      [["dojo", 460, 290], ["chains", 560, 318]],
+      [["dojo", 460, 290], ["dojo", 560, 318]],
+      // Section 3 mini-boss: Rig + Dojo + extra Dojo for the cage finale.
+      [["rig", 480, 300], ["dojo", 580, 320], ["dojo", 540, 285]],
     ],
     boss: null,
   },
@@ -8418,11 +8052,9 @@ const STAGES = [
     drawBg: function() { drawStageUptown(); },
     hazard: "glass",
     waves: [
-      // A Lamplight stands under an awning, gun lowered. Dojo arrives.
-      [["lamplight", 360, 300, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: 1 }],
-       ["dojo", 560, 320]],
-      [["dojo", 70, 290, { facing: 1 }], ["dojo", 580, 320]],
-      [["lamplight", 600, 285], ["chains", 90, 320, { facing: 1 }]],
+      [["lamplight", 560, 300], ["dojo", 460, 320]],
+      [["dojo", 480, 290], ["dojo", 580, 320]],
+      [["lamplight", 600, 285], ["chains", 460, 320]],
     ],
     boss: "razor",
   },
@@ -8431,12 +8063,10 @@ const STAGES = [
     drawBg: function() { drawStageWorks(); },
     hazard: "molten",
     waves: [
-      // A Rig is bent over machinery (fixing a press). Tank patrols in.
-      [["rig", 360, 320, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
-       ["tank", 560, 300]],
-      [["rig", 80, 290, { facing: 1 }], ["tank", 580, 320]],
-      // Mini-boss: two Rigs + a Tank in the foundry, one closing from left.
-      [["rig", 460, 295], ["rig", 60, 318, { facing: 1 }], ["tank", 540, 305]],
+      [["tank", 480, 300], ["rig", 580, 320]],
+      [["rig", 480, 290], ["tank", 580, 320]],
+      // Section 3 mini-boss: two Rigs + a Tank in the foundry.
+      [["rig", 460, 295], ["rig", 580, 318], ["tank", 540, 305]],
     ],
     boss: null,
   },
@@ -8445,13 +8075,10 @@ const STAGES = [
     drawBg: function() { drawStageFreeway(); },
     hazard: "cars",
     waves: [
-      // Two crew on the shoulder fixing a stalled car. They turn at footsteps.
-      [["chains", 340, 322, { ambient: true, ambientPose: "crouch", wakeRange: 130, facing: 1 }],
-       ["slice", 410, 320, { ambient: true, ambientPose: "lean", wakeRange: 130, facing: -1 }],
-       ["slice", 580, 282]],
-      [["lamplight", 60, 290, { facing: 1 }], ["slice", 540, 320]],
-      // Mini-boss: Chains brawlers + Slice flankers from both sides.
-      [["chains", 460, 295], ["chains", 580, 320], ["slice", 70, 290, { facing: 1 }]],
+      [["chains", 480, 300], ["slice", 580, 320]],
+      [["lamplight", 600, 290], ["slice", 460, 320]],
+      // Section 3 mini-boss: two Chains brawlers + a Slice flanker.
+      [["chains", 460, 295], ["chains", 580, 320], ["slice", 540, 290]],
     ],
     boss: null,
   },
@@ -8460,11 +8087,9 @@ const STAGES = [
     drawBg: function() { drawStageTower(); },
     hazard: "wind",
     waves: [
-      // Tower guards posted at their stations.
-      [["dojo", 350, 295, { ambient: true, ambientPose: "guard", wakeRange: 140, facing: 1 }],
-       ["lamplight", 550, 320, { ambient: true, ambientPose: "guard", wakeRange: 140, facing: -1 }]],
-      [["rig", 80, 290, { facing: 1 }], ["dojo", 580, 320]],
-      [["rig", 60, 295, { facing: 1 }], ["rig", 580, 320]],
+      [["dojo", 480, 295], ["lamplight", 580, 320]],
+      [["rig", 460, 290], ["dojo", 580, 320]],
+      [["rig", 460, 295], ["rig", 580, 320]],
     ],
     boss: "volt",
   },
@@ -8472,8 +8097,8 @@ const STAGES = [
     name: "THE TOP",
     drawBg: function() { drawStageTop(); },
     waves: [
-      [["dojo", 90, 295, { facing: 1 }], ["dojo", 580, 320]],
-      [["rig", 60, 290, { facing: 1 }], ["rig", 580, 320]],
+      [["dojo", 480, 295], ["dojo", 580, 320]],
+      [["rig", 460, 290], ["rig", 580, 320]],
     ],
     boss: "blackwell",
     finalQte: true, // after the boss is felled, fire the Kane cinematic
@@ -8525,13 +8150,7 @@ function renderSectionTransition() {
 function spawnWave(stageIdx, waveIdx) {
   const stage = STAGES[stageIdx];
   if (!stage || !stage.waves[waveIdx]) return [];
-  return stage.waves[waveIdx].map(entry => {
-    const [type, x, y, opts] = entry;
-    const e = makeEnemy(type, x, y, opts);
-    // Spawns to the left of centre face right by default; right-side face left.
-    if (!opts || typeof opts.facing !== "number") e.facing = x < W * 0.5 ? 1 : -1;
-    return e;
-  });
+  return stage.waves[waveIdx].map(([type, x, y]) => makeEnemy(type, x, y));
 }
 
 function enterPlaying() {
@@ -8565,11 +8184,7 @@ function enterPlaying() {
   if (typeof beginOpeningCutscene === "function") beginOpeningCutscene();
 }
 
-// Frame-counted windows (active hitboxes, parry) intentionally NOT scaled.
-const GAME_TEMPO_MUL = 1.5;
-
 function updatePlaying(dt) {
-  dt *= GAME_TEMPO_MUL;
   if (consumePress("Escape")) {
     player = null;
     enemies = [];
