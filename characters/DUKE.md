@@ -8,12 +8,12 @@
 > 2. `walk` (6 frames)
 > 3. `run` (6 frames)
 > 4. `jump` (3 frames)
-> 5. `atk1` — BOXING JAB (4 frames) — **front fist HORIZONTAL forward**, body almost vertical
+> 5. `atk1` — BOXING JAB (4 frames) — **FRONT fist HORIZONTAL forward**, body almost vertical
 > 6. `atk2` — CROSS (5 frames) — **REAR fist HORIZONTAL forward**, body rotated 45°
-> 7. `atk3` — HOOK + STOMP (6 frames) — **fist arcs HORIZONTALLY from the side**, body torqued, right foot stomps
-> 8. `atk4` — DROPPING OVERHAND (6 frames) — **fist arcs DOWN from ABOVE the shoulder** (vertical comet, not horizontal hook)
+> 7. `atk3` — LOW KICK (6 frames) — **LEFT SHIN slams sideways into thigh height**, body torqued (the only sideways shin strike)
+> 8. `atk4` — PUSH KICK / TEEP (6 frames) — **LEFT BOOT drives FLAT FORWARD at hip height**, body leans BACK for balance (the only straight-forward foot)
 > 9. `heavy` — UPPERCUT LAUNCHER (7 frames) — **ONE rear fist RISING vertically** from below the knee to above the head
-> 10. `jump_atk` — DIVING ELBOW DROP (4 frames) — **AIRBORNE**, elbow tip leading downward
+> 10. `jump_atk` — FLYING KNEE (4 frames) — **AIRBORNE**, LEFT KNEE leads forward, both fists tucked at chest
 > 11. `back_atk` — REAR ELBOW (4 frames) — **body twisted BACKWARD 60°**, elbow behind body
 > 12. `special` — ROLLING THUNDER (12 frames) — three FORWARD elbow strikes + a haymaker (multi-phase)
 > 13. `throw` (5 frames) — collar grab → spin → slam
@@ -31,10 +31,10 @@
 > |---|---|---|---|---|
 > | `atk1` jab | Vertical, ~5° rotation | FRONT (left) fist | Horizontal forward | Body almost upright, front shoulder forward, sharp snap-back |
 > | `atk2` cross | Rotated 45° from hip | REAR (right) fist | Horizontal forward | Hip drove forward, body 45° rotated — different rotation from jab |
-> | `atk3` hook + stomp | Torqued sideways, knees bent | Right fist | Horizontal arc from the SIDE | Right foot STOMPS with dust puff (only attack that stomps + only side-arcing fist) |
-> | `atk4` overhand | Bent 25° forward | Right fist | Descending VERTICAL arc from ABOVE shoulder | Fist comes DOWN from overhead — NOT horizontal like atk3 |
+> | `atk3` low kick | Torqued sideways, supporting (right) knee braced | LEFT SHIN | Horizontal arc from the OUTSIDE into the thigh | Left leg lifted SIDEWAYS, shin striking at thigh height; only sideways shin attack |
+> | `atk4` push kick / teep | Body leans BACK 15° for balance | LEFT BOOT | Straight FORWARD at hip height | Left foot extended STRAIGHT FORWARD with the sole pointing at the target; only straight-line foot |
 > | `heavy` uppercut | Vertical, extending upward | ONE rear fist | Ascending vertical | Single rising fist from below the knee; only attack that grows TALLER |
-> | `jump_atk` elbow drop | AIRBORNE, 45° forward | Right elbow tip | Descending diagonal | Body fully airborne — only aerial attack |
+> | `jump_atk` flying knee | AIRBORNE, body angled 20° forward | LEFT KNEE | Forward at chest height (mid-air) | Body fully airborne with the KNEE leading; only aerial attack + only knee strike |
 > | `back_atk` rear elbow | Twisted BACKWARD 60° | Right elbow | Backward | Body turned AWAY from camera — only rear-facing attack |
 > | `special` rolling thunder | Multi-phase | THREE forward elbows + haymaker | Forward, alternating sides | Three forearm strikes left-right-left with growing speedlines — only multi-elbow combo |
 > | `throw` collar slam | Body rotating 90° overhead | Both hands grip | Overhead spin | Both hands gripping an imagined collar overhead — only grappling pose |
@@ -42,11 +42,11 @@
 >
 > Cross-checks before approving the sheet:
 > - **atk1 vs atk2:** atk1 uses the FRONT fist with minimal body rotation; atk2 uses the REAR fist with the hip driving 45°. If both look like the same punch from the same arm, redraw atk2 so the rear shoulder is clearly rotated forward.
-> - **atk3 vs atk4:** atk3 is a HORIZONTAL hook arcing inward from the side at chest height; atk4 is a VERTICAL overhand arcing DOWNWARD from above the shoulder. If atk4's fist is at chest height instead of dropping from overhead, redraw — atk4's whole point is the comet-from-overhead silhouette.
-> - **atk4 vs heavy:** atk4 goes DOWN (fist starts overhead, ends at chest); heavy goes UP (fist starts below the knee, ends overhead). Opposite directions — if both look like "fist over head," redraw heavy with the fist clearly LOW on F1–F2.
-> - **atk4 vs counter:** atk4's fist drives DOWN from overhead; counter's fist drives FORWARD AT HIP HEIGHT with the body crouched. If counter shows the fist anywhere above the chest, redraw — counter is the body shot.
-> - **special vs counter:** special's haymaker arcs down to chest; counter is a precision LOW body shot from a crouch. The special is a finisher haymaker; the counter is a sniper-shot to the liver. Body posture must clearly differ (special upright torquing, counter crouched low).
-> - **back_atk vs jump_atk vs special:** back_atk is GROUNDED + body FACING AWAY; jump_atk is AIRBORNE; special is GROUNDED + facing FORWARD. If you can't tell which is which by silhouette alone, redraw.
+> - **atk3 vs atk4:** atk3 is a SIDEWAYS LEFT-SHIN swing into the opponent's thigh (body torqued sideways, leg arcing in); atk4 is a STRAIGHT LEFT BOOT extending forward at hip height (body leaning back, foot flat-soled). If both kicks look the same, redraw — atk3 is a side-arc shin strike, atk4 is a straight-line door-kick.
+> - **atk3/atk4 vs any fist attack:** atk3 and atk4 are LEG attacks. The leg must clearly be the weapon at the peak frame (foot/shin above hip height, leg fully extended). If either looks like Duke just stepping with a punch, the kick isn't reading — redraw.
+> - **jump_atk vs back_atk vs special:** jump_atk is AIRBORNE + KNEE forward; back_atk is GROUNDED + body FACING AWAY + elbow back; special is GROUNDED + facing FORWARD with three elbows. All three must be distinguishable by silhouette alone.
+> - **heavy vs counter:** heavy goes UP (rear fist starts below the knee, ends overhead); counter goes FORWARD AT HIP HEIGHT with the body crouched. Opposite directions and opposite body postures.
+> - **Bad-knee tell:** every kick (atk3, atk4, jump_atk) puts the load on the LEFT (good) leg or the LEFT leg IS the kicking leg. The right (bad) knee is never the supporting leg under heavy load — it strains visibly when it is.
 
 ## Physical
 
@@ -161,23 +161,23 @@ eye whites          #f0f0f0
 - F4: peak — fist fully extended, body rotated 45°, weight on front foot. **Mouth tightens 1 px**.
 - F5: snap-back, body unwinds. Hair strand settles back across the forehead.
 
-### `atk3` — HOOK + STOMP (6 frames, 11 fps) — chains into atk4
-**Visual signature:** the **STOMP**. Duke transfers power through a hard right-foot stomp on the same frame the hook lands, and the **dust puff at his right foot is unique to Duke** — no other character generates ground dust from a footstrike during a punch.
-- F1: load — body coils, front foot lifts 2 px off the ground, left (front) fist at hip height.
-- F2: stomp wind-up — right foot drives downward.
-- F3: hook arc — left fist swings inward in a horizontal arc as the right foot lands.
-- F4: **contact + stomp landing — fist at impact, DUST PUFF at right foot (1–2 brown specks)**.
-- F5: follow-through, body tilted 10° forward, fist past the impact line.
-- F6: recovery — body unwinds, hair strand falls back. **Chains into atk4 if light pressed.**
+### `atk3` — LOW KICK (6 frames, 11 fps) — chains into atk4
+**Visual signature:** Duke's veteran street-fighter low kick — **LEFT SHIN swings sideways into the opponent's lead thigh**, body torqued sideways with the kicking leg arcing in from the outside. The whole body twists with the kick (Muay Thai roundhouse mechanics, but slower and dirtier — a worn boxer's "fight with what you've got"). **Both arms swing outward for balance** as the leg arcs in. Dust puff at the supporting (right) boot when the bad knee absorbs the load. The peak silhouette is unmistakable — Duke standing one-legged with his LEFT SHIN extended horizontally at thigh height, foot pointed sideways past his target.
+- F1: load — body torques sideways, left knee lifts to hip height (chambering the kick), arms beginning to swing outward for balance. **Right (bad) knee braces, 1-px outward tilt** as it takes the supporting weight.
+- F2: leg chambering — left leg fully chambered with knee at hip height and shin folded back, body twisted 30° away from the target to wind up.
+- F3: drive — body untwists rapidly, left leg starting to extend, hip rotating to throw the shin.
+- F4: **contact — LEFT SHIN fully extended horizontally at thigh height (~28 px past the body), foot pointed sideways, body twisted 45° with the rotation, both arms flared OUTWARD for balance. DUST PUFF at the supporting right boot (1–2 brown specks) as the bad knee absorbs the pivot**. Hair strand whips.
+- F5: follow-through — left leg past the impact line, body fully rotated through the kick, arms still flared.
+- F6: recovery — left leg returns to stance, body unwinds, arms settling. **Chains into atk4 if light pressed.**
 
-### `atk4` — DROPPING OVERHAND (6 frames, 11 fps) — combo finisher
-**Visual signature:** Duke drops his entire WEIGHT into one looping overhand right. **F3 the silhouette is unmistakable — body angled 25° forward, right arm at full overhand extension above the shoulder coming DOWN in a vertical comet arc (different from atk3's horizontal hook). F4 the half-grin appears — the cynic's "I shouldn't be enjoying this" tell that he reserves for the finisher. Cigarette stays put through the whole motion.**
-- F1: load — body coils backward, weight shifting to the left (good) leg, right fist drawn behind the body at shoulder height. **The bad right knee strains visibly** (the 1-px tilt that says "this is going to cost him").
-- F2: wind-up — right arm arcing OVERHEAD now, body rotating, hair strand whipping.
-- F3: **DRIVE — right arm at full overhand extension ABOVE the shoulder, body angled 25° forward, weight transferring forward. The vertical fist position is the move's identity — atk3 was horizontal hook, atk4 is overhand**. 4-px brown stomp-dust spray at his right foot as the weight lands.
-- F4: **impact — right fist at chest-of-target height (having come DOWN from overhead in a comet arc), body fully forward, HALF-GRIN visible**. Cigarette unmoved.
-- F5: follow-through — body bent forward at the waist, fist past the impact line, hair strand falling across the forehead.
-- F6: recovery — body straightens slowly, fist coming back, hair settles.
+### `atk4` — PUSH KICK / TEEP (6 frames, 11 fps) — combo finisher
+**Visual signature:** Duke's straight-line door-kick. **LEFT BOOT drives FLAT FORWARD at hip height, sole pointing at the target like he's kicking a door in**. Body leans BACK 15° for balance (counterweight to the extended leg). Completely different silhouette from atk3's sideways shin — atk4's leg is straight forward in a perfect line from hip to bootsole. The half-grin appears at F4 as the boot connects. **Must NOT show the kicking leg arcing sideways (that would read as atk3) and must NOT show the foot pointed (it's FLAT/sole forward).**
+- F1: load — body coils backward, weight shifting fully onto the right (bad) leg, left knee chambering up to hip height. **Bad right knee strains** (1-px outward tilt) as it takes the full load. Both arms drop to hip level.
+- F2: wind-up — left knee at full chamber (knee at hip height, shin folded under the thigh), body leaning back 10°, hands raising slightly to mid-chest for balance.
+- F3: drive — left leg starting to extend forward, body leaning back further as counterweight, hair strand whipping.
+- F4: **CONTACT — LEFT BOOT fully extended STRAIGHT FORWARD at hip height (~32 px past the body), SOLE OF THE BOOT pointed at the target (flat foot, not flexed). Body leaning BACK 15° in counterbalance, arms raised at chest for stability. HALF-GRIN visible**. Cigarette unmoved.
+- F5: follow-through — left leg holding extension one extra frame for the push-kick weight, body still leaned back, target visibly displaced (impact lines or 2-px boot-print dust at hip height ahead of the foot).
+- F6: recovery — left leg retracts, knee folding back under the body, body straightening. Hair settles. Cigarette has not moved.
 
 ### `heavy` — UPPERCUT LAUNCHER (7 frames, 9 fps)
 **Visual signature:** the **strained bad knee** is the tell on F1 — a 1-px tilt that says "this is going to hurt him too." F5 peak shows the half-grin AND the cigarette unmoved AND the fist 16 px above his head. The whole pose is "worn-out man putting his whole body into one shot." Slowest player attack — the load takes time.
@@ -189,12 +189,12 @@ eye whites          #f0f0f0
 - F6: hold — pose held one extra frame for the launcher feel.
 - F7: recovery — body lowers back to stance, knees absorbing.
 
-### `jump_atk` — DIVING ELBOW DROP (4 frames, 10 fps)
-**Visual signature:** Duke isn't graceful in the air — he DIVES. Body angled forward at 45°, **right elbow cocked overhead with the FOREARM VERTICAL like a spear**, the whole body falling onto the elbow's point. **F3 the impact pose shows the entire body folded behind the descending elbow — head, shoulder, hip, and lead foot all in a diagonal line from the elbow tip to his back foot**. Not a graceful flying kick; a worn-out brawler turning gravity into a weapon. Hair strand whips upward. **Cigarette stays put** even at the apex.
-- F1: airborne, right elbow cocked overhead with forearm vertical, body still rising.
-- F2: descent begins — body angles 30° forward, elbow leading the drop.
-- F3: **peak impact — elbow at chest-of-target height, body 45° forward in a diagonal line from elbow-tip to rear foot**. Hair strand whipped up.
-- F4: recovery — body resets, elbow lowering toward landing.
+### `jump_atk` — FLYING KNEE (4 frames, 10 fps)
+**Visual signature:** Duke launches forward with his **LEFT KNEE leading the strike at chest height**, both fists tucked at his own chest, the back (right) leg trailing behind. Not a graceful Tony-Jaa flying knee — Duke is a tired boxer turning a small hop into a knee strike. **F3 silhouette: body airborne and angled 20° forward, left knee fully raised so the kneecap is at chest height of the imagined target, left shin folded vertical under the thigh, right leg trailing behind for counterweight. Hair strand whips upward**. The only aerial attack and the only knee strike. Cigarette stays put through the apex.
+- F1: airborne — body rising, left knee starting to drive up, right leg trailing behind. Both fists tucked at chest.
+- F2: forward arc — body angled 15° forward, left knee climbing to hip height, right leg straightening behind for counterweight.
+- F3: **peak impact — body fully airborne, LEFT KNEE at chest height of the imagined target with the shin folded vertical underneath, right leg trailing straight back, both fists tucked at chest. Hair strand whipped up. Brown impact spark at the knee tip**.
+- F4: recovery — body descending, left leg unfolding toward landing, right leg coming forward to plant.
 
 ### `back_atk` — REAR ELBOW (4 frames, 12 fps)
 - Heavier rear-elbow strike than Rio's — Duke pivots more on the bad knee, so the move loads slow but lands hard.
@@ -269,14 +269,16 @@ Duke's identity in motion is the **dust puff at his stomping right foot + cigare
 
 - `atk1` JAB — body vertical, FRONT fist horizontal forward, sharp snap-back, no dust (efficient)
 - `atk2` CROSS — body rotated 45°, REAR fist horizontal forward, 1-px hair-strand whip across the forehead at peak
-- `atk3` HOOK + STOMP — body torqued sideways, fist arcs HORIZONTALLY from the side, right foot STOMPS with dust puff (1–2 brown specks)
-- `atk4` DROPPING OVERHAND — fist arcs DOWN from ABOVE the shoulder (vertical comet, NOT horizontal hook), bigger dust puff (4 brown specks) at right foot, half-grin appears
+- `atk3` LOW KICK — LEFT SHIN arcs sideways into thigh height, body torqued 45° with the rotation, both arms flared OUTWARD for balance, dust puff at the supporting right boot
+- `atk4` PUSH KICK / TEEP — LEFT BOOT drives FLAT FORWARD at hip height (sole pointing at target like kicking a door), body leans BACK 15° for counterbalance, half-grin appears
 - `heavy` UPPERCUT — ONE rear fist RISING vertically from below the knee to overhead, bad-knee strain visible on F1, half-grin on F5
-- `jump_atk` DIVING ELBOW DROP — body fully AIRBORNE, elbow tip leading downward (the only aerial attack)
+- `jump_atk` FLYING KNEE — body AIRBORNE angled 20° forward, LEFT KNEE leads at chest height with the shin folded vertical underneath (the only aerial attack + only knee strike)
 - `back_atk` REAR ELBOW — body twisted BACKWARD 60°, elbow behind body (the only rear-facing attack)
 - `special` ROLLING THUNDER — three FORWARD elbow strikes (left-right-left) with growing speedlines (3-px → 4-px → 5-px) + a haymaker finisher with dust puff + half-grin
 - `throw` COLLAR SLAM — both hands gripping overhead, body rotates 90° (the only grappling pose)
 - `counter` LIVER SHOT KO — body CROUCHED low (shortest pose Duke takes), rear fist drives forward at HIP HEIGHT — the only attack below chest level + half-grin at full visibility
+
+**Kick discipline note (every kick uses the LEFT — good — leg).** Duke's right knee is bad; he never kicks with the right leg. atk3, atk4, and jump_atk all use the LEFT leg as the weapon. The right (bad) knee is either the supporting leg (atk3, atk4) or trailing behind for counterweight (jump_atk), and it visibly strains when it carries load.
 
 **Hurt / flinch:** F1 body folds, jaw clenches. F2 cigarette wobbles 1 px but stays on the ear (the gag). 1-px white impact spark at the contact point. F3 body returns to stance, hair strand falls across the forehead.
 
