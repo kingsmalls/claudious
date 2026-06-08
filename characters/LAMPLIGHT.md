@@ -10,12 +10,27 @@ Visually they read **immediately as noir**: long dark trench coat, fedora pulled
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — pistol shot (5 frames)
-> 4. `atk2` — charged shot (8 frames)
+> 3. `atk1` — PISTOL SHOT (5 frames) — **two-handed pistol HORIZONTAL FORWARD at chest height**, fedora tilts DOWN 1 px to sight, small orange muzzle flash
+> 4. `atk2` — CHARGED SHOT (8 frames) — **same horizontal grip but GROWING BLUE GLOW at the muzzle (2→3→5→7 px)** across F1–F4, bigger 8-px white-orange muzzle flash on release, body ROCKS BACK with the coat flaring
 > 5. `hurt` (3 frames)
 > 6. `dead` (4 frames)
 >
 > **Total: 30 frames in 6 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Lamplight only has two attacks, and the generator's failure mode is **drawing them as the same pose with a recolored muzzle flash**. The charged shot must read as visibly different by silhouette — longer aim, glowing barrel, harder recoil — not just a colour swap. Each attack must occupy a different silhouette quadrant:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` shot | Vertical, body squared, slight 5° forward lean | Pistol two-handed at chest | Horizontal forward | Fedora tilts DOWN 1 px to sight + small 4-px ORANGE-YELLOW muzzle flash; coat sits straight (no flare); body steady (no recoil rock) |
+> | `atk2` charged | Vertical aim then ROCKED BACK 10° on release | Pistol two-handed at chest | Horizontal forward | GROWING BLUE GLOW at the muzzle across F1–F4 (2 → 3 → 5 → 7 px) + scarf tints one shade cooler at peak charge + bigger 8-px WHITE-ORANGE flash + body rocks BACK with the coat flaring behind (the only attack where the coat flares) |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2 wind-up:** atk1's aim is ONE frame (F1–F2 raise) and then the trigger pulls; atk2 holds the aim across FOUR frames with a visibly growing blue orb at the barrel. If atk2's wind-up looks like atk1 with a blue tint, redraw — the blue glow must grow in size frame by frame so the charge is readable from across the screen.
+> - **atk1 vs atk2 flash:** atk1 flash is small (4 px), orange-yellow, no body rock. atk2 flash is BIG (8 px), white-orange core, AND the body rocks back. If both flashes look the same size, redraw atk2 bigger.
+> - **atk2 vs idle/walk:** the coat only flares on atk2 recoil. If walk/idle shows the coat flaring, redraw — the flare is reserved for the charged shot.
+> - **Scarf rule:** the white scarf is UP across the nose and mouth in EVERY frame including hurt and dead. If any frame shows the mouth/nose visible, redraw — the scarf is identity.
 
 ## Physical
 
@@ -86,8 +101,8 @@ charged glow blue  #4a8ad0    (telegraph during charged shot wind-up)
 
 | Slot      | Frames | Notes |
 |-----------|-------:|-------|
-| `idle`    | 4 | Gun held two-handed at chest height. Eye-slit visible under fedora brim. Scarf tails sway 1 px on breath. |
-| `walk`    | 6 | Backwards walk while keeping gun raised — for retreating. Mirror for forward walk if needed. Coat hem sways behind. |
+| `idle`    | 4 | Gun held two-handed at chest height. Eye-slit visible under fedora brim. Scarf tails sway 1 px on breath. Coat hangs straight (no flare). |
+| `walk`    | 6 | **Composed gunslinger gait that LOOPS SEAMLESSLY** (F6 blends back into F1). Lamplight walks backwards while keeping the gun raised — mirror the cycle for forward travel. F1 = LEFT leg fwd + RIGHT arm-shoulder fwd swing (opposite-side). F2 = passing. F3 = RIGHT leg fwd + LEFT arm-shoulder fwd swing. F4 = passing. F5 = mirror of F1. F6 = passing → blends into F1. **Both arms keep the two-handed pistol grip at the chest — they don't swing wide, but the SHOULDERS rotate AT THE SIDES with each step (1–2 px sway)** so the body still reads as walking, not as a static aim pose. Arms NEVER extend forward past chest height (would read as taking a shot). Coat hem sways 2 px behind the trailing leg per step — never flares (flare is reserved for charged recoil). Scarf tails drift 1 px lateral per step. No planted/stomp pose on F6 — the cycle blends straight back. |
 | `atk1`    | 5 | Regular shot. F1–F2 = raise + aim (fedora tilts down 1 px), F3 = trigger pull (muzzle flash at barrel, visible past the scarf), F4–F5 = recoil + recover. |
 | `atk2`    | 8 | Charged shot. F1–F4 = long aim with growing blue glow at barrel (also tints the scarf for one frame), F5 = bigger muzzle flash, F6–F8 = harder recoil — body rocks back, coat flares behind. |
 | `hurt`    | 3 | Body twists from the hit. Gun arm drops one frame. Fedora and scarf stay in place. |
@@ -105,11 +120,10 @@ charged glow blue  #4a8ad0    (telegraph during charged shot wind-up)
 
 ## Visual VFX summary
 
-Lamplight's identity is the **orange muzzle flash** + blue charged glow + fedora tilt to aim + scarf as the high-contrast white silhouette against the black coat.
+Lamplight's identity is the **orange muzzle flash** + blue charged glow + fedora tilt to aim + scarf as the high-contrast white silhouette against the black coat. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so the regular shot and the charged shot never blur into one move.
 
-- `shot` — fedora tilts DOWN 1 px on F2 (aiming tell) + 4-px orange-yellow muzzle flash at barrel tip on F3
-- `charged` — barrel develops a GROWING BLUE GLOW (2 → 3 → 5 → 7 px) during F1–F4 (the blue tints the white scarf one shade cooler for one frame at peak) + bigger 8-px muzzle flash + coat flares behind on recoil
-- `whip` pistol-whip — gun body swings horizontally as a club at the player's head, no muzzle flash, just metal-on-bone impact
+- `atk1` PISTOL SHOT — fedora tilts DOWN 1 px on F2 (aiming tell) + small 4-px ORANGE-YELLOW muzzle flash at the barrel tip on F3 + body steady (no recoil rock, coat does not flare)
+- `atk2` CHARGED SHOT — barrel develops a GROWING BLUE GLOW (2 → 3 → 5 → 7 px) across F1–F4 (the blue tints the white scarf one shade cooler at peak charge) + bigger 8-px WHITE-ORANGE muzzle flash on F5 + body rocks BACK 10° with the coat flaring behind on recoil (the only attack where the coat flares)
 
 **Hurt / flinch:** F1 body twists from the hit. F2 gun arm drops one frame (the only time the gun is not in firing position). Fedora and scarf STAY UP. 1-px white impact spark on the coat.
 

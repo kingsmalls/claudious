@@ -10,16 +10,34 @@ Of all Kane's crews, Dojo is the only one who *bows* before the fight.
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — front kick (4 frames)
-> 4. `atk2` — roundhouse kick (5 frames)
-> 5. `atk3` — axe kick (6 frames)
-> 6. `jump_atk` — flying side kick (5 frames)
+> 3. `atk1` — FRONT KICK / mae geri (4 frames) — **rear LEG drives STRAIGHT FORWARD horizontally** at chest height, FOOT FLEXED (toes pulled back), heel leading, body upright
+> 4. `atk2` — ROUNDHOUSE / mawashi geri (5 frames) — **kicking leg HORIZONTAL at chest height with shin PARALLEL to ground**, body torqued 45°, top-of-foot leading
+> 5. `atk3` — AXE KICK / kakato otoshi (6 frames) — **kicking leg STRAIGHT VERTICAL past the head** (180° leg extension splitting the silhouette), then HEEL drops straight down like a guillotine
+> 6. `jump_atk` — FLYING SIDE KICK / tobi yoko geri (5 frames) — **AIRBORNE body fully HORIZONTAL mid-flight**, lead leg extended straight forward with the SIDE of the foot leading, rear leg tucked under
 > 7. `guard` (3 frames)
 > 8. `bow` (6 frames)
 > 9. `hurt` (3 frames)
 > 10. `dead` (4 frames)
 >
 > **Total: 46 frames in 10 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Dojo is the only character whose attacks are ALL kicks, which is exactly the failure mode — the generator falls back to "guy lifting a leg" for every move. Each kick must occupy a DIFFERENT silhouette quadrant. If two kicks share a silhouette, redraw one:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` front kick | Vertical, body upright, slight 5° forward | Rear leg, FOOT FLEXED (toes back), HEEL leading | Horizontal STRAIGHT forward | Foot is FLEXED with toes pulled back — heel/ball of foot leads in a straight line; body stays upright facing forward |
+> | `atk2` roundhouse | Torqued 45° sideways, hip rotated through | Kicking leg, TOP-OF-FOOT (instep) leading | Horizontal ARC at chest height from the OUTSIDE in | Shin parallel to the ground, body rotated 45° showing the hip drive, top-of-foot leading — only attack with the hip clearly torqued and the foot pointed (NOT flexed) |
+> | `atk3` axe kick | Vertical, body leaned BACK slightly, then forward | Same leg whole 180° up then DOWN | Vertical UP then vertical DOWN | Leg STRAIGHT VERTICAL past the head at F3 (the leg splits the silhouette down the middle) — the only attack with the kicking leg ABOVE the head |
+> | `jump_atk` flying side kick | AIRBORNE, body fully HORIZONTAL parallel to ground | Lead leg, SIDE of the foot leading | Horizontal forward at chest height (mid-air) | Only AIRBORNE kick + body fully horizontal in flight + side-of-foot leading (NOT heel like atk1, NOT instep like atk2) — an arrow silhouette |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 = STRAIGHT-LINE leg with the foot FLEXED (toes pulled back, heel leading); body stays squared forward. atk2 = ARCING leg with the foot POINTED (top-of-foot leading); body torqued 45° showing the hip rotation. If both kicks look like "leg out at chest height," redraw atk1 with the foot clearly flexed and the body squared, and atk2 with the shin clearly horizontal-parallel and the hip rotated.
+> - **atk2 vs jump_atk:** atk2 is GROUNDED with the supporting foot planted and the body torqued. jump_atk is fully AIRBORNE with the body horizontal in flight and BOTH legs off the ground (lead extended, rear tucked under). If jump_atk shows a planted foot at peak, redraw — it must be airborne.
+> - **atk3 vs anything else:** atk3 is the ONLY attack where the kicking leg goes STRAIGHT UP past the head (vertical leg pose). If atk3 shows the leg at chest height instead, redraw — the vertical-leg silhouette IS the move's identity.
+> - **jump_atk vs flying knee (other characters):** Dojo does NOT throw a knee strike. The flying attack is a SIDE KICK with the lead leg straight forward, side-of-foot leading. If F3 shows a bent knee leading, redraw with the leg straight.
+> - **No-punches rule:** Dojo NEVER throws a punch. Hands stay in knife-hand guard at chin/hip across every attack frame. If any attack shows the lead arm extending forward like a strike, redraw — the kick is always the weapon.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -88,7 +106,7 @@ toenails           #c8a890     (1px detail)
 | Slot         | Frames | Notes |
 |--------------|-------:|-------|
 | `idle`       | 4 | **Karate front-stance** — narrow front-back foot placement, front knee bent, back leg straight. **Bare feet visible.** Hands in **knife-hand guard** (open palms vertical, fingers up, one forward at chin height, one at hip). Belt tails sway 1 px on breath. |
-| `walk`       | 6 | Light gliding steps in stance — front foot slides forward, rear foot follows. **Never crosses center line** (no boxer's stride). Hands stay in guard. Bare feet stay flat. |
+| `walk`       | 6 | **Disciplined gliding stride that LOOPS SEAMLESSLY** (F6 blends back into F1). F1 = LEFT foot slides fwd + RIGHT shoulder rotates fwd 2 px (opposite-side, but kept tight to the body). F2 = passing position (feet roughly under body). F3 = RIGHT foot slides fwd + LEFT shoulder rotates fwd 2 px. F4 = passing. F5 = mirror of F1. F6 = passing → blends into F1. **Hands stay in knife-hand guard at chin/hip the whole cycle** — they do NOT swing out wide, but the shoulders rotate AT THE SIDES with each step so the body still reads as walking, not as a static stance. Arms NEVER extend forward past chin height (would read as a strike — and Dojo doesn't strike with hands). Bare feet stay flat, never crossing the center line. Belt tails drift 1 px laterally per step. No planted/stomp pose on F6 — the cycle blends straight back. |
 | `atk1`       | 4 | **Front kick (mae geri).** F1 = rear knee lifts to chest, foot pulled toward the hip (chamber). F2 = **leg drives forward horizontally, foot flexed with toes back, heel leading**. F3 = peak — leg fully extended at chest-of-target height, ball of foot at impact, supporting leg slightly bent, **belt tails snapped forward 6 px**. F4 = re-chamber knee, return to stance. |
 | `atk2`       | 5 | **Roundhouse (mawashi geri).** F1 = body torques back, kicking leg starts lifting sideways with knee bent. F2 = leg chambers to the side, knee at shoulder height. F3 = **peak — kicking leg horizontal at chest height, shin parallel to ground, top-of-foot leading, body rotated 45°, arms swung to rear shoulder, belt tails snap horizontally**. F4 = leg follow-through past the target. F5 = recovery, leg returns to stance. |
 | `atk3`       | 6 | **Axe kick.** F1 = kicking leg lifts toward chest. F2 = leg continues rising straight up, body leans back slightly. F3 = **peak — kicking leg STRAIGHT UP vertical past the head (the leg splits the silhouette into two halves), supporting leg planted, body arched back slightly**. F4 = leg DRIVES DOWN with heel leading (vertical chop). F5 = heel at chest-of-target height. F6 = recovery, leg plants. |
@@ -112,11 +130,12 @@ toenails           #c8a890     (1px detail)
 
 ## Visual VFX summary
 
-Dojo's identity is the **belt-tail snap** with every kick + the karate front-stance + bare feet visible on strikes.
+Dojo's identity is the **belt-tail snap** with every kick + the karate front-stance + bare feet visible on strikes. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two kicks blur together — and Dojo never punches.
 
-- `counter` parry-strike — rear hand sweeps OUT/DOWN deflecting + lead hand drives forward in open-palm strike (both arms active SAME frame) + belt tails snap forward 6 px
-- `roundhouse` — supporting leg planted, kicking leg horizontal at chest height with shin parallel to ground, body torqued 90°, top-of-foot leading, belt tails snap horizontally
-- `flying_knee` — body airborne, lead knee driven HIGH and FORWARD, lower leg tucked under, both arms wide for balance, belt tails snap downward
+- `atk1` FRONT KICK (mae geri) — body upright, rear leg drives STRAIGHT forward at chest height, foot FLEXED with toes pulled back and HEEL leading; belt tails snap forward 6 px
+- `atk2` ROUNDHOUSE (mawashi geri) — body torqued 45°, kicking leg horizontal at chest height with shin PARALLEL to the ground, top-of-foot (instep) leading; belt tails snap horizontally with the rotation
+- `atk3` AXE KICK — kicking leg goes STRAIGHT UP past the head (vertical leg splits the silhouette), then heel drives straight DOWN like a guillotine; belt tails snap upward then down
+- `jump_atk` FLYING SIDE KICK (tobi yoko geri) — body fully AIRBORNE and HORIZONTAL mid-flight, lead leg straight forward with the SIDE of the foot leading, rear leg tucked under, both arms swept back; belt tails trailing horizontally behind
 
 **Hurt / flinch:** F1 body folds. F2 belt tails swing WIDE and snap. Recovers fast — by F3 back in guard stance. 1-px white impact spark.
 

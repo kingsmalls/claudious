@@ -8,14 +8,31 @@ Kane's heavy enforcer. Ex-prison-yard fighters and former bouncers Kane bought o
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — sledgehammer slam (7 frames)
-> 4. `atk2` — shoulder charge (8 frames)
-> 5. `atk3` — bear hug (6 frames)
-> 6. `atk4` — belly flop (6 frames)
+> 3. `atk1` — SLEDGEHAMMER SLAM (7 frames) — **PYRAMID silhouette**, both fists clasped overhead, body straight VERTICAL
+> 4. `atk2` — SHOULDER CHARGE (8 frames) — **body angled 30° forward like a BATTERING RAM**, lead shoulder lowered, arms swept BEHIND
+> 5. `atk3` — BEAR HUG GRAB (6 frames) — **BOTH arms reach forward at chest height in a WIDE WRAPPING posture**, fingers spread (the only grappling pose)
+> 6. `atk4` — BELLY FLOP (6 frames) — **body HORIZONTAL on the ground**, arms spread wide, gut-down (the only prone attack)
 > 7. `hurt` (3 frames)
 > 8. `dead` (4 frames)
 >
 > **Total: 44 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Tank's biggest sheet-generation failure is **slam / charge / bear hug blurring together** because the generator falls back to "big man with arms out" for all three. Every attack below must occupy a DIFFERENT silhouette quadrant — if two attacks share a silhouette, redraw one:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` slam | Body VERTICAL, arched back slightly | BOTH fists clasped overhead | Descending vertical | PYRAMID — wide feet, both arms straight vertical OVERHEAD with fists meeting at the top; the silhouette is taller than wide |
+> | `atk2` shoulder charge | Body angled 30° FORWARD, lowered | Lead SHOULDER | Horizontal forward (whole-body ram) | Body angled forward like a battering ram with the lead shoulder dropped to chest height and arms swept BEHIND for aerodynamics (arms are NOT the weapon) |
+> | `atk3` bear hug | Body bent forward 20°, upright-ish | BOTH arms wrap forward | Horizontal forward at chest height, then INWARD | Both arms reach forward in a WIDE WRAPPING C-shape with palms facing IN and fingers SPREAD (the only attack with open spread fingers); F4 squeezes inward |
+> | `atk4` belly flop | Body HORIZONTAL on the GROUND | Whole gut/chest | Falling forward, then prone | Only attack where Tank ends FLAT on the ground; F4 silhouette is a horizontal mass with arms spread wide and the body parallel to the floor |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk3:** atk1 = both fists CLASPED TOGETHER OVERHEAD (vertical pyramid, fists meeting at the top of the silhouette). atk3 = both arms reach FORWARD at chest height with fingers SPREAD WIDE (palms in, hands NOT clasped, NOT overhead). If atk3 shows fists clasped overhead it's drawn as a slam — redraw with hands open, spread, forward at chest height.
+> - **atk2 vs atk3:** atk2 = arms swept BEHIND, lead SHOULDER lowered as the weapon (whole body angled forward like a ram). atk3 = arms reach FORWARD wrapping (the weapon IS the arms). If atk2 shows arms forward, the charge isn't reading — redraw with arms back, shoulder leading.
+> - **atk1 vs atk4:** atk1 ends standing upright with arms overhead at impact (vertical). atk4 ends flat on the ground with the body horizontal (prone). Opposite orientations. If atk4 shows Tank still standing at peak, redraw — the move's identity IS the prone landing.
+> - **atk2 vs walk:** the charge body must be lower and more angled than walk; the lead shoulder visibly DROPS to chest height. If charge looks like Tank just walking faster, redraw with the shoulder clearly lowered and arms swept back.
 
 > ## 🛑 ABSOLUTE RULE — DO NOT WRITE ANY TEXT INTO THE SHEET
 >
@@ -87,7 +104,7 @@ strap brown        #4a3a28
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
 | `idle`   | 4 | **Wide planted stance** — feet outside shoulder width. Slow chest rise on breath. Arms hang loose, fists half-clenched. Vest **badge catches a 1-px gold highlight**. |
-| `walk`   | 6 | **Heavy stomp gait** — boots flat-footed. Body barely sways. **Dust puff (1–2 brown specks) at the planted heel on every step**. Vest jiggles 1 px on impact. |
+| `walk`   | 6 | **Heavy stomp gait that LOOPS SEAMLESSLY** (F6 blends back into F1). F1 = LEFT leg fwd + RIGHT arm fwd swing (at side, hip-level). F2 = passing position. F3 = RIGHT leg fwd + LEFT arm fwd swing. F4 = passing. F5 = mirror of F1. F6 = passing → blends into F1. **Both arms swing in a relaxed arc AT THE SIDES**, fists half-clenched at hip height. Arms NEVER extend forward past the body (would read as a bear-hug grab or shoulder-charge wind-up). Boots flat-footed, body barely sways. **Dust puff (1–2 brown specks) at the planted heel on F1, F3, F5**. Vest jiggles 1 px on impact. No planted/stomp pose on F6 — the cycle blends straight back. |
 | `atk1`   | 7 | **Sledgehammer slam.** F1 = both arms start rising, knees bending. F2 = arms above head, fists clasping, body coiled back (ground-rumble specks at his feet). F3 = **peak PYRAMID pose — feet wide, both arms vertical overhead, fists meeting at the top, body arched backwards**. F4 = drive down (body folds at the waist, both fists crash at chest-height of target) — **dust burst, 5–6 brown specks in a half-circle at his feet**. F5 = follow-through, body bent forward, fists at thigh height. F6 = straighten. F7 = recovery to stance. |
 | `atk2`   | 8 | **Shoulder charge.** F1 = stance widens, body coils backward. F2 = body angles forward 15°, lead shoulder starts lowering. F3 = **lead shoulder LOWERED to chest height, arms swept BEHIND, body angled 30° forward (battering-ram silhouette)**. F4 = launch — first stride forward, motion lines behind shoulders, **dust trail behind rear boot**. F5 = mid-charge, second stride, more motion lines. F6 = approaching impact, body still angled forward. F7 = impact, body straightens slightly, dust burst at contact point. F8 = recovery to stance. |
 | `atk3`   | 6 | **Bear hug grab.** F1 = both arms start rising at the sides, body angling forward. F2 = arms swing forward at chest height, fingers spread wide, body bent 15° forward. F3 = **peak — BOTH ARMS reaching forward at chest height in a WIDE WRAPPING posture (palms in, fingers spread), body bent forward 20°**. F4 = arms WRAP inward (imagined target now between them), body squeezes inward, head tilts back. F5 = held crush pose. F6 = release, arms come down, body straightens. |
@@ -107,11 +124,12 @@ strap brown        #4a3a28
 
 ## Visual VFX summary
 
-Tank's identity is the **ground-rumble dust** during slam wind-ups + heavy boot-print dust on every footstep + the pyramid silhouette on the slam.
+Tank's identity is the **ground-rumble dust** during slam wind-ups + heavy boot-print dust on every footstep + the pyramid silhouette on the slam. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `slam` — pyramid silhouette (wide feet, both arms vertical overhead, fists meeting at the top) + dust burst at his feet on impact + 1-frame screen-jitter
-- `charge` shoulder bash — battering-ram silhouette (body angled 30° forward, lead shoulder horizontal) + dust trail behind rear boot
-- `grab` bear hug — both arms wrapping forward at chest height (palms in, fingers spread), body bent forward 20°
+- `atk1` SLEDGEHAMMER SLAM — PYRAMID silhouette (wide feet, both arms vertical OVERHEAD with fists CLASPED at the top, body arched slightly back) + dust burst at his feet on impact + 1-frame screen-jitter
+- `atk2` SHOULDER CHARGE — battering-ram silhouette (body angled 30° forward, lead SHOULDER lowered to chest height, arms swept BEHIND for aerodynamics) + dust trail behind rear boot
+- `atk3` BEAR HUG GRAB — both arms reach FORWARD at chest height in a WIDE WRAPPING C-shape, palms IN, fingers SPREAD wide; body bent forward 20° (the only attack with spread fingers + the only grappling pose)
+- `atk4` BELLY FLOP — body falls forward 60°, then lands FLAT HORIZONTAL on the ground with arms spread wide; 8-speck dust burst spraying outward along the entire body length (the only prone attack)
 
 **Hurt / flinch:** Almost no flinch. F1 head turns 5°, vest doesn't move (he's barely impressed). 1-px white impact spark on the vest.
 
