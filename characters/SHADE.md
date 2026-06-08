@@ -104,6 +104,20 @@ smoke trail edge   #1a0e22
 - Visible face below the eyes.
 - Multiple shades / clones in one frame — one body at a time, even during vanish.
 
+## Visual VFX summary
+
+Shade's identity is the **purple cloak wisps** + the eye-glow (the only saturated colour on him) + smoke from the cloak hem.
+
+- `strike` shadow chop — chopping hand fully extended forward + cloak hem fanned 180° behind in a comet-tail arc
+- `backstab` materialising blade — F1 blade EMERGES FIRST from a purple smoke wisp before the body solidifies + body then thrusts forward (the blade appears before he does)
+- `sweep` low cloak chop — body low, hand chops downward at ankle height, cloak swirls in a low circle around the body
+- `vanish` — body fades over 5 frames: solid → 60% alpha → 30% alpha → just hood/eyes → eye-glow alone with purple smoke
+- `reappear` — reverse of vanish: smoke + eyes → 50% alpha body → full opacity
+
+**Hurt / flinch:** F1 body folds. F2 hood briefly drops back 4 px exposing more of the upper mask (BUT NEVER the face below the eyes — that's the rule). 1-px white impact spark.
+
+**Dead:** Body crumples. Cloak pools around the body in a wide circle. Eye-glow fades — bright on F1, dim on F2, gone by F3. Purple smoke dissipates upward over the death frames.
+
 ## Sheet specs
 
 - 7 columns × 5 rows = 35 cells (~33 frames used)

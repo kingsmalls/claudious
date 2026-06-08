@@ -102,6 +102,18 @@ beard              #4a3a28
 - Clean, pressed clothing — everything is worn-in and stained.
 - The hard hat replaced by a beanie or other headgear. Stays the yellow construction helmet.
 
+## Visual VFX summary
+
+Rig's identity is the **yellow hardhat** (always on, even when hit/dead) + dust at his boots + shockwave on the pound.
+
+- `strike` hardhat headbutt-and-jab — head LOWERS with hardhat tilted forward like a ram + lead fist drives forward UNDER the hardhat brim
+- `pound` pneumatic earthquake — vertical column silhouette (fists clasped above hardhat, body fully stretched UP) + shockwave dust ring radiating 36 px on each side + vertical dust plume rising up
+- `throw` tool throw — wrench flies forward as a slow tumbling projectile (visible rotation as it travels)
+
+**Hurt / flinch:** F1 stagger, head turns 10°. F2 hardhat STAYS ON (his signature — never falls off). 1-px white impact spark on the vest. F3 returns to stance.
+
+**Dead:** Falls FORWARD onto the ground (face down, hardhat lands first). Hardhat stays on the head through all 4 frames.
+
 ## Sheet specs
 
 - 8 columns × 5 rows = 40 cells (~35 frames used; pound attack is the big one at 12)

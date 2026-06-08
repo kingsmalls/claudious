@@ -105,6 +105,18 @@ strap brown        #4a3a28
 - Trimmed beard or styled hair.
 - The KANE PROPERTIES badge replaced by anything else, ever.
 
+## Visual VFX summary
+
+Tank's identity is the **ground-rumble dust** during slam wind-ups + heavy boot-print dust on every footstep + the pyramid silhouette on the slam.
+
+- `slam` — pyramid silhouette (wide feet, both arms vertical overhead, fists meeting at the top) + dust burst at his feet on impact + 1-frame screen-jitter
+- `charge` shoulder bash — battering-ram silhouette (body angled 30° forward, lead shoulder horizontal) + dust trail behind rear boot
+- `grab` bear hug — both arms wrapping forward at chest height (palms in, fingers spread), body bent forward 20°
+
+**Hurt / flinch:** Almost no flinch. F1 head turns 5°, vest doesn't move (he's barely impressed). 1-px white impact spark on the vest.
+
+**Dead:** Falls like a tree — F1 folds at the knees, F2 falls to one knee (dust puff), F3 collapses sideways, F4 face down.
+
 ## Sheet specs
 
 - 8 columns × 6 rows = 48 cells (~44 frames used; he now has 4 attacks)

@@ -104,6 +104,18 @@ RED BANDANA shadow #6a1828
 - The yellow bandana from Rio (different character, different color, different wrist).
 - Glowing energy / elemental effects.
 
+## Visual VFX summary
+
+Runner's identity is the **over-committed body posture** + red bicep bandana streaking horizontally through swings. No technique — he literally falls forward into his hits.
+
+- `swipe` wild haymaker — front leg crosses past body line, rear arm flails behind for balance, bandana 12-px horizontal streak through the swing
+- `tackle` body slam — body fully horizontal mid-air, both arms forward like a football tackle, motion lines behind the feet
+- `kick` panicked kick — body leans BACK 30° (no balance), kicking foot FLAT (not flexed), both arms flailing wide, supporting knee visibly buckling
+
+**Hurt / flinch:** F1 body folds at the waist, face shows FEAR (eyebrows up, mouth open). F2 hands fly up defensively. 1-px white impact spark.
+
+**Dead:** Falls flat onto back, arms splayed. Bandana visible against the ground.
+
 ## Sheet specs
 
 - 8 columns × 4 rows uniform grid (32 cells, ~28 frames used)

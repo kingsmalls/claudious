@@ -112,6 +112,14 @@ ring engraving     #1a1a22
 - Tattoos.
 - Speaking lines.
 
+## Visual VFX summary
+
+Already covered in the per-move animation table — sparks on hook, floor cracks on charge, concrete-chunk debris on overhead, shockwave rings on earthquake, propeller motion-blur on Juggernaut, star-burst + ghost-fist trail on iron-wall counter.
+
+**Hurt / flinch:** Almost no flinch (he's a wall). F1 head turns 5°, crossed arms STAY CROSSED even when struck. F2 1-px white impact spark on the forearms. F3 returns to idle.
+
+**Dead:** The first significant flinch IS the death animation. He goes down slowly in stages — F1 folds at the waist, F2 to one knee, F3 onto both knees, F4 forward to all fours, F5 elbows give, F6 forehead touches ground, F7 settled face down.
+
 ## Sheet specs
 
 - 8 columns × 6 rows = 48 cells (~45 frames used; he has the longest attack chain)

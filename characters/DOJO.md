@@ -110,6 +110,18 @@ toenails           #c8a890     (1px detail)
 - Loose, untied hair (always tied back).
 - Footwear of any kind.
 
+## Visual VFX summary
+
+Dojo's identity is the **belt-tail snap** with every kick + the karate front-stance + bare feet visible on strikes.
+
+- `counter` parry-strike — rear hand sweeps OUT/DOWN deflecting + lead hand drives forward in open-palm strike (both arms active SAME frame) + belt tails snap forward 6 px
+- `roundhouse` — supporting leg planted, kicking leg horizontal at chest height with shin parallel to ground, body torqued 90°, top-of-foot leading, belt tails snap horizontally
+- `flying_knee` — body airborne, lead knee driven HIGH and FORWARD, lower leg tucked under, both arms wide for balance, belt tails snap downward
+
+**Hurt / flinch:** F1 body folds. F2 belt tails swing WIDE and snap. Recovers fast — by F3 back in guard stance. 1-px white impact spark.
+
+**Dead:** Falls to one knee first (composed, not collapsed), then forward to all fours. Bare feet visible throughout.
+
 ## Sheet specs
 
 - 7 columns × 5 rows = 35 cells (~30 frames used)

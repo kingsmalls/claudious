@@ -410,6 +410,10 @@ const ANIM_FPS = {
   jab: 14, cross: 12, haymaker: 10, taunt: 8, dead: 6,
   slash: 14, dash: 14, swing: 11, spin: 13, slam: 10,
   lunge: 14, shot: 12, charged: 8, backstab: 16, pound: 9,
+  // New enemy attack names.
+  tackle: 12, kick: 13, grab: 9,
+  flurry: 16, sweep: 13, roundhouse: 12, flying_knee: 11,
+  whip: 14,
 };
 const ANIM_LOOPS = {
   idle: true, walk: true, run: true, jump: false,
@@ -423,6 +427,9 @@ const ANIM_LOOPS = {
   jab: false, cross: false, haymaker: false, taunt: false, dead: false,
   slash: false, dash: false, swing: false, spin: false, slam: false,
   lunge: false, shot: false, charged: false, backstab: false, pound: false,
+  tackle: false, kick: false, grab: false,
+  flurry: false, sweep: false, roundhouse: false, flying_knee: false,
+  whip: false,
 };
 
 // Choose the right frame for an entity's anim state and draw it. Falls back
@@ -4020,10 +4027,35 @@ const ENEMY_ATK = {
     damage: 8, knockback: 70, hitstop: 3,
     hit: { fwd: 14, hw: 9, hd: 11, lo: 0, hi: 32 },
   },
+  // Runner additions for AI variety.
+  runner_tackle: {
+    startup: 8, active: 5, recovery: 22,
+    damage: 10, knockback: 110, hitstop: 5,
+    hit: { fwd: 18, hw: 12, hd: 12, lo: 0, hi: 28 },
+    pushSelf: 140,
+  },
+  runner_kick: {
+    startup: 7, active: 4, recovery: 18,
+    damage: 9, knockback: 90, hitstop: 4,
+    hit: { fwd: 16, hw: 11, hd: 12, lo: 0, hi: 32 },
+  },
   tank_slam: {
     startup: 14, active: 6, recovery: 26,
     damage: 18, knockback: 180, hitstop: 7,
     hit: { fwd: 18, hw: 13, hd: 13, lo: 0, hi: 40 },
+  },
+  // Tank additions: shoulder check (charge) + bear hug (close grapple).
+  tank_charge: {
+    startup: 16, active: 8, recovery: 24,
+    damage: 16, knockback: 200, hitstop: 7,
+    hit: { fwd: 22, hw: 18, hd: 14, lo: 0, hi: 40 },
+    pushSelf: 180,
+    superArmor: true,
+  },
+  tank_grab: {
+    startup: 10, active: 5, recovery: 24,
+    damage: 20, knockback: 140, hitstop: 8,
+    hit: { fwd: 14, hw: 12, hd: 12, lo: 0, hi: 40 },
   },
   lamplight_shot: {
     startup: 10, active: 1, recovery: 28,
@@ -4036,6 +4068,18 @@ const ENEMY_ATK = {
     hit: { fwd: 18, hw: 11, hd: 11, lo: 0, hi: 30 },
     pushSelf: 220,
   },
+  // Slice additions: rapid double-slash flurry + behind-the-back stab.
+  slice_flurry: {
+    startup: 4, active: 8, recovery: 14,
+    damage: 6, knockback: 60, hitstop: 4,
+    hit: { fwd: 16, hw: 12, hd: 11, lo: 0, hi: 34 },
+    multiHit: 4,
+  },
+  slice_backstab: {
+    startup: 3, active: 3, recovery: 14,
+    damage: 16, knockback: 130, hitstop: 7,
+    hit: { fwd: 14, hw: 10, hd: 11, lo: 0, hi: 32 },
+  },
   chains_swing: {
     startup: 10, active: 6, recovery: 22,
     damage: 12, knockback: 100, hitstop: 5,
@@ -4046,15 +4090,39 @@ const ENEMY_ATK = {
     damage: 10, knockback: 80, hitstop: 4,
     hit: { fwd: 16, hw: 10, hd: 11, lo: 0, hi: 32 },
   },
+  // Shade addition: low cloak-sweep chop (different angle than strike).
+  shade_sweep: {
+    startup: 6, active: 5, recovery: 14,
+    damage: 12, knockback: 100, hitstop: 5,
+    hit: { fwd: 18, hw: 13, hd: 13, lo: 0, hi: 20 },
+  },
   dojo_counter: {
     startup: 4, active: 3, recovery: 14,
     damage: 11, knockback: 110, hitstop: 5,
     hit: { fwd: 16, hw: 11, hd: 12, lo: 0, hi: 32 },
   },
+  // Dojo additions: roundhouse kick + flying knee.
+  dojo_roundhouse: {
+    startup: 7, active: 4, recovery: 16,
+    damage: 14, knockback: 130, hitstop: 6,
+    hit: { fwd: 20, hw: 14, hd: 13, lo: 0, hi: 40 },
+  },
+  dojo_flying_knee: {
+    startup: 9, active: 5, recovery: 20,
+    damage: 16, knockback: 150, hitstop: 7,
+    hit: { fwd: 18, hw: 12, hd: 12, lo: 0, hi: 44 },
+    pushSelf: 120,
+  },
   rig_strike: {
     startup: 7, active: 4, recovery: 16,
     damage: 14, knockback: 130, hitstop: 6,
     hit: { fwd: 18, hw: 12, hd: 13, lo: 0, hi: 40 },
+  },
+  // Rig addition: tool throw — wrench projectile.
+  rig_throw: {
+    startup: 8, active: 1, recovery: 22,
+    damage: 0,
+    spawnsProjectile: "wrench",
   },
   // Rig's signature AOE: ground-pound that radiates a shockwave on both sides.
   // Heavily telegraphed (long startup) so players can punish if they read it.
@@ -4079,6 +4147,12 @@ const ENEMY_ATK = {
     damage: 0,
     spawnsProjectile: "heavy_bullet",
     chargedShot: true,
+  },
+  // Lamplight addition: pistol-whip — close-range melee swing of the gun.
+  lamplight_whip: {
+    startup: 6, active: 4, recovery: 16,
+    damage: 12, knockback: 140, hitstop: 6,
+    hit: { fwd: 18, hw: 12, hd: 12, lo: 0, hi: 40 },
   },
   // Shade's quick backstab after reappear. Very short startup since it's
   // already 'free' (player is facing the wrong way).
@@ -4494,17 +4568,25 @@ function runEnemyAI(e, dt) {
     case "tank":   runTankAI(e, dx, dy, dist, dt); break;
     case "slice":  runSliceAI(e, dx, dy, dist, dt); break;
     case "rig":    runRigAI(e, dx, dy, dist, dt); break;
-    case "shade":  approachOrAttack(e, dx, dy, dist, dt); break;
-    case "dojo":   approachOrAttack(e, dx, dy, dist, dt); break;
+    case "shade":  runShadeAI(e, dx, dy, dist, dt); break;
+    case "dojo":   runDojoAI(e, dx, dy, dist, dt); break;
     case "chains": runChainsAI(e, dx, dy, dist, dt); break;
     case "baron":     runBaronAI(e, dx, dy, dist, dt); break;
     case "razor":     runRazorAI(e, dx, dy, dist, dt); break;
     case "volt":      runVoltAI(e, dx, dy, dist, dt); break;
     case "blackwell": runBlackwellAI(e, dx, dy, dist, dt); break;
     case "lamplight": {
-      // Stay at long range. If too close, back off; if in range, shoot.
-      const idealMin = 70, idealMax = 110;
-      if (dist < idealMin) {
+      // Stay at range. If player closes inside whip-range, melee with the
+      // pistol whip instead of shooting. Otherwise shot / charged pattern.
+      const whipRange = 30, idealMin = 70, idealMax = 110;
+      if (dist < whipRange) {
+        // Player is in pistol-whip range — strike instead of shoot.
+        e.vx = 0; e.vy = 0;
+        e.animState = "idle";
+        if (e.aiCooldown <= 0) {
+          startEnemyAttack(e, "whip");
+        }
+      } else if (dist < idealMin) {
         const back = -Math.sign(dx || 1);
         e.vx = back * e.walkSpeed;
         e.x += e.vx * dt;
@@ -4518,7 +4600,6 @@ function runEnemyAI(e, dt) {
         e.vx = 0; e.vy = 0;
         e.animState = "idle";
         if (e.aiCooldown <= 0) {
-          // Every 4th shot is a heavy telegraphed charged shot. Tracked in lampShots.
           e.lampShots = (e.lampShots || 0) + 1;
           const atk = (e.lampShots % 4 === 0) ? "charged" : "shot";
           startEnemyAttack(e, atk);
@@ -4552,8 +4633,8 @@ function approachOrAttack(e, dx, dy, dist, dt) {
 // Each function gives the minion a real fighting style instead of the generic
 // approach-and-swipe. Boss AIs already had this; minions now do too.
 
-// RUNNER: hit-and-run. Swipe, then back off ~30px, then re-approach. At low
-// HP, panicked flee (existing behavior).
+// RUNNER: hit-and-run with multi-attack pattern. Cycles swipe / tackle / kick
+// instead of just one swipe. At low HP, panicked flee.
 function runRunnerAI(e, dx, dy, dist, dt) {
   if (!e.fleeing && e.hp < e.hpMax * 0.3) e.fleeing = true;
   if (e.fleeing) {
@@ -4565,8 +4646,6 @@ function runRunnerAI(e, dx, dy, dist, dt) {
     e.animState = "walk";
     return;
   }
-  // Hit-and-run: after each attack, dash backward briefly. e.runnerRetreat counts
-  // down a backpedal window post-attack.
   if (e.runnerRetreat > 0) {
     e.runnerRetreat -= dt;
     const back = -Math.sign(dx || 1);
@@ -4576,15 +4655,34 @@ function runRunnerAI(e, dx, dy, dist, dt) {
     e.animState = "walk";
     return;
   }
-  approachOrAttack(e, dx, dy, dist, dt);
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+  } else {
+    e.vx = 0; e.vy = 0;
+    e.animState = "idle";
+    if (e.aiCooldown <= 0) {
+      const pattern = (e.hp < e.hpMax * 0.6)
+        ? ["swipe", "tackle", "swipe", "kick", "tackle"]
+        : ["swipe", "swipe", "kick", "swipe", "tackle"];
+      const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
+      startEnemyAttack(e, atk);
+    }
+  }
 }
 
-// TANK: heavily telegraphed slam. Stops moving in range and charges 30 frames
-// before swinging. Super-armor through hits during charge so players have to
-// commit to dodging rather than flinching it.
+// TANK: super-armored heavy with multi-attack rotation. Closes distance with
+// shoulder charges at mid-range; alternates slam / grab / charge at point-
+// blank. Phase 2 (under 50%) compresses the cycle so attacks chain faster.
 function runTankAI(e, dx, dy, dist, dt) {
-  // Approach steady; once in range hold ground and slam.
-  if (dist > e.range + 4) {
+  if (dist > e.range + 24) {
+    // At long range, sometimes shoulder-charge to close the gap.
+    if (e.aiCooldown <= 0 && Math.random() < 0.4) {
+      startEnemyAttack(e, "charge");
+      return;
+    }
     e.vx = (dx / dist) * e.walkSpeed;
     e.vy = (dy / dist) * e.walkSpeed;
     e.x += e.vx * dt; e.y += e.vy * dt;
@@ -4594,11 +4692,12 @@ function runTankAI(e, dx, dy, dist, dt) {
   e.vx = 0; e.vy = 0;
   e.animState = "idle";
   if (e.aiCooldown <= 0) {
-    startEnemyAttack(e, "slam");
-    // Visual telegraph: ground dust during the slam's startup. No new attack
-    // needed — the existing tank_slam already has long startup; we just add
-    // particles via a tick hook below by setting a flag.
-    e.tankTelegraph = 14;
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["slam", "grab", "slam", "charge", "grab", "slam"]
+      : ["slam", "slam", "grab", "slam", "charge"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
+    startEnemyAttack(e, atk);
+    if (atk === "slam") e.tankTelegraph = 14;
   }
   if (e.tankTelegraph > 0) {
     e.tankTelegraph--;
@@ -4608,19 +4707,35 @@ function runTankAI(e, dx, dy, dist, dt) {
   }
 }
 
-// SLICE: hit-and-run knife. Lunge in, then auto-dash back to ~70px, then
-// re-approach. Always in motion — players can't camp.
+// SLICE: hit-and-run knife with three move types. Lunges in, flurries with
+// rapid slashes, occasionally pulls a backstab if the player turns away.
+// Always retreats after a hit. Phase 2 leans into flurry + backstab.
 function runSliceAI(e, dx, dy, dist, dt) {
   if (e.sliceRetreat > 0) {
     e.sliceRetreat -= dt;
     const back = -Math.sign(dx || 1);
-    e.facing = -back;   // keep facing player while dashing back
+    e.facing = -back;
     e.vx = back * e.runSpeed * 1.1;
     e.x += e.vx * dt;
     e.animState = "walk";
     return;
   }
-  approachOrAttack(e, dx, dy, dist, dt);
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.runSpeed * 0.9;
+    e.vy = (dy / dist) * e.runSpeed * 0.9;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["lunge", "flurry", "backstab", "flurry", "lunge", "backstab"]
+      : ["lunge", "lunge", "flurry", "lunge", "flurry"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
+    startEnemyAttack(e, atk);
+  }
 }
 
 // CHAINS: alternates a long-reach swing and a 360° spin. The spin covers both
@@ -4636,16 +4751,46 @@ function runChainsAI(e, dx, dy, dist, dt) {
   e.vx = 0; e.vy = 0;
   e.animState = "idle";
   if (e.aiCooldown <= 0) {
-    e.chainsStep = (e.chainsStep || 0) + 1;
-    // Every third attack is the spin; rest are regular swings.
-    const atk = (e.chainsStep % 3 === 0) ? "spin" : "swing";
+    // Phase 2 mixes the 360° spin in more aggressively.
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["swing", "spin", "swing", "spin", "swing"]
+      : ["swing", "swing", "spin", "swing", "swing"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
     startEnemyAttack(e, atk);
   }
 }
 
-// RIG: alternates strike and AOE ground pound. Pound is heavily telegraphed
-// (rumble particles for ~8 frames before active), super-armored through it.
+// RIG: strike + pound + ranged tool throw. Throws the wrench when player is
+// at mid-range, ground-pound AOE at close range. Phase 2 adds more pounds.
 function runRigAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    // Mid-range — try throwing the wrench.
+    if (dist > 60 && e.aiCooldown <= 0 && Math.random() < 0.35) {
+      startEnemyAttack(e, "throw");
+      return;
+    }
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["strike", "strike", "pound", "strike", "pound", "throw"]
+      : ["strike", "strike", "strike", "pound", "strike", "throw"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
+    startEnemyAttack(e, atk);
+  }
+}
+
+// SHADE: pattern cycle around vanish/reappear gimmick. The vanish itself
+// is driven by updateShadeVanish; this AI picks which attack fires when
+// Shade is solid and within range. Strike at distance, sweep at close
+// range (low chop), backstab automatically after reappear.
+function runShadeAI(e, dx, dy, dist, dt) {
   if (dist > e.range) {
     e.vx = (dx / dist) * e.walkSpeed;
     e.vy = (dy / dist) * e.walkSpeed;
@@ -4656,9 +4801,33 @@ function runRigAI(e, dx, dy, dist, dt) {
   e.vx = 0; e.vy = 0;
   e.animState = "idle";
   if (e.aiCooldown <= 0) {
-    e.rigStep = (e.rigStep || 0) + 1;
-    // Every fourth attack is the pound.
-    const atk = (e.rigStep % 4 === 0) ? "pound" : "strike";
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["strike", "sweep", "backstab", "sweep", "strike", "backstab"]
+      : ["strike", "strike", "sweep", "strike", "backstab"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
+    startEnemyAttack(e, atk);
+  }
+}
+
+// DOJO: martial artist with four kicks. Cycles counter / roundhouse /
+// flying_knee with the parry-strike as the default. Phase 2 introduces
+// more aggressive kick chains.
+function runDojoAI(e, dx, dy, dist, dt) {
+  if (dist > e.range) {
+    e.vx = (dx / dist) * e.walkSpeed;
+    e.vy = (dy / dist) * e.walkSpeed;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.animState = "walk";
+    return;
+  }
+  e.vx = 0; e.vy = 0;
+  e.animState = "idle";
+  if (e.aiCooldown <= 0) {
+    const pattern = (e.hp < e.hpMax * 0.5)
+      ? ["counter", "roundhouse", "flying_knee", "roundhouse",
+         "counter", "flying_knee"]
+      : ["counter", "roundhouse", "counter", "flying_knee", "roundhouse"];
+    const atk = pattern[(e.bossPatternStep = (e.bossPatternStep || 0) + 1) % pattern.length];
     startEnemyAttack(e, atk);
   }
 }
@@ -4850,6 +5019,7 @@ function spawnProjectile(kind, x, y, dir, owner) {
     kind === "knife"  ? { speed: 240, damage: 12, knockback: 80,  hitstop: 5, w: 8, h: 3, color: "#cfd0d6" } :
     kind === "shock"  ? { speed: 200, damage: 14, knockback: 120, hitstop: 6, w: 14, h: 10, color: "#a8d4ff" } :
     kind === "heavy_bullet" ? { speed: 220, damage: 18, knockback: 140, hitstop: 7, w: 9, h: 4, color: "#ff8a40" } :
+    kind === "wrench" ? { speed: 180, damage: 14, knockback: 110, hitstop: 6, w: 10, h: 5, color: "#a8a4a0", arc: -80 } :
                         { speed: 200, damage: 5,  knockback: 40,  hitstop: 3, w: 4, h: 4, color: "#fff" };
   projectiles.push({
     kind, x, y, vx: dir * def.speed, vy: 0, vz: def.arc || 0, z: 0,

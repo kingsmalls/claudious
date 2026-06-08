@@ -234,6 +234,20 @@ The signature.
 - Boots without steel toe — they have a visible silver/grey toe cap
 - Athletic shorts / gym wear — he's in heavy work pants
 
+## Visual VFX summary
+
+Atlas's identity in motion is the **wedding-band glint on the launcher + brown dust burst on heavy impacts + the parental smile reserved for the combo finisher**. Pure mass, no finesse.
+
+- `atk1` OPEN-PALM SHOVE — fingers visibly splayed (not a fist) + tribal forearm tattoos prominent
+- `atk2` BACKHAND SLAP — whole-body torque, beard whips 2 px with the rotation
+- `atk3` OVERHEAD CHOPPING SMASH — clasped hands drop, brown dust burst at his feet (4–5 specks), parental smile
+- `heavy` UPPERCUT LAUNCHER — 1-px white GLINT on the silver wedding band as the chain swings with the rising fist
+- `special` FOUNDATION STONE — speedlines on the charge (3 → 5 growing), tribal-tattoo arms grappling, massive dust burst on the slam (8–10 brown specks half-circle)
+
+**Hurt / flinch:** F1 body absorbs but barely flinches (he's the biggest player — takes hits like a wall). 1-px white impact spark + the wedding-band chain swings 2 px. F2 head turns 5°. F3 returns to stance.
+
+**Dead:** Falls slowly in stages — first to one knee, then to all fours. Wedding-band chain slides off the chest onto the ground on F4.
+
 ## Sheet specs (same for all three characters)
 
 ### Color discipline

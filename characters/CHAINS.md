@@ -95,6 +95,18 @@ chain link shadow  #3a3a40
 - Tactical / military gear — Chains are blue-collar, not soldiers.
 - A face mask — Chains is *recognizable*. He doesn't hide.
 
+## Visual VFX summary
+
+Chains' identity is the **chain motion-blur trail** + sparks where the chain hits the ground.
+
+- `swing` bullwhip arc — chain fully extended in horizontal taut line 36 px past body, body torqued 45°
+- `spin` centrifuge — chain traces a complete halo around his body (motion-blur circle, visible at 4 cardinal points across the spin frames)
+- `low_sweep` boot-sweep — body low, supporting hand on the floor, free leg sweeping in 120° arc at ankle height, chain trailing as a low secondary arc
+
+**Hurt / flinch:** F1 stagger, chain drops slack 4 px. F2 free hand goes to the wound. 1-px white impact spark.
+
+**Dead:** Falls forward to one knee, then onto the side. Chain pools beneath the body in a coiled S-shape.
+
 ## Sheet specs
 
 - 8 columns × 5 rows = 40 cells (~36 frames used; spin needs 12)

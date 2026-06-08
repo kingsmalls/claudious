@@ -135,6 +135,23 @@ lapel pin shadow   #8a6020
 - Bright colors — black suit, only the gold pin and burgundy knife inlays break it.
 - A second weapon style — knives only. No gun, no whip, no nonsense.
 
+## Visual VFX summary
+
+Razor's identity is the **dual-blade red motion arcs** at different angles per move + immaculate posture (suit never wrinkles).
+
+- `slash` — 28-px diagonal red arc from upper-right to lower-left
+- `flurry` — criss-cross of red arcs (alternating diagonals on top of each other)
+- `fencing_kick` — no blade arc; the foot-flexed heel-leading kick is the visual
+- `dash` — body horizontal in X-shape, both blades extended, motion lines behind heels
+- `pirouette` — both blades trace a complete CIRCLE around her at hip height (red halo)
+- `throw` — knife 18 px ahead of her hand with 6-px motion-line trail
+- `special` BLADE DANCE — 6 red arcs at varied angles (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst) — kata-diagram identity
+- `counter` — off-hand blade SPARKS at the deflection point + throwing-hand blade releases as projectile
+
+**Hurt / flinch:** F1 body twists 15° from the hit, both knives stay in hand (she never drops them). F2 suit stays clean (her signature — even mid-hit the tailoring is perfect). 1-px white spark at the contact point.
+
+**Dead:** Falls to one knee, then to her side. Both knives slide 8 px from her open hands on F4 — the only frames where she releases them.
+
 ## Sheet specs
 
 - 8 columns × 6 rows = 48 cells (~38 frames used)

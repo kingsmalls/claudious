@@ -146,6 +146,23 @@ buckle silver      #8a8a8e
 - Tattoos.
 - A scowl — he never *looks* angry. The polite smile is the menace.
 
+## Visual VFX summary
+
+Baron's identity is the **brass-knuckle gold glint** at different heights per move (his "piano scale" of glints) + coat flares + the square jaw juts forward.
+
+- `jab` — gold glint at head height
+- `cross` — gold glint at head height + 45° coat flare behind
+- `liver_hook` — gold glint at HIP height (lower than jab/cross — the body-shot tell)
+- `uppercut` — gold knuckle leaves a VERTICAL gold streak from hip to overhead
+- `haymaker` — coat OPENS FULLY across 4 frames (revealing chest scar) + gold-knuckle comet arc from shoulder down
+- `clinch` — both hands grab + rear knee drives up + coat flares open
+- `special` BONE-BREAKER — 5 gold glints at DIFFERENT heights (head, head, hip, vertical, head) — the piano-scale
+- `counter` — coat fans wide hiding torso for 1 frame (magician's misdirection) + cross emerges through the coat with gold trail
+
+**Hurt / flinch:** F1 body folds at the waist, but the hair STAYS NEAT (his signature — he's never disheveled), polite smile remains. F2 hands drop briefly from guard. 1-px white impact spark on the brass knuckles (his own knuckles catch the hit's spark).
+
+**Dead:** Falls hard. Brass knuckles roll 8 px ahead of him on F4 — the iconic image. The polite smile finally drops on the very last frame for ONE frame.
+
 ## Sheet specs
 
 - 8 columns × 6 rows = 48 cells (~45 frames used; he has 5 attacks now)

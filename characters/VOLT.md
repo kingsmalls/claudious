@@ -105,6 +105,23 @@ power pack body    #1a1a22
 - Multiple visible weapons — his body IS the weapon.
 - Glowing red — blue power-lines only.
 
+## Visual VFX summary
+
+Volt's identity is the **blue cyber-arm powerlines** brightening before strikes + electricity discharge on impacts.
+
+- `strike` cyber-haymaker — powerlines BRIGHTEN from dim cyan to electric white in F1–F2 + 4-px blue plasma trail behind the cyber fist
+- `uppercut` twin-fist launcher — WHITE LIGHTNING STAR-BURST (6-px) erupting from the cyber elbow at peak
+- `shock` plasma orb — orb GROWS 2→4→6→8 px in cyber palm during charge + 3 lightning arcs jumping to forearm at peak
+- `axe` cyber-leg kick — powerlines BRIGHTEN on the cyber thigh + vertical blue plasma trail on the descending heel
+- `thunder` clap — both fists meet at chest + WHITE LIGHTNING STAR-BURST + 6-px shockwave ring radiating left and right
+- `clinch` lightning grab — current FLOWS from cyber hand up the held opponent (4–5 lightning arcs jumping up their body)
+- `special` OVERDRIVE SURGE — expanding LIGHTNING RING radiates outward from Volt at chest height (16 px → 24 → 32 px) + entire body has electric arcs
+- `counter` cyber-reflect — small visible shield-plane (3 lightning arcs in a flat plane) in front of cyber palm + return-shock lightning bolt
+
+**Hurt / flinch:** F1 body recoils, cyber limbs LESS affected (organic side flinches harder). F2 powerlines FLICKER (brightness drops then surges). 1-px white impact spark on the cyber armour.
+
+**Dead:** Falls to knees, collapses forward. F3–F4 cyber limbs SPASM with small white sparks at the elbow and knee joints. Powerlines fully dark by F6.
+
 ## Sheet specs
 
 - 8 columns × 5 rows = 40 cells (~36 frames used)

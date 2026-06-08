@@ -234,6 +234,21 @@ The signature.
 - A full beard — it's stubble (3–4 days)
 - The cigarette LIT or removed — never lit, never moves
 
+## Visual VFX summary
+
+Duke's identity in motion is the **dust puff at his stomping right foot + cigarette unmoved + half-grin reserved for finishers**. He's a worn-out boxer — every move costs him visibly.
+
+- `atk1` JAB — sharp snap-back, cigarette unmoved, no dust (efficient)
+- `atk2` CROSS — 1-px hair-strand whip across the forehead at peak
+- `atk3` HOOK + STOMP — dust puff (1–2 brown specks) at his right foot on impact
+- `atk4` DROPPING OVERHAND — bigger dust puff (4 brown specks) at right foot, half-grin appears
+- `heavy` UPPERCUT — bad-knee strain visible on F1, half-grin on F5
+- `special` ROLLING THUNDER — 3 elbow speedlines (3-px → 4-px → 5-px growing) + dust puff on the haymaker finisher + half-grin
+
+**Hurt / flinch:** F1 body folds, jaw clenches. F2 cigarette wobbles 1 px but stays on the ear (the gag). 1-px white impact spark at the contact point. F3 body returns to stance, hair strand falls across the forehead.
+
+**Dead:** Falls backward. Cigarette finally falls off the ear on F4 — first time it moves in the whole game.
+
 ## Sheet specs (same for all three characters)
 
 ### Color discipline

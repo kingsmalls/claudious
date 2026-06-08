@@ -103,6 +103,18 @@ charged glow blue  #4a8ad0    (telegraph during charged shot wind-up)
 - A cigarette — that's Duke's identity item, not Lamplight's.
 - A long flowing cape — the coat flares slightly on motion but isn't a cape.
 
+## Visual VFX summary
+
+Lamplight's identity is the **orange muzzle flash** + blue charged glow + fedora tilt to aim + scarf as the high-contrast white silhouette against the black coat.
+
+- `shot` — fedora tilts DOWN 1 px on F2 (aiming tell) + 4-px orange-yellow muzzle flash at barrel tip on F3
+- `charged` — barrel develops a GROWING BLUE GLOW (2 → 3 → 5 → 7 px) during F1–F4 (the blue tints the white scarf one shade cooler for one frame at peak) + bigger 8-px muzzle flash + coat flares behind on recoil
+- `whip` pistol-whip — gun body swings horizontally as a club at the player's head, no muzzle flash, just metal-on-bone impact
+
+**Hurt / flinch:** F1 body twists from the hit. F2 gun arm drops one frame (the only time the gun is not in firing position). Fedora and scarf STAY UP. 1-px white impact spark on the coat.
+
+**Dead:** Falls. Fedora rolls off the head on F3 revealing the buzz cut underneath (still no face — scarf still up). Gun lands on the ground beside the body.
+
 ## Sheet specs
 
 - 8 columns × 4 rows = 32 cells (~30 frames used)

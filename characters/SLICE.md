@@ -89,6 +89,19 @@ knife handle       #0a0a10
 - Gun on the hip — Slices don't carry guns.
 - The bandana from Runner's bicep.
 
+## Visual VFX summary
+
+Slice's identity is the **knife grip flips** + low fencer's stance + motion lines on rapid attacks.
+
+- `lunge` — body fully horizontal arrow pointing at target, knife in forward grip leading, 4-px motion-line streak behind the knife
+- `flurry` — 4 rapid alternating slash motion-arcs (left blade, right blade, left, right), small white sparkle at each impact
+- `backstab` — jumps OVER the player, knife in reverse grip during the leap, single thrust on landing
+- `jump_atk` flying stab — body diagonal mid-air, knife held overhead in icepick grip pointing DOWN, falling like a dart
+
+**Hurt / flinch:** F1 body folds, knife arm drops to hip but doesn't release. F2 cocky half-smile finally drops. 1-px white impact spark.
+
+**Dead:** Crumples sideways. Knife slides 6 px from the open hand on F3 — first frame he ever lets it go.
+
 ## Sheet specs
 
 - 8 columns × 4 rows = 32 cells

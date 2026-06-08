@@ -206,6 +206,21 @@ The signature.
 - Long hair flowing — afro is contained, not flowing
 - Open jacket flapping wildly — it's cropped and tight
 
+## Visual VFX summary
+
+Rio's identity in motion is the **yellow bandana ribbon**. Every attack should leave a visible bandana trail in a different shape so each move has its own colour-streak signature:
+
+- `atk1` JAB — bandana 12-px horizontal ribbon behind the fist
+- `atk2` CROSS — bandana whips OPPOSITE the cross fist (creates a yellow X across the body)
+- `atk3` ROUNDHOUSE — bandana traces a horizontal yellow arc following the kicking foot
+- `atk4` SPINNING BACK KICK — bandana traces a complete 360° circle around her body
+- `heavy` UPPERCUT — bandana streaks STRAIGHT UP as a vertical yellow column
+- `special` SUNSET SPIN — yellow halo at hip level during sweep + free-floating yellow streak above her head at the peak uppercut
+
+**Hurt / flinch:** F1 body folds forward at the waist, head rocks back 5°. F2 a 2-px white impact spark at the contact point + bandana lifts away from the wrist by 4 px (whipped by the hit). F3 body returns toward stance, bandana settles.
+
+**Dead:** Falls to one knee then forward. Bandana slides 4 px from the wrist on the final frame, visible against the dark ground.
+
 ## Sheet specs (same for all three characters)
 
 ### Color discipline
