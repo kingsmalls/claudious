@@ -388,9 +388,26 @@ function loadAtlasFor(key) {
 }
 
 if (typeof window !== "undefined" && typeof fetch === "function") {
+  // Players.
   loadAtlasFor("rio");
   loadAtlasFor("duke");
   loadAtlasFor("atlas");
+  // Enemies. drawSpriteCharacter wins per-frame whenever the atlas has the
+  // requested anim; missing anims fall back to the per-type procedural
+  // drawer, so partial atlases ship cleanly.
+  loadAtlasFor("runner");
+  loadAtlasFor("slice");
+  loadAtlasFor("chains");
+  loadAtlasFor("tank");
+  loadAtlasFor("lamplight");
+  loadAtlasFor("dojo");
+  loadAtlasFor("shade");
+  loadAtlasFor("rig");
+  // Bosses.
+  loadAtlasFor("baron");
+  loadAtlasFor("razor");
+  loadAtlasFor("volt");
+  loadAtlasFor("blackwell");
 }
 
 // Per-anim playback speed and looping behavior. Beat-em-ups feel stiff at
@@ -6162,6 +6179,10 @@ function drawBlackwell(e) {
 
 // Dispatcher.
 function drawEnemy(e) {
+  // Sprite atlas wins per-frame whenever it has the requested anim. Falls
+  // through to the per-type procedural drawer below when the atlas is
+  // missing or doesn't have a frame for the current animState.
+  if (SPRITES[e.type] && drawSpriteCharacter(e)) return;
   switch (e.type) {
     case "tank":      return drawTank(e);
     case "lamplight": return drawLamplight(e);
