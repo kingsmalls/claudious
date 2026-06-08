@@ -86,18 +86,29 @@ eye whites          #ffffff
 - Bandana visible on left wrist throughout, hanging slightly.
 - Eyes scanning forward. Mouth neutral.
 
-### `walk` (6 frames, 8 fps)
-- 6-frame stride cycle. Forward foot strikes on frames 1 and 4.
-- Front arm swings opposite to leg.
+### `walk` (6 frames, 8 fps) — **must read clearly as LOCOMOTION, never an attack**
+- 6-frame stride cycle that LOOPS SEAMLESSLY (F6 blends back into F1).
+- F1 = LEFT leg forward + RIGHT arm forward swing (opposite-side arm)
+- F2 = passing position (feet roughly under body, arms at sides)
+- F3 = RIGHT leg forward + LEFT arm forward swing
+- F4 = passing position
+- F5 = LEFT leg forward again (mirror of F1)
+- F6 = passing position — blends straight back into F1
+- **Both arms swing in a relaxed arc AT THE SIDES.** Fists loosely closed at hip level.
 - Afro bounces subtly (1–2 px).
-- Bandana sways with the wrist.
-- Hands stay roughly at hip level — not raised, not dropped.
+- Bandana sways with the wrist on the swinging arm.
+- **NEVER**: arms reaching forward past the body, fists extended like a punch, a planted stomp-foot pose, body leaned forward in attack stance. Walk is calm forward travel — not combat prep.
 
-### `run` (6 frames, 12 fps)
-- Lower torso, longer stride. Body leans forward 5–10°.
-- Arms pump hard. Bandana trails behind on the back-swing.
-- Frames 3 and 6 have horizontal speedlines behind the heel.
-- Afro bounces more visibly.
+### `run` (6 frames, 12 fps) — locomotion, NOT a punch chain
+- 6-frame run cycle, looping seamlessly.
+- Body leans forward 5–10° (slightly more committed than walk).
+- Knees lift HIGHER than walk; brief airborne stride frames (F2 and F5 both feet off ground for 1 frame).
+- **Arms pump UP and DOWN at the sides like a sprinter** — fists loosely closed at hip-to-chest height, elbows bent.
+- **Arms NEVER extend forward past the body.** No punching motion, no grab pose.
+- Frames 3 and 6 have horizontal speedlines (2 px) behind the trailing heel.
+- Afro bounces more visibly than walk.
+- Bandana trails behind on the back-swing.
+- **NEVER**: a frame where her arm reaches forward (reads as grab attempt), a frame with fist extended at chest height (reads as shadow-boxing).
 
 ### `jump` (3 frames, 8 fps — non-looping)
 - F1: anticipation crouch — knees deep bend, arms drop.

@@ -86,8 +86,8 @@ RED BANDANA shadow #6a1828
 | Slot     | Frames | Notes |
 |----------|-------:|-------|
 | `idle`   | 4 | Cocky tilt. Hands at hip level, palms loose (not fists). Weight on the back foot, **front foot tapping** — itchy energy. |
-| `walk`   | 6 | Loose swagger. Shoulders roll with each step. **Hands stay low**, not raised — he's not expecting to fight. |
-| `run`    | 4 | Limbs flail. Bandana visible on the back-swing of the rear arm. Body upright (not athletic crouch). |
+| `walk`   | 6 | **Loose swagger that LOOPS SEAMLESSLY** (F6 blends back into F1). F1 = LEFT leg fwd + RIGHT arm fwd swing (at side). F2 = passing. F3 = RIGHT leg fwd + LEFT arm fwd swing. F4 = passing. F5 = mirror of F1. F6 = passing → blends into F1. Shoulders roll with each step. **Hands stay LOW at the sides, swinging in a relaxed arc** — never extended forward (that would read as the wild_swipe wind-up). No planted/stomp foot on F6. |
+| `run`    | 4 | 4-frame loop. F1: LEFT foot strike + right arm fwd swing. F2: airborne, arms pumping at sides. F3: RIGHT foot strike + left arm fwd swing. F4: airborne — blends into F1. **Arms PUMP at the sides** (elbows bent, hands at hip-to-chest height) — NEVER extend forward (would read as swipe/tackle). Bandana visible on the back-swing of the rear arm. Body upright (not athletic crouch). |
 | `atk1`   | 4 | **Wild swipe.** F1 = shoulder DIP back and DOWN (the unmistakable wind-up). F2 = body lunges forward, front leg crossing past center. F3 = **full extension — fist 18 px past the body, rear arm flailing behind, bandana streaking horizontally through the swing**. F4 = stumble-back recovery, body over-balanced. |
 | `atk2`   | 4 | **Sloppy kick.** F1 = kicking leg starts lifting, body already leaning back 15°. F2 = leg rising, body leaning back further, arms starting to flail. F3 = **peak — kicking leg extended forward at hip height with foot FLAT (not flexed), body leaned back 30°, both arms flailing wide for balance, supporting knee visibly buckling**. F4 = stumble — kicking leg drops, body over-balanced, arms still wide. |
 | `hurt`   | 3 | Body folds at the waist. Face shows **fear** (eyebrows up, mouth open). Hands fly up. |

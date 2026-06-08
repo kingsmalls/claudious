@@ -90,26 +90,30 @@ eye whites          #f0f0f0
 - **Wayward forehead strand** falls across the camera-side eye.
 - Mouth slightly parted, eyes half-lidded — the tired look is part of idle.
 
-### `walk` (6 frames, 7 fps)
-- 6-frame limping cycle. **Left leg strides cleanly; right leg drags 1 frame behind** — the limp.
-- F1: left foot strikes forward, right foot still planted.
-- F2: weight transfers, right foot lifts late.
-- F3: right foot mid-swing (shorter stride than left's).
-- F4: right foot strikes (shorter reach), left foot still planted.
-- F5: weight transfers, left foot lifts.
-- F6: left foot mid-swing (longer stride).
-- Arms swing economically — front arm moves opposite to leg, but the swing is small (no exaggerated ROM).
-- Body leans 5° forward, head bobbing 1 px on each strike.
+### `walk` (6 frames, 7 fps) — **must read clearly as LOCOMOTION, never an attack**
+- 6-frame limping stride cycle that LOOPS SEAMLESSLY (F6 blends back into F1). **Left leg strides cleanly; right leg drags slightly** — the limp.
+- F1 = LEFT leg forward (clean stride) + RIGHT arm forward swing (opposite-side arm) at hip height.
+- F2 = passing position (feet roughly under body, arms at sides).
+- F3 = RIGHT leg forward (shorter, dragged stride) + LEFT arm forward swing.
+- F4 = passing position.
+- F5 = LEFT leg forward again (mirror of F1).
+- F6 = passing position — blends straight back into F1.
+- **Both arms swing in a small relaxed arc AT THE SIDES** (economic ROM, but still side-swinging). Fists loosely closed at hip level.
+- Body leans 5° forward, head bobs 1 px on each strike.
 - **Cigarette stays put.** Hair strand hangs forward, sways 1 px on each strike.
+- **NEVER**: arms reaching forward past the body, fists extended like a jab, a planted stomp-foot pose on the final frame, body coiled like a wind-up. Walk is the tired man traveling — not the boxer winding up.
 
-### `run` (6 frames, 11 fps)
-- Body forward 10°, longer strides than walk but the right-leg stride is still 1–2 px shorter than the left's.
-- F1, 4: foot strikes (alternating); F2–3, 5–6: in-air phases.
-- Arms pump harder than walk but still elbow-led, not full-shoulder.
+### `run` (6 frames, 11 fps) — locomotion, NOT a punch chain
+- 6-frame run cycle, looping seamlessly (F6 blends into F1).
+- Body forward 10°, longer strides than walk but the right-leg stride is still 1–2 px shorter than the left's (limp still visible).
+- F1, F4: foot strikes (alternating). F2–F3, F5–F6: airborne / passing phases.
+- **Arms PUMP up and down at the sides** like a boxer's road-work — elbows bent, fists loosely closed at hip-to-chest height. Pump is tired but rhythmic.
+- **Arms NEVER extend forward past the body.** No jab pose, no grab pose, no overhand wind-up.
 - Jacket flares open at the shoulders behind him — the cut-off frayed edges flap visibly.
 - Hair flops on each back-swing — wayward strand whips up off the forehead briefly.
 - **Frames 3 and 6:** 3-px horizontal speedlines behind each heel.
 - **Cigarette stays put** even at this speed — it's the running gag.
+- **NEVER**: a frame where his fist reaches forward at chest height (reads as Rolling Thunder elbow), a planted stomp pose (reads as atk3 stomp), or an overhand arc (reads as atk4).
 
 ### `jump` (3 frames, 8 fps — non-looping)
 - F1: deep crouch, right (bad) knee bent shallower than left — he loads with the left leg primarily. Both fists drop to hip level.

@@ -92,29 +92,33 @@ eye whites          #f0f0f0
 - **Tribal forearm tattoos** visible on both forearms.
 - Mouth set in a thoughtful, neutral expression — not angry.
 
-### `walk` (6 frames, 6 fps — slowest walk in the cast)
-- **Heavy stomp gait.** Both boots land flat-footed; each step has weight.
-- F1: left foot strikes forward, right foot still planted. **1-px dust puff at the left heel.**
-- F2: weight transfer — body sways 1 px to the left, right foot lifts.
-- F3: right foot mid-swing.
-- F4: right foot strikes forward, left planted. **1-px dust puff at the right heel.**
-- F5: weight transfer — body sways 1 px to the right.
-- F6: left foot mid-swing, beginning the cycle again.
-- Body wide stance throughout — minimum shoulder-width even at full stride.
+### `walk` (6 frames, 6 fps — slowest walk in the cast) — **must read clearly as LOCOMOTION, never an attack**
+- **Heavy stomp gait** that LOOPS SEAMLESSLY (F6 blends back into F1). Both boots land flat-footed; each step has weight, but the cycle is *forward travel*, not combat.
+- F1 = LEFT leg forward (planted strike) + RIGHT arm forward swing (opposite-side arm) at hip height. **1-px dust puff at the left heel** on impact.
+- F2 = passing position (feet roughly under body, arms at sides). Body sways 1 px to the left.
+- F3 = RIGHT leg forward + LEFT arm forward swing. **1-px dust puff at the right heel.**
+- F4 = passing position. Body sways 1 px to the right.
+- F5 = LEFT leg forward again (mirror of F1).
+- F6 = passing position — blends straight back into F1.
+- **Both arms swing in a relaxed arc AT THE SIDES** with the slow rhythm of a heavy man. Hands loosely open at hip level (not balled into fists, not splayed like a shove).
+- Body wide stance throughout — minimum shoulder-width even mid-stride.
 - **Chain swings 1–2 px laterally with each weight shift.** Wedding band visible.
-- Beard moves 1 px with each impact.
+- Beard moves 1 px with each strike.
+- **NEVER**: arms reaching forward past the body (reads as atk1 palm shove), splayed fingers (reads as the open-palm strike), both hands clasped (reads as atk3 chopping smash wind-up), a held planted stomp pose on F6 (reads as kick / finisher). Walk is the patriarch walking the block — not striking.
 
-### `run` (6 frames, 10 fps)
-- Running for Atlas isn't graceful — he covers ground but the body doesn't bounce, it surges. Body angled 5° forward.
-- F1: left foot strike — bigger dust puff than walk (3–4 brown specks). Body forward.
-- F2: airborne briefly, both feet off, arms swinging.
-- F3: right foot strike — dust puff. Body still forward.
-- F4: airborne, the second push.
-- F5: same as F1 cycle continues.
-- F6: same as F3.
-- **Frames 1 and 4 (foot strikes):** dust kicks at the boots, 3–4 px brown specks each.
+### `run` (6 frames, 10 fps) — locomotion, NOT a strike chain
+- Atlas's run isn't graceful — he covers ground but the body doesn't bounce, it surges. Body angled 5° forward. **6-frame cycle that loops seamlessly** (F6 blends into F1).
+- F1: LEFT foot strike + right arm forward swing — bigger dust puff than walk (3–4 brown specks).
+- F2: airborne briefly, both feet off, **arms pumping at sides** (elbows bent, hands loose at hip-to-chest height).
+- F3: RIGHT foot strike + left arm forward swing — dust puff (3–4 brown specks).
+- F4: airborne briefly, arms pumping the other way.
+- F5: same as F1 (cycle repeats).
+- F6: same as F2 — blends back into F1.
+- **Arms PUMP UP AND DOWN at the sides** like a heavy man jogging — elbows bent, hands loosely closed at hip-to-chest height. Pump is slow but rhythmic.
+- **Arms NEVER extend forward past the body.** No palm reaching out (would read as atk1), no clasped hands (would read as atk3 smash), no spread arms (would read as flying splash).
 - **Chain bounces visibly** — 2–3 px vertical movement per stride. Wedding band trails behind the chain by 1 frame.
-- Flannel hem flares slightly behind him — body so wide it doesn't flap dramatically, but the bottom edge lifts 2 px on each stride.
+- Flannel hem lifts 2 px on each stride.
+- **NEVER**: a planted foot held into F6 (reads as a stomp finisher), arms extended forward (reads as shove / grapple), body horizontal (reads as flying splash).
 
 ### `jump` (3 frames, 8 fps — non-looping)
 - F1: deep crouch — both knees bend hard, body coils, weight on both feet equally. Hands drop to knee level.

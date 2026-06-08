@@ -4,6 +4,62 @@ Universal rules for every character sheet in this project. Each character's
 own `.md` file specifies that character's appearance, identity items, and
 anim list; the rules below apply to every sheet.
 
+## 🛑 LOCOMOTION ROWS — `walk` and `run` MUST read as locomotion
+
+The `walk` and `run` rows have been the biggest source of "looks like a
+grab attempt / shadow boxing / jump stomp" complaints. The cause is
+usually one of two mistakes the generator makes:
+
+1. Drawing tucked arms or arms extended FORWARD on a frame — that frame
+   reads as a punch or grab when looped at game speed.
+2. The last frame of the walk shows a planted leg or stomped foot — when
+   the cycle wraps back to frame 1, the snap looks like a sudden stomp.
+
+Rules for every `walk` row:
+
+- All frames show **forward locomotion** — feet alternating, arms
+  swinging at the sides OPPOSITE to the leg direction (left leg
+  forward = right arm forward swing, and vice versa).
+- **Both arms swing in a relaxed arc at the sides.** Arms NEVER reach
+  forward past the body. Fists stay loosely closed, not in striking
+  position.
+- The cycle must **loop seamlessly** — the last frame's pose should
+  blend back into the first frame's pose. No planted-leg "ending"
+  frame.
+- Body is upright. No body lean, no crouch, no kick.
+- Walk = 6 frames typically. Each frame is a single step in the cycle:
+  - F1: left leg forward, right arm forward
+  - F2: passing position (feet under body), arms at sides
+  - F3: right leg forward, left arm forward
+  - F4: passing position
+  - F5: left leg forward again (mirror of F1 OR same as F1)
+  - F6: passing position
+- This anim loops continuously while the character walks. **It must
+  loop CLEANLY** — no pose at the end that reads as "stomp" or
+  "kick" or "arm extended."
+
+Rules for every `run` row:
+
+- Body leans forward 5-10°.
+- Knees lift higher than walk — visible airborne stride.
+- **Arms PUMP up and down at the sides**, fists loosely closed.
+  Arms NEVER extend forward past the body (that reads as punch/grab).
+- Same loop-cleanly rule as walk.
+- Optional: 1-2 px motion lines behind the heel on the trailing foot.
+
+What walk/run frames MUST NOT contain:
+
+- Extended fists / arms forward (reads as punch or grab)
+- Open hands grabbing forward (reads as throw setup)
+- A planted-leg "stomp" or "kick" pose on the final frame
+- A pose that reuses the character's atk1 or jump_atk silhouette
+- Body coiled like a wind-up
+- A grimace or attack-face expression
+
+The character should be **calm and traveling**, not preparing for a
+hit. Walk reads as "walking somewhere," run reads as "running
+somewhere." Combat poses live in the atk rows.
+
 ---
 
 ## 🛑 RULE ZERO — NO TEXT IN THE OUTPUT IMAGE, EVER
