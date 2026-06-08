@@ -9,13 +9,28 @@ Kane's bottom-tier muscle. Recruited from Kane's "neighborhood liaison" jobs pro
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
 > 3. `run` (4 frames)
-> 4. `atk1` — wild swipe (4 frames)
-> 5. `atk2` — sloppy kick (4 frames)
+> 4. `atk1` — WILD SWIPE (4 frames) — **over-committed OVERHAND HAYMAKER**, front leg crosses past the body line, rear arm flails behind, RED BICEP BANDANA streaks horizontally through the swing
+> 5. `atk2` — SLOPPY KICK (4 frames) — **kicking leg straight forward at hip height with the FOOT FLAT (not flexed)**, body leans BACK 30° (no balance), both arms flailing wide, supporting knee visibly buckling
 > 6. `hurt` (3 frames)
 > 7. `dead` (3 frames)
 > 8. `flee` (4 frames)
 >
 > **Total: 32 frames in 8 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Runner only has two attacks, and the generator's failure mode is **both reading as "cocky kid stumbling forward."** Each must occupy a different silhouette quadrant — the over-commitment must read in different limbs and opposite body angles:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` wild swipe | Body OVER-COMMITS FORWARD, front leg crosses past body line | Lead ARM in an overhand haymaker arc | Diagonal-down forward from overhead | Front leg CROSSES past the body line, rear arm flails BEHIND for balance, RED BICEP BANDANA streaks horizontally through the swing — the only arm attack + body falling forward into it |
+> | `atk2` sloppy kick | Body LEANS BACK 30° (no balance), supporting knee buckling | Kicking LEG, foot FLAT (untrained) | Horizontal forward at hip height | Body leans BACKWARD (opposite of swipe's forward fall), foot is FLAT (not flexed like a trained kick), both arms flailing WIDE for balance, supporting knee visibly buckling — the only leg attack + the only backward body lean |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 = body falls FORWARD into the hit, front leg crosses center, rear arm trails behind. atk2 = body leans BACK 30°, leg straight forward, both arms wide. Opposite body angles — if both look like "kid stumbling," redraw atk1 forward-falling and atk2 with the body clearly rocked back.
+> - **atk2 vs kick discipline:** the foot must be FLAT (toes pointed forward, not pulled back). A trained kick would have a flexed foot — Runner doesn't know how. If the foot is flexed, redraw flat to show the lack of training.
+> - **Over-commitment rule:** both attacks must look like the body is going to FALL after — F4 of each shows him stumbling, never returning to balanced stance. If F4 shows a balanced recovery, redraw — the over-commitment IS the character.
+> - **Red bandana visibility:** the bicep bandana must be visible in every attack frame. atk1 lets it streak horizontally as the arm swings; atk2 lets it sit on the bicep with the arms flailing wide. If the bandana is hidden behind the body in any frame, reorient so it shows.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -106,11 +121,10 @@ RED BANDANA shadow #6a1828
 
 ## Visual VFX summary
 
-Runner's identity is the **over-committed body posture** + red bicep bandana streaking horizontally through swings. No technique — he literally falls forward into his hits.
+Runner's identity is the **over-committed body posture** + red bicep bandana streaking horizontally through swings. No technique — he literally falls forward into his hits. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so the swipe and the kick never blur together.
 
-- `swipe` wild haymaker — front leg crosses past body line, rear arm flails behind for balance, bandana 12-px horizontal streak through the swing
-- `tackle` body slam — body fully horizontal mid-air, both arms forward like a football tackle, motion lines behind the feet
-- `kick` panicked kick — body leans BACK 30° (no balance), kicking foot FLAT (not flexed), both arms flailing wide, supporting knee visibly buckling
+- `atk1` WILD SWIPE — body over-commits FORWARD with the front leg crossing past the body line + lead arm in an overhand haymaker arc + rear arm flails BEHIND for balance + red bicep bandana 12-px horizontal streak through the swing
+- `atk2` SLOPPY KICK — body leans BACK 30° (opposite of swipe's forward fall), kicking leg straight forward at hip height with the FOOT FLAT (not flexed — he doesn't know how), both arms flailing wide, supporting knee visibly buckling
 
 **Hurt / flinch:** F1 body folds at the waist, face shows FEAR (eyebrows up, mouth open). F2 hands fly up defensively. 1-px white impact spark.
 

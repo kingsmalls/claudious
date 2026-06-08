@@ -8,13 +8,30 @@ Kane's crowd-control specialists. Recruited from biker gangs and salvage-yard wo
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — bullwhip swing (6 frames)
-> 4. `atk2` — boot-sweep (5 frames)
-> 5. `atk3` — centrifuge spin (12 frames)
+> 3. `atk1` — BULLWHIP SWING (6 frames) — **CHAIN fully extended in a horizontal TAUT LINE 36 px past the body**, body torqued 45°, near shoulder thrown forward
+> 4. `atk2` — BOOT-SWEEP (5 frames) — **body LOW with supporting hand braced on the floor**, free LEG horizontal at ankle height in a 120° sweeping arc, chain trailing as a low secondary arc
+> 5. `atk3` — CENTRIFUGE SPIN (12 frames) — **full 360° spin with the CHAIN tracing a complete HALO around the body** (motion-blur circle, chain visible at four cardinal points across the spin frames)
 > 6. `hurt` (3 frames)
 > 7. `dead` (3 frames)
 >
 > **Total: 39 frames in 7 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Chains has three chain-attacks and the generator's failure mode is **all three reading as "guy swinging chain horizontally."** Each must occupy a different silhouette quadrant — the chain's PATH and the body's POSTURE must differ between them. If two attacks share a silhouette, redraw one:
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` bullwhip swing | Vertical, body torqued 45° at the hip | Wrapped arm + CHAIN | Horizontal TAUT line at chest height | Chain is a STRAIGHT TAUT LINE 36 px past the body (single side, not a circle), body torqued 45° showing the swing through, free hand on hip — only attack with the chain extended on ONE side as a straight line |
+> | `atk2` boot-sweep | Body LOW (dropped to one knee), supporting HAND on the floor | Free LEG at ankle height | Horizontal ankle-height ARC | Body LOW to the ground with supporting HAND BRACED ON FLOOR (the only attack that touches the ground with the hand), free leg sweeping at ankle height — chain trails as a SECONDARY LOW ARC behind the leg, not the primary weapon |
+> | `atk3` centrifuge spin | Vertical, body rotating through 360° with head SPOTTED forward | Wrapped arm extended + CHAIN | Horizontal at chest height, FULL CIRCLE around the body | Chain forms a complete HALO around the body (visible at 12 / 3 / 6 / 9 o'clock across the spin frames) + head stays FACING FORWARD while the body rotates (the ballet-spot tell) — the only attack with the chain as a full circle |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk3:** atk1 = chain straight TAUT LINE on ONE side of the body, body torqued 45° once. atk3 = chain HALO all the way around the body, body spinning 360°. If atk3 frames look like atk1 with extra speedlines, redraw — atk3's chain must visibly continue past the body to the opposite side, forming a circle across the active frames.
+> - **atk2 vs anything else:** atk2 is the ONLY attack where Chains drops LOW with his supporting hand on the FLOOR. If F3 doesn't show the hand braced on the ground with the body crouched, the sweep isn't reading — redraw.
+> - **atk1 chain vs atk2 chain:** atk1's chain is at CHEST height in a STRAIGHT LINE. atk2's chain is at ANKLE height trailing the sweeping leg (secondary low arc). Different heights, different roles. If both look identical at chest height, atk2's chain isn't dropped low enough — redraw.
+> - **atk3 head-spotting rule:** atk3's head must face FORWARD across every spin frame even as the body rotates underneath (ballet-spot mechanic). If the head rotates with the body, the spin reads as just dizzy — redraw with the head locked forward.
+> - **Chain-wrap rule:** the heavy industrial chain is wrapped twice around the dominant forearm in EVERY frame including hurt and dead. If any frame shows a bare forearm, redraw — the chain wrap is identity.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -97,11 +114,11 @@ chain link shadow  #3a3a40
 
 ## Visual VFX summary
 
-Chains' identity is the **chain motion-blur trail** + sparks where the chain hits the ground.
+Chains' identity is the **chain motion-blur trail** + sparks where the chain hits the ground. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so the swing, the sweep, and the spin never blur together.
 
-- `swing` bullwhip arc — chain fully extended in horizontal taut line 36 px past body, body torqued 45°
-- `spin` centrifuge — chain traces a complete halo around his body (motion-blur circle, visible at 4 cardinal points across the spin frames)
-- `low_sweep` boot-sweep — body low, supporting hand on the floor, free leg sweeping in 120° arc at ankle height, chain trailing as a low secondary arc
+- `atk1` BULLWHIP SWING — chain fully extended in a horizontal TAUT LINE 36 px past the body (single side, straight line), body torqued 45° showing the swing through, free hand on hip — the only attack with the chain as a straight one-sided line
+- `atk2` BOOT-SWEEP — body LOW with supporting HAND BRACED ON THE FLOOR, free leg horizontal at ankle height in a 120° sweeping arc, chain trailing behind the leg as a SECONDARY LOW ARC (chain at ankle height, not chest height) — the only attack that touches the ground with the hand
+- `atk3` CENTRIFUGE SPIN — chain traces a complete HALO around the body (motion-blur circle, visible at 12 / 3 / 6 / 9 o'clock across the spin frames), head stays FACING FORWARD while the body rotates underneath (ballet-spot) — the only attack with the chain as a full circle + the only multi-hit AOE
 
 **Hurt / flinch:** F1 stagger, chain drops slack 4 px. F2 free hand goes to the wound. 1-px white impact spark.
 
