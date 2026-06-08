@@ -626,6 +626,12 @@ function drawSpriteCharacter(p) {
   X.translate(sx, sy);
   if (p.facing === -1) X.scale(-1, 1);
 
+  // Shade's vanish gimmick — fade the sprite to match vanishAlpha. Without
+  // this the teleport reads as the body just blinking sideways instead of
+  // dissolving into smoke.
+  const vAlpha = p.vanishAlpha ?? 1;
+  if (vAlpha < 1) X.globalAlpha = Math.max(0.05, vAlpha);
+
   // ---- Run lean: the body tilts forward 4° while running. Reads as urgency.
   if (animName === "run") {
     X.rotate(0.07);
@@ -647,13 +653,13 @@ function drawSpriteCharacter(p) {
   // 2-4 frames after taking damage. Reads as a clean impact pulse.
   if (p.hitFlash > 0) {
     X.globalCompositeOperation = "source-atop";
-    X.globalAlpha = 0.55;
+    X.globalAlpha = 0.55 * (vAlpha < 1 ? vAlpha : 1);
     X.fillStyle = "#ffffff";
     X.fillRect(-frame.w * ax, -frame.h * ay, frame.w, frame.h);
     X.globalCompositeOperation = "source-over";
-    X.globalAlpha = 1;
     p.hitFlash--;
   }
+  X.globalAlpha = 1;
   X.restore();
   return true;
 }
