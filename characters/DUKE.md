@@ -8,20 +8,45 @@
 > 2. `walk` (6 frames)
 > 3. `run` (6 frames)
 > 4. `jump` (3 frames)
-> 5. `atk1` — BOXING JAB (4 frames)
-> 6. `atk2` — CROSS (5 frames)
-> 7. `atk3` — HOOK + STOMP (6 frames)
-> 8. `atk4` — DROPPING OVERHAND (6 frames) — **NEW** combo finisher: worn-out boxer drops his weight into one final looping right (visually distinct from atk3 horizontal hook)
-> 9. `heavy` — UPPERCUT LAUNCHER (7 frames)
-> 10. `jump_atk` — DIVING ELBOW DROP (4 frames)
-> 11. `back_atk` — REAR ELBOW (4 frames)
-> 12. `special` — ROLLING THUNDER (12 frames) — **the signature move, must be visually distinct from atk3/atk4**
-> 13. `throw` (5 frames)
-> 14. `counter` (6 frames)
+> 5. `atk1` — BOXING JAB (4 frames) — **front fist HORIZONTAL forward**, body almost vertical
+> 6. `atk2` — CROSS (5 frames) — **REAR fist HORIZONTAL forward**, body rotated 45°
+> 7. `atk3` — HOOK + STOMP (6 frames) — **fist arcs HORIZONTALLY from the side**, body torqued, right foot stomps
+> 8. `atk4` — DROPPING OVERHAND (6 frames) — **fist arcs DOWN from ABOVE the shoulder** (vertical comet, not horizontal hook)
+> 9. `heavy` — UPPERCUT LAUNCHER (7 frames) — **ONE rear fist RISING vertically** from below the knee to above the head
+> 10. `jump_atk` — DIVING ELBOW DROP (4 frames) — **AIRBORNE**, elbow tip leading downward
+> 11. `back_atk` — REAR ELBOW (4 frames) — **body twisted BACKWARD 60°**, elbow behind body
+> 12. `special` — ROLLING THUNDER (12 frames) — three FORWARD elbow strikes + a haymaker (multi-phase)
+> 13. `throw` (5 frames) — collar grab → spin → slam
+> 14. `counter` — LIVER SHOT KO (6 frames) — **body CROUCHED low**, rear fist drives FORWARD at HIP HEIGHT (the only attack below chest level)
 > 15. `hurt` (3 frames)
 > 16. `dodge` (5 frames)
 >
 > **Total: 86 frames in 16 rows.** If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Duke's sheet kept producing attacks that all looked like "boxer throwing the same punch." Every attack below must occupy a DIFFERENT silhouette quadrant — if two attacks share a silhouette, redraw one.
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` jab | Vertical, ~5° rotation | FRONT (left) fist | Horizontal forward | Body almost upright, front shoulder forward, sharp snap-back |
+> | `atk2` cross | Rotated 45° from hip | REAR (right) fist | Horizontal forward | Hip drove forward, body 45° rotated — different rotation from jab |
+> | `atk3` hook + stomp | Torqued sideways, knees bent | Right fist | Horizontal arc from the SIDE | Right foot STOMPS with dust puff (only attack that stomps + only side-arcing fist) |
+> | `atk4` overhand | Bent 25° forward | Right fist | Descending VERTICAL arc from ABOVE shoulder | Fist comes DOWN from overhead — NOT horizontal like atk3 |
+> | `heavy` uppercut | Vertical, extending upward | ONE rear fist | Ascending vertical | Single rising fist from below the knee; only attack that grows TALLER |
+> | `jump_atk` elbow drop | AIRBORNE, 45° forward | Right elbow tip | Descending diagonal | Body fully airborne — only aerial attack |
+> | `back_atk` rear elbow | Twisted BACKWARD 60° | Right elbow | Backward | Body turned AWAY from camera — only rear-facing attack |
+> | `special` rolling thunder | Multi-phase | THREE forward elbows + haymaker | Forward, alternating sides | Three forearm strikes left-right-left with growing speedlines — only multi-elbow combo |
+> | `throw` collar slam | Body rotating 90° overhead | Both hands grip | Overhead spin | Both hands gripping an imagined collar overhead — only grappling pose |
+> | `counter` liver shot | CROUCHED LOW, knees deep | Rear fist | Horizontal forward at HIP height | Body lower than any other pose; fist at LIVER HEIGHT (not face/chest) — only below-the-belt attack |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 uses the FRONT fist with minimal body rotation; atk2 uses the REAR fist with the hip driving 45°. If both look like the same punch from the same arm, redraw atk2 so the rear shoulder is clearly rotated forward.
+> - **atk3 vs atk4:** atk3 is a HORIZONTAL hook arcing inward from the side at chest height; atk4 is a VERTICAL overhand arcing DOWNWARD from above the shoulder. If atk4's fist is at chest height instead of dropping from overhead, redraw — atk4's whole point is the comet-from-overhead silhouette.
+> - **atk4 vs heavy:** atk4 goes DOWN (fist starts overhead, ends at chest); heavy goes UP (fist starts below the knee, ends overhead). Opposite directions — if both look like "fist over head," redraw heavy with the fist clearly LOW on F1–F2.
+> - **atk4 vs counter:** atk4's fist drives DOWN from overhead; counter's fist drives FORWARD AT HIP HEIGHT with the body crouched. If counter shows the fist anywhere above the chest, redraw — counter is the body shot.
+> - **special vs counter:** special's haymaker arcs down to chest; counter is a precision LOW body shot from a crouch. The special is a finisher haymaker; the counter is a sniper-shot to the liver. Body posture must clearly differ (special upright torquing, counter crouched low).
+> - **back_atk vs jump_atk vs special:** back_atk is GROUNDED + body FACING AWAY; jump_atk is AIRBORNE; special is GROUNDED + facing FORWARD. If you can't tell which is which by silhouette alone, redraw.
 
 ## Physical
 
@@ -205,14 +230,14 @@ The signature.
 - F5: recovery — hands drop, body straightens back to stance.
 - **Cigarette stays put** through the whole throw.
 
-### `counter` — counter-special (6 frames, 11 fps)
-- The free counter-special at full parry meter. A bigger, meaner version of the Rolling Thunder haymaker — body wider, fist heavier.
-- F1: load — body torques back further than the special's haymaker, weight on the left leg, right fist drawn behind.
-- F2: drive begins — body weight drops forward, right fist arcs downward.
-- F3: arc — fist mid-arc, body fully forward, hair strand whipping.
-- F4: contact — right fist at impact, **bigger dust puff at his feet** (5–6 brown specks in a half-circle), half-grin at full visibility.
-- F5: follow-through — body past impact, fist still extended.
-- F6: recovery — body straightens, fist lowering. Cigarette has not moved.
+### `counter` — LIVER SHOT KO (6 frames, 11 fps)
+**Visual signature:** Duke's veteran-boxer trick. **The ONLY attack in his kit aimed BELOW chest level**. Body drops into a deep crouch (lower than any other pose Duke takes — knees bent past 90°, weight slammed forward onto the front foot), then the rear fist drives FORWARD HORIZONTALLY at LIVER HEIGHT (just above the belt, well below the head). The body posture is unmistakable — Duke is the SHORTEST in this frame, fist horizontal at hip height, not arcing up or down. F4 the half-grin is at full visibility — the cynic enjoying the dirty win. Cigarette stays put through the whole motion. **Must NOT show the fist above chest height and must NOT show an arc — this is a level, straight, low body shot.**
+- F1: load — body starts dropping, knees bending past their idle angle, weight transferring to front foot. Rear fist drops to hip level (already low, telegraphing the body shot).
+- F2: deeper crouch — knees fully bent past 90°, body lowered 6–8 px from idle, rear shoulder pulling back to load the fist.
+- F3: **drive — body at FULL CROUCH (the shortest Duke gets), weight slammed forward, rear fist starting to drive forward HORIZONTALLY at hip/liver height**. Eyes lock forward on the target's body, not the head.
+- F4: **peak impact — body still crouched low, rear fist FULLY EXTENDED forward at HIP HEIGHT (~14 px past the body, ~28 px above the floor — well below chest), front hand still raised at chin for guard. HALF-GRIN at full visibility — the cynic's smile. 1-px white impact spark at fist height (low, not high)**. Hair strand falls across the forehead.
+- F5: follow-through — body still crouched, fist holding the extension one extra frame for the kill-shot weight, weight transferring through the punch.
+- F6: recovery — body slowly rises back toward idle, fist retracting, knees straightening. Hair strand settles. **Cigarette has not moved.**
 
 ### `hurt` (3 frames, 12 fps)
 - F1: impact — head whips back 8°, torso folds at the waist, both hands fly outward briefly.
@@ -240,14 +265,18 @@ The signature.
 
 ## Visual VFX summary
 
-Duke's identity in motion is the **dust puff at his stomping right foot + cigarette unmoved + half-grin reserved for finishers**. He's a worn-out boxer — every move costs him visibly.
+Duke's identity in motion is the **dust puff at his stomping right foot + cigarette unmoved + half-grin reserved for finishers**. He's a worn-out boxer — every move costs him visibly. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `atk1` JAB — sharp snap-back, cigarette unmoved, no dust (efficient)
-- `atk2` CROSS — 1-px hair-strand whip across the forehead at peak
-- `atk3` HOOK + STOMP — dust puff (1–2 brown specks) at his right foot on impact
-- `atk4` DROPPING OVERHAND — bigger dust puff (4 brown specks) at right foot, half-grin appears
-- `heavy` UPPERCUT — bad-knee strain visible on F1, half-grin on F5
-- `special` ROLLING THUNDER — 3 elbow speedlines (3-px → 4-px → 5-px growing) + dust puff on the haymaker finisher + half-grin
+- `atk1` JAB — body vertical, FRONT fist horizontal forward, sharp snap-back, no dust (efficient)
+- `atk2` CROSS — body rotated 45°, REAR fist horizontal forward, 1-px hair-strand whip across the forehead at peak
+- `atk3` HOOK + STOMP — body torqued sideways, fist arcs HORIZONTALLY from the side, right foot STOMPS with dust puff (1–2 brown specks)
+- `atk4` DROPPING OVERHAND — fist arcs DOWN from ABOVE the shoulder (vertical comet, NOT horizontal hook), bigger dust puff (4 brown specks) at right foot, half-grin appears
+- `heavy` UPPERCUT — ONE rear fist RISING vertically from below the knee to overhead, bad-knee strain visible on F1, half-grin on F5
+- `jump_atk` DIVING ELBOW DROP — body fully AIRBORNE, elbow tip leading downward (the only aerial attack)
+- `back_atk` REAR ELBOW — body twisted BACKWARD 60°, elbow behind body (the only rear-facing attack)
+- `special` ROLLING THUNDER — three FORWARD elbow strikes (left-right-left) with growing speedlines (3-px → 4-px → 5-px) + a haymaker finisher with dust puff + half-grin
+- `throw` COLLAR SLAM — both hands gripping overhead, body rotates 90° (the only grappling pose)
+- `counter` LIVER SHOT KO — body CROUCHED low (shortest pose Duke takes), rear fist drives forward at HIP HEIGHT — the only attack below chest level + half-grin at full visibility
 
 **Hurt / flinch:** F1 body folds, jaw clenches. F2 cigarette wobbles 1 px but stays on the ear (the gag). 1-px white impact spark at the contact point. F3 body returns to stance, hair strand falls across the forehead.
 
