@@ -12,20 +12,45 @@ He fights like a boxer because he was one. The brass knuckles are for the people
 >
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
-> 3. `atk1` — jab (4 frames) — head-level straight
-> 4. `atk2` — cross (5 frames) — head-level straight with hip drive
-> 5. `atk3` — liver hook (5 frames) — low body shot at hip level (different angle)
-> 6. `uppercut` — rising brass-knuckle uppercut (6 frames) — vertical rising fist
-> 7. `haymaker` — overhand looping (9 frames) — telegraphed heavy
-> 8. `clinch` — clinch + knee (7 frames) — boxer's grab into rising knee strike
-> 9. `special` — BONE-BREAKER COMBO (12 frames) — five-strike chained finisher, **must be visually distinct from atk3**
-> 10. `counter` — coat parry-riposte (6 frames) — coat-flare deflect into hidden cross
-> 11. `jump_atk` — aerial knee (4 frames)
+> 3. `atk1` — JAB (4 frames) — **FRONT fist HORIZONTAL forward at HEAD level**, body almost vertical, coat does NOT move
+> 4. `atk2` — CROSS (5 frames) — **REAR fist HORIZONTAL forward at HEAD level**, body rotated 45° with the hip drive, coat FLARES 45° behind
+> 5. `atk3` — LIVER HOOK (5 frames) — **REAR fist HORIZONTAL inward arc at HIP level**, body SQUATTED 10°, knees bent — only attack at hip height
+> 6. `uppercut` — RISING UPPERCUT (6 frames) — **LEAD fist ASCENDING vertically** from thigh to overhead — the only Baron punch going UP
+> 7. `haymaker` — OVERHAND LOOPING (9 frames) — **REAR fist ARCING OVER from above the shoulder down to chest-of-target**, coat OPENS FULLY for 4-frame wind-up showing the chest scar
+> 8. `clinch` — CLINCH + RISING KNEE (7 frames) — **BOTH hands gripping imagined collar**, opponent PULLED DOWN as rear knee DRIVES UP into the gut — the only grab-knee combo
+> 9. `special` — BONE-BREAKER COMBO (12 frames) — **5 RAPID brass-knuckle strikes at 5 DIFFERENT heights** (head, head, hip, vertical-rising, head) — the piano-scale of glints
+> 10. `counter` — COAT PARRY-RIPOSTE (6 frames) — **the COAT FANS 90° WIDE for 1 frame HIDING the torso entirely**, then a cross erupts through it — only attack where the coat is the weapon-screen
+> 11. `jump_atk` — AERIAL KNEE (4 frames) — **AIRBORNE**, rear KNEE leads forward at chest height, coat trailing behind
 > 12. `hurt` (3 frames)
 > 13. `taunt` (5 frames) — hair-comb gesture
 > 14. `dead` (5 frames)
 >
 > **Total: 81 frames in 14 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Baron's sheet kept producing attacks that all looked like "thick boxer in a coat throwing the same punch." Every attack below must occupy a DIFFERENT silhouette quadrant — if two attacks share a silhouette, redraw one. The five Baron punches are designed as a **piano scale of heights and angles** — every punch sits at a different level on the body.
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` jab | Vertical, ~5° rotation | FRONT (left) fist | Horizontal forward at HEAD level | Body almost upright, coat does NOT move, gold glint at HEAD height |
+> | `atk2` cross | Rotated 45° from hip | REAR (right) fist | Horizontal forward at HEAD level | Coat FLARES 45° behind in a fan — only head-level punch with the coat-fan tell |
+> | `atk3` liver hook | SQUATTED 10° lower, knees bent | REAR fist (horizontal arc) | Horizontal inward at HIP level | Body shorter than any other punch pose; gold glint at HIP height (not head) — the only body-shot |
+> | `uppercut` | Vertical, extending UPWARD | LEAD fist | Ascending vertical | Single fist rising from THIGH height to ABOVE the head — only Baron attack going UP |
+> | `haymaker` | Rotated past 90°, body folded forward | REAR fist (overhand arc) | Descending arc from ABOVE shoulder to chest-of-target | Coat OPENS FULLY for the 4-frame wind-up revealing the chest scar — the longest tell in the kit |
+> | `clinch` | Folded forward 30°, knee raised | Both hands grip + rear KNEE | Knee drives UP into gut | Only attack where Baron is HOLDING an imagined opponent + raised knee silhouette |
+> | `jump_atk` | AIRBORNE, angled 15° forward | Rear KNEE | Forward at chest height (mid-air) | Body fully airborne with the KNEE leading — only aerial attack + only knee strike outside `clinch` |
+> | `special` bone-breaker | Multi-phase, alternating L/R | All 5 punch heights chained | 5 hits at varied heights | 5 gold glints in rapid succession at 5 DIFFERENT heights (head-head-hip-vertical-head) |
+> | `counter` coat-parry | Coat fans WIDE in front (torso hidden) → cross emerges | Coat (screen) + REAR fist | Coat-sweep then cross | 1 frame where Baron's TORSO is completely hidden behind the spread coat — only attack with that magician-screen pose |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 = FRONT fist with minimal body rotation, coat STATIC. atk2 = REAR fist with hip driving 45° and coat FLARING 45° behind. If both look like the same punch with the coat held the same way, redraw atk2 so the coat is clearly fanned out behind the body.
+> - **atk1/atk2 vs atk3 (liver hook):** atk1 and atk2 are at HEAD height. atk3 is at HIP height with the body SQUATTED 10° shorter. If the liver hook fist is at chest/head height, redraw — the gold knuckles must clearly be at the imagined opponent's belt-line.
+> - **atk3 (liver hook) vs uppercut:** liver hook goes HORIZONTAL inward at hip; uppercut goes VERTICAL straight up from thigh to overhead. If the uppercut fist is arcing inward instead of climbing in a straight vertical line, redraw — uppercut is the only ascending-vertical move in the kit.
+> - **uppercut vs haymaker:** uppercut RISES (fist starts low, ends overhead). Haymaker FALLS (fist starts above the shoulder, ends at chest-of-target). Opposite directions. If both look like "big fist over the head," redraw uppercut with the fist clearly at THIGH height on F1–F2 and haymaker with the fist clearly ABOVE the shoulder on F5.
+> - **clinch vs jump_atk:** both feature a raised knee. Clinch is GROUNDED with BOTH HANDS GRIPPING an imagined collar pulled down onto the knee. jump_atk is AIRBORNE with no grab — just the body in flight and the knee leading. If clinch looks airborne or jump_atk shows hands gripping, the silhouettes are crossed.
+> - **counter vs haymaker:** both involve a big coat motion. Haymaker's coat OPENS to the SIDES revealing the chest. Counter's coat FANS FORWARD across the front of the body, hiding the torso for 1 frame. If you can't see the difference between "coat panels swept aside" and "coat held up like a curtain," redraw counter so the coat is clearly in front of the body, screen-like, on F2.
+> - **special vs the individual punches:** the special's 5 strikes deliberately RE-USE the jab/cross/liver/uppercut/haymaker silhouettes in sequence. That is correct. The differentiation is that special chains 5 of them across 12 frames, each at a different height — if drawn as 5 of the same punch, redraw.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -148,16 +173,17 @@ buckle silver      #8a8a8e
 
 ## Visual VFX summary
 
-Baron's identity is the **brass-knuckle gold glint** at different heights per move (his "piano scale" of glints) + coat flares + the square jaw juts forward.
+Baron's identity is the **brass-knuckle gold glint** at different heights per move (his "piano scale" of glints) + coat flares + the square jaw juts forward. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `jab` — gold glint at head height
-- `cross` — gold glint at head height + 45° coat flare behind
-- `liver_hook` — gold glint at HIP height (lower than jab/cross — the body-shot tell)
-- `uppercut` — gold knuckle leaves a VERTICAL gold streak from hip to overhead
-- `haymaker` — coat OPENS FULLY across 4 frames (revealing chest scar) + gold-knuckle comet arc from shoulder down
-- `clinch` — both hands grab + rear knee drives up + coat flares open
-- `special` BONE-BREAKER — 5 gold glints at DIFFERENT heights (head, head, hip, vertical, head) — the piano-scale
-- `counter` — coat fans wide hiding torso for 1 frame (magician's misdirection) + cross emerges through the coat with gold trail
+- `atk1` JAB — body almost vertical, FRONT fist horizontal forward at HEAD level, gold glint at head height, coat STATIC
+- `atk2` CROSS — body rotated 45°, REAR fist horizontal forward at HEAD level, gold glint at head height + 45° COAT FLARE behind in a fan + square jaw juts forward 1 px
+- `atk3` LIVER HOOK — body SQUATTED 10° lower with knees bent (shortest punch pose), REAR fist horizontal inward at HIP level, gold glint at HIP height (the only body-shot)
+- `uppercut` RISING UPPERCUT — LEAD fist ASCENDING vertically from THIGH height to ABOVE the head, gold knuckle leaves a VERTICAL gold streak from hip to overhead (the only ascending Baron attack)
+- `haymaker` OVERHAND — coat OPENS FULLY across 4 frames revealing the chest scar (the longest tell) + REAR fist arcs OVER from above the shoulder down to chest-of-target with a gold-knuckle comet trail
+- `clinch` CLINCH + RISING KNEE — both hands GRIP imagined collar, opponent PULLED DOWN as rear knee DRIVES UP into the gut (the only grab-knee combo)
+- `jump_atk` AERIAL KNEE — body AIRBORNE angled 15° forward, rear KNEE leads at chest height, coat trailing behind (the only aerial attack)
+- `special` BONE-BREAKER — 5 gold glints at 5 DIFFERENT heights in sequence (head, head, hip, vertical-rising, head) — the piano-scale of brass-knuckle glints across 12 frames
+- `counter` COAT PARRY-RIPOSTE — coat FANS 90° WIDE in front for 1 frame HIDING the torso entirely (magician's misdirection), then a REAR cross erupts THROUGH the coat with a gold trail
 
 **Hurt / flinch:** F1 body folds at the waist, but the hair STAYS NEAT (his signature — he's never disheveled), polite smile remains. F2 hands drop briefly from guard. 1-px white impact spark on the brass knuckles (his own knuckles catch the hit's spark).
 

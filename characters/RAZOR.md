@@ -11,18 +11,42 @@ She wears a tailored suit because she does most of her work in office buildings.
 > 1. `idle` (4 frames)
 > 2. `walk` (6 frames)
 > 3. `draw` (4 frames)
-> 4. `atk1` — cross-cut slash (4 frames) — single diagonal cut
-> 5. `atk2` — twin-blade flurry (8 frames) — rapid alternating slashes left-right-left-right
-> 6. `atk3` — fencing kick (5 frames) — heel-thrust forward
-> 7. `atk4` — missile dash (9 frames) — both blades extended, X-shape body
-> 8. `atk5` — spinning pirouette (8 frames) — 360° turn with both blades sweeping
-> 9. `throw` — knife throw (5 frames) — released knife with motion trail
-> 10. `special` — BLADE DANCE (14 frames) — six-hit signature, **must be visually distinct from atk1/atk2**
-> 11. `counter` — parry-and-throw (6 frames) — off-hand blade deflects, throwing-hand knife flies
+> 4. `atk1` — CROSS-CUT SLASH (4 frames) — **SINGLE front blade DIAGONAL upper-right to lower-left across the body**, other blade at the hip
+> 5. `atk2` — TWIN-BLADE FLURRY (8 frames) — **THREE alternating slashes left-right-left**, criss-cross of red arcs stacked on top of each other (only multi-slash chain at chest level)
+> 6. `atk3` — FENCING KICK (5 frames) — **FRONT leg STRAIGHT FORWARD at hip height, foot FLEXED with HEEL leading**, both blades in fencing guard (the only kick)
+> 7. `atk4` — MISSILE DASH (9 frames) — **body fully HORIZONTAL mid-air**, BOTH blades extended forward as a leading X-shape, legs trailing horizontally
+> 8. `atk5` — SPINNING PIROUETTE (8 frames) — **full 360° spin GROUNDED**, both blades held perpendicular at HIP height tracing a complete circle (red halo at hip level)
+> 9. `throw` — KNIFE THROW (5 frames) — **one blade RELEASED as a projectile** 18 px ahead of the empty throwing hand, second blade still held at the hip
+> 10. `special` — BLADE DANCE (14 frames) — **SIX sequential slashes at SIX different angles** (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst) — the kata-diagram
+> 11. `counter` — SCISSOR-PARRY + LOW LEG-CUT (6 frames) — **both blades CROSS in an X to catch the strike**, then a step-past + low scything cut at the THIGHS (the only attack below knee height; no projectile)
 > 12. `hurt` (3 frames)
 > 13. `dead` (5 frames)
 >
 > **Total: 81 frames in 13 rows.** Every row must be present. If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Razor's sheet kept producing attacks that all looked like "woman in a suit waving a knife." Every attack below must occupy a DIFFERENT silhouette quadrant — if two attacks share a silhouette, redraw one. The dual-blade arcs are designed as a **chart of angles and heights** — every blade move sits at a different angle on the body.
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` cross-cut | Vertical fencing stance | FRONT blade only | Diagonal upper-right to lower-left at chest height | Single 28-px red diagonal arc; rear blade stays at the hip — the only single-blade slash |
+> | `atk2` flurry | Squared, body alternating L/R | BOTH blades alternating | Three chest-height arcs in opposing diagonals | Criss-cross of THREE stacked red arcs (one frame shows one blade mid-arc, the other already chambered) — only multi-arc chest pattern |
+> | `atk3` fencing kick | Vertical, supporting leg straight | FRONT leg (HEEL leading) | Straight forward at hip height | Front leg fully extended forward, foot FLEXED with HEEL leading, BOTH blades still held in guard — only kick / only attack where blades are NOT moving |
+> | `atk4` missile dash | Body fully HORIZONTAL mid-air | BOTH blades extended forward | Forward at chest height (flying) | Body parallel to the ground, both arms forward as a leading X, legs trailing — only airborne attack |
+> | `atk5` pirouette | GROUNDED 360° rotation | BOTH blades perpendicular outward | Continuous circle around the body at HIP height | Red halo ring around the body at hip level — only attack with a circular sweep + only AOE multi-hit |
+> | `throw` knife throw | Vertical, body squared to target | ONE blade as projectile | Forward through the air | The blade is DETACHED from the hand (only attack where Razor is missing a knife); 6-px motion-line behind the projectile |
+> | `special` blade dance | Multi-phase, body shifting per strike | All angles chained | 6 hits at varied heights and angles | 6 red arcs forming a kata diagram (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst finisher) — only multi-angle chain |
+> | `counter` scissor-parry + leg-cut | Folded LOW on F4, leg-height blade | BOTH blades cross then ONE low blade | Cross in front, then horizontal scythe at THIGH height | F2 both blades crossed in an X over the chest (only X-block pose); F4 body crouched LOW with one blade horizontal at thigh height — the only sub-knee blade attack |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 is ONE slash with ONE blade; the other blade stays at the hip. atk2 is THREE alternating slashes with BOTH blades in succession. If atk1 shows both blades arcing, redraw — atk1 is the single-blade signature.
+> - **atk1/atk2 vs special:** the special's 6 strikes deliberately re-use the slash arcs of atk1/atk2, but at SIX different angles across 14 frames. If special looks like atk2 repeated, redraw so each of the 6 arcs hits a different height/angle (per the table above).
+> - **atk3 (fencing kick) vs any blade move:** atk3 is the ONLY attack where the blades are static and the LEG is the weapon. The foot must be clearly at hip height with the heel leading. If the kick reads as "Razor slashing while standing on one leg," redraw — the leg IS the weapon.
+> - **atk4 (missile dash) vs atk5 (pirouette):** atk4 is AIRBORNE with the body horizontal flying forward. atk5 is GROUNDED with the body vertical rotating in place. If both look like "blades extended out from the body," redraw — one flies straight, one spins on the spot.
+> - **atk5 (pirouette) vs counter (scissor parry):** both involve both blades. Pirouette = blades perpendicular OUTWARD tracing a horizontal halo while the body spins. Counter = blades CROSSED in front of the chest in an X (defensive). Opposite intents and opposite silhouettes.
+> - **throw vs counter:** throw RELEASES a blade as a projectile (one hand empty after F3). Counter KEEPS both blades — the X-parry then a low leg-cut. If counter shows a knife flying, redraw — the counter no longer throws; it cuts low at the legs instead. This is the differentiation from the throw.
+> - **counter vs any other slash:** counter's F4 silhouette is the SHORTEST Razor gets — body crouched low with one blade horizontal at THIGH height. If counter's cut lands at chest height, redraw — it's the only sub-knee blade in the kit.
 
 > ## ⚠️ SHEET CONSISTENCY RULES — read first
 >
@@ -100,7 +124,7 @@ lapel pin shadow   #8a6020
     - F13 = STRIKE 6: BOTH BLADES thrust forward together as X-shape finisher (red X-burst, biggest of the six)
     - F14 = hold + recovery
     - **Visual identity: 6 red arcs at varied angles forming a complex pattern — like a kata diagram. Launches on the final X-thrust.** 42 dmg total across the 6 hits.
-  - **`counter` — Parry-and-throw riposte.** NEW. Defensive deflect with one blade + instant knife throw with the other. **Visual signature: F1 off-hand blade rises diagonally to deflect (visible spark at deflection point). F2 the parry connects. F3 rear arm cocks the THROWING blade. F4 throwing-hand blade RELEASES forward as a projectile. F5–F6 stance recovery.** Reads as "she deflected with one hand and threw with the other in a single motion."
+  - **`counter` — Scissor-parry + low leg-cut.** Defensive X-block with BOTH blades, then a step-past and a low horizontal scythe at the opponent's thighs. **Visual signature: F2 BOTH blades cross over the chest in a tight X to catch the incoming strike (visible spark at the crossing point). F3 Razor steps past on the front foot, body lowering. F4 body fully CROUCHED low (the shortest she gets), front blade whips around HORIZONTALLY at THIGH height as a tight 16-px red arc at leg level — the only blade arc below the knee. F5 follow-through, blade past target. F6 stance returns.** Reads as "she blocked it with both blades and cut your leg out from under you." Keeps both knives — no projectile (that's what `throw` is for). 16 dmg + 80 knockback; cripples low.
 - **Pattern:** Phase 1 mixes slash + flurry + fencing kick + dash. Phase 2 adds pirouette and the Blade Dance special.
 - **Talks during fights:** "We could have done this in your kitchen." / "You're making this so much harder than it needs to be."
 
@@ -118,7 +142,7 @@ lapel pin shadow   #8a6020
 | `atk5`     | 8 | **Spinning pirouette.** F1 = supporting foot pivots, body starts rotating, both blades EXTEND outward at hip height (perpendicular to the body). F2 = body 90° through the rotation, blades still extended at hip level. F3 = body 180° (facing away from camera). F4 = body 270°. F5 = body completes 360° (back to original facing). F6 = blades start drawing back in. F7 = settle into fencing stance. F8 = back to ready. **Visual identity: blades trace a continuous circle around her at hip height through F1–F5 — red halo of motion.** |
 | `throw`    | 5 | **Knife throw.** F1 = body squares to target, rear arm cocks the knife at ear height. F2 = arm begins forward motion. F3 = **release — knife drawn 18 px ahead of the throwing hand, 6-px motion-line trail behind it, blade angled 30° pointing forward**. F4 = follow-through, throwing arm fully extended. F5 = return to stance. |
 | `special`  | 14 | **BLADE DANCE — six-hit signature.** F1–F2 = wide stance load, both blades at shoulder height. F3 = **STRIKE 1: front-blade slash upper-right to lower-left (red arc #1, diagonal)**. F4 = wind-up for next. F5 = **STRIKE 2: rear-blade slash upper-left to lower-right (red arc #2, opposite diagonal)**. F6 = wind-up. F7 = **STRIKE 3: front-blade horizontal cut at HIP height (red arc #3, horizontal)**. F8 = wind-up. F9 = **STRIKE 4: rear-blade horizontal cut at NECK height (red arc #4, high horizontal)**. F10 = wind-up. F11 = **STRIKE 5: front-blade VERTICAL cut downward (red arc #5, vertical)**. F12 = body coils, both blades raise. F13 = **STRIKE 6 (finisher): BOTH BLADES thrust forward together — X-burst, biggest of the six red marks**. F14 = recovery. **Six varied-angle arcs — the kata diagram identity.** |
-| `counter`  | 6 | **Parry-and-throw riposte.** F1 = off-hand blade rises diagonally to deflect (visible spark at deflection point). F2 = parry connects, body angles slightly. F3 = rear arm cocks the THROWING blade at ear height. F4 = **throwing-hand blade RELEASES forward as a projectile (motion-line trail)**. F5 = follow-through, throwing arm extended. F6 = return to ready stance. |
+| `counter`  | 6 | **Scissor-parry + low leg-cut.** F1 = both blades rise toward the chest, weight shifts to the front foot. F2 = **BOTH blades cross over the chest in a tight X (the scissor block) — visible spark at the crossing point as the incoming strike is caught**. F3 = step-past — front foot plants past the imagined opponent, body lowering, blades uncrossing. F4 = **peak — body CROUCHED LOW (shortest pose Razor takes), front blade whipped HORIZONTALLY across THIGH height as a 16-px tight red arc at leg level (the only sub-knee blade arc)**. F5 = follow-through, blade past target, second blade trailing at hip guard. F6 = return to ready stance, both blades still in hand. |
 | `hurt`     | 3 | Body twists. **Suit stays clean.** Both knives stay in hand. |
 | `dead`     | 5 | F1 = body folds. F2 = falls to one knee. F3 = collapses to side. **F4 = both knives slide 8 px from open hands.** F5 = settled. |
 | `phase2`   | 4 | **Brief tell when she crosses 40% HP** — F1 = lifts one blade to her sleeve. F2 = wipes blood off the blade with the sleeve. F3 = examines the blade. F4 = returns to stance. |
@@ -137,16 +161,16 @@ lapel pin shadow   #8a6020
 
 ## Visual VFX summary
 
-Razor's identity is the **dual-blade red motion arcs** at different angles per move + immaculate posture (suit never wrinkles).
+Razor's identity is the **dual-blade red motion arcs at varied angles** + immaculate posture (suit never wrinkles). **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `slash` — 28-px diagonal red arc from upper-right to lower-left
-- `flurry` — criss-cross of red arcs (alternating diagonals on top of each other)
-- `fencing_kick` — no blade arc; the foot-flexed heel-leading kick is the visual
-- `dash` — body horizontal in X-shape, both blades extended, motion lines behind heels
-- `pirouette` — both blades trace a complete CIRCLE around her at hip height (red halo)
-- `throw` — knife 18 px ahead of her hand with 6-px motion-line trail
-- `special` BLADE DANCE — 6 red arcs at varied angles (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst) — kata-diagram identity
-- `counter` — off-hand blade SPARKS at the deflection point + throwing-hand blade releases as projectile
+- `atk1` CROSS-CUT SLASH — single 28-px diagonal red arc from upper-right to lower-left at chest height; rear blade stays at the hip (the only single-blade slash)
+- `atk2` TWIN-BLADE FLURRY — THREE alternating slashes (left-right-left) forming a criss-cross of red arcs stacked at chest height (the only multi-arc chain at chest level)
+- `atk3` FENCING KICK — no blade arc; FRONT leg STRAIGHT FORWARD at hip height with the foot FLEXED and HEEL leading, both blades held in guard (the only kick + only attack where blades are static)
+- `atk4` MISSILE DASH — body fully HORIZONTAL mid-air, both blades extended forward as a leading X, legs trailing horizontally (the only airborne attack)
+- `atk5` SPINNING PIROUETTE — GROUNDED 360° rotation, both blades held perpendicular at HIP height tracing a complete circle — red halo ring at hip level (the only AOE multi-hit + only circular sweep)
+- `throw` KNIFE THROW — one blade RELEASED as a projectile 18 px ahead of the empty throwing hand with a 6-px motion-line trail (the only attack where Razor is missing a knife)
+- `special` BLADE DANCE — 6 red arcs at six different angles (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst finisher) — the kata-diagram identity
+- `counter` SCISSOR-PARRY + LOW LEG-CUT — F2 both blades crossed in an X over the chest (the only X-block pose), then F4 body CROUCHED LOW with front blade whipping HORIZONTALLY at THIGH height as a 16-px red arc (the only blade arc below the knee). Both knives stay in hand.
 
 **Hurt / flinch:** F1 body twists 15° from the hit, both knives stay in hand (she never drops them). F2 suit stays clean (her signature — even mid-hit the tailoring is perfect). 1-px white spark at the contact point.
 
