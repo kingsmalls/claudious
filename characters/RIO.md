@@ -8,20 +8,45 @@
 > 2. `walk` (6 frames)
 > 3. `run` (6 frames)
 > 4. `jump` (3 frames)
-> 5. `atk1` — JAB (4 frames) — head-level straight
-> 6. `atk2` — CROSS (5 frames) — head-level hip-driven straight
-> 7. `atk3` — ROUNDHOUSE KICK (6 frames) — chest-height side kick
-> 8. `atk4` — SPINNING BACK KICK (6 frames) — **NEW** combo finisher: 270° rotation into a heel kick, body airborne, yellow bandana traces the full spin (visually distinct from atk3)
-> 9. `heavy` — UPPERCUT LAUNCHER (7 frames)
-> 10. `jump_atk` — FLYING KNEE (4 frames)
-> 11. `back_atk` — REAR ELBOW (4 frames)
-> 12. `special` — SUNSET SPIN (12 frames) — **the signature move, must be visually distinct from atk3/atk4**
-> 13. `throw` (5 frames)
-> 14. `counter` (6 frames)
+> 5. `atk1` — JAB (4 frames) — **FRONT fist HORIZONTAL forward** at head height
+> 6. `atk2` — CROSS (5 frames) — **REAR fist HORIZONTAL forward**, body rotated 45°
+> 7. `atk3` — ROUNDHOUSE KICK (6 frames) — **leg HORIZONTAL at chest height**, shin parallel to floor, body torqued 90°
+> 8. `atk4` — SPINNING BACK KICK (6 frames) — **AIRBORNE 270° spin**, heel VERTICAL above the head, bandana traces a full circle
+> 9. `heavy` — UPPERCUT LAUNCHER (7 frames) — **ONE front fist RISING vertically** from hip to above the head
+> 10. `jump_atk` — FLYING KNEE (4 frames) — **AIRBORNE**, lead knee forward at chest height
+> 11. `back_atk` — REAR ELBOW (4 frames) — **body twisted BACKWARD 60°**, elbow behind body
+> 12. `special` — SUNSET SPIN (12 frames) — sweep halo at hip + rising double-uppercut (multi-phase)
+> 13. `throw` (5 frames) — overhead spin throw
+> 14. `counter` — CHECK HOOK (6 frames) — **body PIVOTED 90° sideways off-line**, lead fist hooks tight at head height (the only sideways-facing punch)
 > 15. `hurt` (3 frames)
 > 16. `dodge` — backward roll (5 frames)
 >
 > **Total: 86 frames in 16 rows.** If any row is missing, the engine substitutes a fallback that may not match the intended move.
+>
+> ## 🛑 SILHOUETTE DIFFERENTIATION — read before drawing any attack
+>
+> Rio's sheet kept producing attacks that all looked like "boxer in stance throwing a similar punch." Every attack below must occupy a DIFFERENT silhouette quadrant — if two attacks share a silhouette, redraw one.
+>
+> | Attack | Body axis | Striking limb | Direction | Unique silhouette tell |
+> |---|---|---|---|---|
+> | `atk1` jab | Vertical, ~5° rotation | FRONT (left) fist | Horizontal forward | Body almost upright, front shoulder forward; bandana 12-px horizontal ribbon trail |
+> | `atk2` cross | Rotated 45° from hip | REAR (right) fist | Horizontal forward | Hip drove forward; bandana whips OPPOSITE the cross fist (yellow X across body) |
+> | `atk3` roundhouse | Torqued sideways 90° | LEFT shin (chamber) | Horizontal at chest height | Leg parallel to ground at chest height — only chest-height side kick |
+> | `atk4` spinning back kick | AIRBORNE mid-rotation | Right heel | Vertical, heel UP | Body airborne with heel ABOVE the head + bandana traces full 360° circle |
+> | `heavy` uppercut | Vertical, extending upward | ONE front fist | Ascending vertical | Single rising fist + bandana streaks STRAIGHT UP as vertical yellow column |
+> | `jump_atk` flying knee | AIRBORNE, angled forward | Lead knee | Forward at chest height (mid-air) | Body airborne with the KNEE leading + bandana diagonal ribbon |
+> | `back_atk` rear elbow | Twisted BACKWARD 60° | Right elbow | Backward | Body turned AWAY from camera — only rear-facing attack |
+> | `special` sunset spin | Multi-phase, grounded | Leg sweep + double fist | Hip sweep + ascending double | Yellow HALO ribbon at hip level + free-floating yellow streak above head |
+> | `throw` overhead spin | Body rotating 90° overhead | Both hands grip | Overhead spin | Both hands gripping at chest height then enemy pivots overhead — only grappling pose |
+> | `counter` check hook | PIVOTED 90° SIDEWAYS off-line | Lead fist | Tight horizontal hook to the SIDE | Body fully sideways to the camera (profile silhouette) — only sideways-facing punch |
+>
+> Cross-checks before approving the sheet:
+> - **atk1 vs atk2:** atk1 = FRONT fist, body almost vertical with ~5° rotation. atk2 = REAR fist, hip drove forward 45°. If both look like the same arm punching, redraw atk2 so the rear shoulder is clearly rotated over.
+> - **atk3 vs atk4:** atk3 = horizontal shin at chest height with body torqued but planted. atk4 = AIRBORNE mid-spin with heel VERTICAL above the head. Different orientation (horizontal vs vertical) and different grounding (planted vs airborne).
+> - **atk3/atk4 vs jump_atk:** all leg attacks — but atk3 is GROUNDED, atk4 is airborne SPINNING with heel up, jump_atk is airborne with KNEE forward (not heel up). Three distinct silhouettes.
+> - **heavy vs counter:** heavy goes straight UP (single fist ascending vertical column). counter is a hook arcing INWARD HORIZONTALLY with body PIVOTED SIDEWAYS. Opposite directions and opposite body orientations.
+> - **counter vs any other punch:** counter is the only attack where Rio is fully PROFILE-SIDEWAYS to the camera. If counter shows her facing forward, redraw — the off-line pivot IS the move's identity.
+> - **special vs heavy:** special's uppercut uses BOTH fists rising; heavy uses ONE fist. If they look the same, redraw heavy with the rear fist clearly DOWN at the hip on F1–F2 so the rise is visible.
 
 ## Physical
 
@@ -192,8 +217,14 @@ The signature.
 - F4: release — enemy released downward, Rio's body in a forward lean.
 - F5: recovery.
 
-### `counter` — counter-special (6 frames, 12 fps)
-- A bigger, brighter atk1 with a bandana flare. Same movement as the jab but the bandana **streaks across the entire arm length** for two frames.
+### `counter` — CHECK HOOK (6 frames, 12 fps)
+**Visual signature:** the boxer's textbook counter — Rio steps off-line and pivots her body 90° SIDEWAYS to the camera while throwing a tight lead hook at head height. **F4 silhouette: Rio is fully PROFILE-FACING to the camera (the only attack pose where she's sideways), lead arm hooked inward at head height with the elbow bent 90°, rear hand still up at chin for guard, weight planted on the pivot foot. Yellow bandana traces a TIGHT inward arc across her own face line** (different from atk3's wide arc — counter's hook is short and compact). **The reserved SMILE appears for one frame** (F5) — the satisfaction of a clean counter. Must NOT show Rio facing forward; the off-line pivot IS the move's identity.
+- F1: read — Rio's weight shifts onto the lead (left) foot, body starts pivoting off-line. Lead shoulder dips slightly. Bandana still at the wrist.
+- F2: pivot — front foot rotates 60° to the side, body following the pivot, rear arm tucking up at chin. Lead fist starts coming around in a tight horizontal arc.
+- F3: drive — body now 75° pivoted (almost full profile to camera), lead fist arcing inward at head height with the elbow bent 90°. Bandana streaks across her face line in a tight 8-px yellow arc.
+- F4: **PEAK — body FULLY SIDEWAYS to camera (90° pivot, profile silhouette), lead fist at peak hook position with elbow bent 90° at head height, rear hand at chin for guard. Bandana fully across the face line as a tight yellow arc. 1-px white impact spark at the fist**. Eyes locked.
+- F5: **hold + brief SMILE — pose held one extra frame for the counter's weight, mouth corner lifts 1 px**. The clean-counter smile.
+- F6: recovery — body un-pivots back to forward stance, lead fist retracts, hands resume guard. Bandana settles back at the wrist.
 
 ### `hurt` (3 frames, 12 fps)
 - F1: impact — body folds, head rocks back 5°.
@@ -219,14 +250,18 @@ The signature.
 
 ## Visual VFX summary
 
-Rio's identity in motion is the **yellow bandana ribbon**. Every attack should leave a visible bandana trail in a different shape so each move has its own colour-streak signature:
+Rio's identity in motion is the **yellow bandana ribbon**. Every attack should leave a visible bandana trail in a different shape so each move has its own colour-streak signature. **Every attack occupies a distinct silhouette quadrant** (see the SILHOUETTE DIFFERENTIATION table near the top) so no two moves blur together.
 
-- `atk1` JAB — bandana 12-px horizontal ribbon behind the fist
-- `atk2` CROSS — bandana whips OPPOSITE the cross fist (creates a yellow X across the body)
-- `atk3` ROUNDHOUSE — bandana traces a horizontal yellow arc following the kicking foot
-- `atk4` SPINNING BACK KICK — bandana traces a complete 360° circle around her body
-- `heavy` UPPERCUT — bandana streaks STRAIGHT UP as a vertical yellow column
-- `special` SUNSET SPIN — yellow halo at hip level during sweep + free-floating yellow streak above her head at the peak uppercut
+- `atk1` JAB — body vertical, FRONT fist forward; bandana 12-px horizontal ribbon behind the fist
+- `atk2` CROSS — body rotated 45°, REAR fist forward; bandana whips OPPOSITE the cross fist (yellow X across body)
+- `atk3` ROUNDHOUSE — grounded, leg horizontal at chest height (shin parallel to floor); bandana arcs with the kicking foot
+- `atk4` SPINNING BACK KICK — AIRBORNE mid-spin, heel VERTICAL above the head; bandana traces complete 360° circle
+- `heavy` UPPERCUT — ONE front fist rising from the hip to overhead; bandana streaks STRAIGHT UP as vertical yellow column
+- `jump_atk` FLYING KNEE — AIRBORNE, lead knee forward at chest height (the only knee strike)
+- `back_atk` REAR ELBOW — body twisted BACKWARD 60°, elbow behind body (the only rear-facing attack)
+- `special` SUNSET SPIN — yellow HALO at hip level during sweep + free-floating yellow streak above head at the peak double-uppercut
+- `throw` OVERHEAD SPIN — both hands grip, enemy pivots overhead (the only grappling pose)
+- `counter` CHECK HOOK — body fully PROFILE-SIDEWAYS to camera, lead fist hooked tight at head height, bandana tight inward arc across face line, reserved SMILE on F5
 
 **Hurt / flinch:** F1 body folds forward at the waist, head rocks back 5°. F2 a 2-px white impact spark at the contact point + bandana lifts away from the wrist by 4 px (whipped by the hit). F3 body returns toward stance, bandana settles.
 
