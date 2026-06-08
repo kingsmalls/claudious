@@ -482,7 +482,9 @@ const ANIM_FALLBACK = {
   sweep:      ["atk2", "atk1", "idle"],
   shot:       ["atk1", "idle"],
   charged:    ["atk2", "atk1", "idle"],
-  whip:       ["atk1", "idle"],
+  whip:       ["atk3", "atk1", "idle"],
+  hipfire:    ["atk4", "atk1", "idle"],
+  coat_kick:  ["atk5", "atk3", "atk1", "idle"],
   strike:     ["atk1", "idle"],
   pound:      ["atk2", "atk1", "idle"],
   roundhouse: ["atk2", "atk1", "idle"],
@@ -4262,6 +4264,20 @@ const ENEMY_ATK = {
     damage: 12, knockback: 140, hitstop: 6,
     hit: { fwd: 18, hw: 12, hd: 12, lo: 0, hi: 40 },
   },
+  // Lamplight addition: hipfire fan — three rapid shots at hip height across
+  // the lane. Sprays a horizontal band, denies ground at mid range.
+  lamplight_hipfire: {
+    startup: 8, active: 14, recovery: 18,
+    damage: 0,
+    spawnsProjectile: "bullet_fan",
+  },
+  // Lamplight addition: coat-flare kick — close-range cinematic leg sweep.
+  // Different cadence and angle than the pistol-whip so close range has variety.
+  lamplight_coat_kick: {
+    startup: 7, active: 4, recovery: 14,
+    damage: 11, knockback: 120, hitstop: 5,
+    hit: { fwd: 22, hw: 13, hd: 11, lo: 8, hi: 30 },
+  },
   // Shade's quick backstab after reappear. Very short startup since it's
   // already 'free' (player is facing the wrong way).
   shade_backstab: {
@@ -4597,8 +4613,16 @@ function advanceEnemyAttack(e) {
     e.attackHits.clear();
   }
 
-  // Spawn projectile on first active frame.
-  if (d.spawnsProjectile && e.attackFrame === d.startup + 1) {
+  // Spawn projectile on first active frame. Hipfire's bullet_fan fires three
+  // bullets across the active window with vertical spread to read as a fan.
+  if (d.spawnsProjectile === "bullet_fan") {
+    const fanFrames = [d.startup + 1, d.startup + Math.floor(d.active / 2) + 1, d.startup + d.active];
+    const yOffsets = [-30, -36, -22]; // gut / chest / knee spread
+    const idx = fanFrames.indexOf(e.attackFrame);
+    if (idx >= 0) {
+      spawnProjectile("bullet", e.x + e.facing * 12, e.y + yOffsets[idx], e.facing, e);
+    }
+  } else if (d.spawnsProjectile && e.attackFrame === d.startup + 1) {
     spawnProjectile(d.spawnsProjectile, e.x + e.facing * 12, e.y - 22, e.facing, e);
   }
 
@@ -4684,27 +4708,38 @@ function runEnemyAI(e, dt) {
     case "volt":      runVoltAI(e, dx, dy, dist, dt); break;
     case "blackwell": runBlackwellAI(e, dx, dy, dist, dt); break;
     case "lamplight": {
-      // Stay at range. If player closes inside whip-range, melee with the
-      // pistol whip instead of shooting. Otherwise shot / charged pattern.
-      const whipRange = 30, idealMin = 70, idealMax = 110;
-      if (dist < whipRange) {
-        // Player is in pistol-whip range — strike instead of shoot.
+      // Five-attack rotation by distance:
+      //   < 30 px         -> melee (whip / coat_kick alternating)
+      //   30 - 70 px      -> hipfire fan (area denial as player closes)
+      //   70 - 110 px     -> ideal range (shot / charged rotation)
+      //   > 110 px        -> walk forward to close to ideal range
+      const meleeRange = 30, fanRange = 70, idealMin = 70, idealMax = 110;
+      if (dist < meleeRange) {
+        // Close range — alternate pistol-whip and coat-flare kick.
         e.vx = 0; e.vy = 0;
         e.animState = "idle";
         if (e.aiCooldown <= 0) {
-          startEnemyAttack(e, "whip");
+          e.lampMelee = (e.lampMelee || 0) + 1;
+          const atk = (e.lampMelee % 2 === 0) ? "coat_kick" : "whip";
+          startEnemyAttack(e, atk);
         }
-      } else if (dist < idealMin) {
+      } else if (dist < fanRange) {
+        // Mid-close — back up a touch but spray the hipfire fan to deny ground.
         const back = -Math.sign(dx || 1);
-        e.vx = back * e.walkSpeed;
+        e.vx = back * e.walkSpeed * 0.6;
         e.x += e.vx * dt;
         e.animState = "walk";
+        if (e.aiCooldown <= 0) {
+          startEnemyAttack(e, "hipfire");
+        }
       } else if (dist > idealMax) {
+        // Too far — walk forward to ideal range.
         e.vx = (dx / dist) * e.walkSpeed * 0.6;
         e.vy = (dy / dist) * e.walkSpeed * 0.6;
         e.x += e.vx * dt; e.y += e.vy * dt;
         e.animState = "walk";
       } else {
+        // Ideal range — shot / charged rotation (charged every 4th).
         e.vx = 0; e.vy = 0;
         e.animState = "idle";
         if (e.aiCooldown <= 0) {
