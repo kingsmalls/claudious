@@ -125,6 +125,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **86 character poses in 16 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` JAB — body vertical, FRONT fist forward; bandana 12-px horizontal ribbon behind the fist
+> - `atk2` CROSS — body rotated 45°, REAR fist forward; bandana whips OPPOSITE the cross fist (yellow X across body)
+> - `atk3` ROUNDHOUSE — grounded, leg horizontal at chest height (shin parallel to floor); bandana arcs with the kicking foot
+> - `atk4` SPINNING BACK KICK — AIRBORNE mid-spin, heel VERTICAL above the head; bandana traces complete 360° circle
+> - `heavy` UPPERCUT — ONE front fist rising from the hip to overhead; bandana streaks STRAIGHT UP as vertical yellow column
+> - `jump_atk` FLYING KNEE — AIRBORNE, lead knee forward at chest height (the only knee strike)
+> - `back_atk` REAR ELBOW — body twisted BACKWARD 60°, elbow behind body (the only rear-facing attack)
+> - `special` SUNSET SPIN — yellow HALO at hip level during sweep + free-floating yellow streak above head at the peak double-uppercut
+> - `throw` OVERHEAD SPIN — both hands grip, enemy pivots overhead (the only grappling pose)
+> - `counter` CHECK HOOK — body fully PROFILE-SIDEWAYS to camera, lead fist hooked tight at head height, bandana tight inward arc across face line, reserved SMILE on F5
+> - HURT flinch: F1 body folds forward at the waist, head rocks back 5°. F2 a 2-px white impact spark at the contact point + bandana lifts away from the wrist by 4 px (whipped by the hit). F3 body returns toward stance, bandana settles.
+> - DEAD: Falls to one knee then forward. Bandana slides 4 px from the wrist on the final frame, visible against the dark ground.
+>
 >
 > **Character:** Rio. 24-year-old woman, dark brown skin (`#8a5235`), athletic boxer's frame. Full afro, dark brown to black (`#1a1410`), ~3–4 in. deep, soft round silhouette. Single small gold hoop earring (camera-side). Cropped olive-sage bomber jacket (`#7d8d4f` mid, `#5a6b3a` shadow, `#9bab6a` highlight), ends at lower ribs, two slash pockets, knit collar/cuffs/hem. Black ribbed tank top under (`#0a0a10`). Off-white hand wraps wrapping the knuckles 4 times (`#dcd6c4`). Slim charcoal cargo pants (`#1a1a22`). Ankle-high lace-up boxing boots, black with white soles.
 >
@@ -192,6 +209,30 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 > 16. `dodge` × 5 frames
 >
 > Total: **86 character poses in 16 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` OVERHAND LEFT — lead fist arcs DOWN from above the shoulder onto the temple, body slips right 10°, hair-strand whips (the looping dirty-boxer lead, not a stiff jab)
+> - `atk2` SOLAR-PLEXUS CROSS — body coils LOW (6 px below idle), rear fist drives forward at GUT HEIGHT, **1-frame CIGARETTE ASH FLECKS** (the only frame in the game the cig produces ash)
+> - `atk3` OBLIQUE KICK — LEFT BOOT angled DOWN-AND-INWARD at opponent's lead KNEE (sole facing knee joint), body half-turned 30°, front arm forward for balance (UFC's knee-snapper)
+> - `atk4` SOCCER KICK — full BACK-SWING then LEFT BOOT punts forward at HEAD HEIGHT with TOES leading, body leans back 20°, dust puff at supporting boot, **HALF-GRIN at full intensity**
+> - `heavy` UPPERCUT — ONE rear fist RISING vertically from below the knee to overhead, bad-knee strain visible on F1, half-grin on F5
+> - `jump_atk` FALLING AXE KICK — AIRBORNE, **LEFT LEG pointed STRAIGHT UP ABOVE THE HEAD** at apex, then HEEL drops vertically (the only inverted-leg silhouette)
+> - `back_atk` SPINNING BACKFIST — body PIVOTS 180°, back of rear fist whips at head height, **6-px hair-strand BROWN COMET STREAK** traces the rotation
+> - `special` ROLLING THUNDER — three FORWARD elbow strikes (left-right-left) with growing speedlines (3-px → 4-px → 5-px) + a haymaker finisher with dust puff + half-grin
+> - `throw` COLLAR-HOIST KNEE-SLAM — three-beat: grab → hoist → **LEFT KNEE DRIVES INTO ENEMY GUT (mid-throw cinematic beat)** → toss (the only throw with an intermediate strike)
+> - `counter` LIVER SHOT KO — body CROUCHED low (shortest pose Duke takes), rear fist drives forward at HIP HEIGHT — the only attack below chest level + half-grin at full visibility
+> - Cigarette ash flecks (1 frame, F4) — atk2 SOLAR-PLEXUS CROSS only
+> - Hair-strand brown comet streak (6 px) — back_atk SPINNING BACKFIST only
+> - Leg pointed STRAIGHT UP above the head — jump_atk FALLING AXE KICK only
+> - Mid-attack knee strike — throw KNEE-SLAM only
+> - Body crouched LOWER than any other pose — counter LIVER SHOT only
+> - Body slipped RIGHT 10° — atk1 OVERHAND LEFT only
+> - Full back-swing chamber (leg drawn 30 px behind) — atk4 SOCCER KICK only
+> - HURT flinch: F1 body folds, jaw clenches. F2 cigarette wobbles 1 px but stays on the ear (the gag). 1-px white impact spark at the contact point. F3 body returns to stance, hair strand falls across the forehead.
+> - DEAD: Falls backward. Cigarette finally falls off the ear on F4 — first time it moves in the whole game.
 >
 >
 > **Character:** Duke. 31-year-old man, weathered pale skin (`#d4a888`), 3–4 days of stubble (`#3a2a1c`), squared jaw, slightly broken nose. Ex-boxer's frame — heavier than Rio, leaner than Atlas. **Carries himself slightly hunched** — old knee injury changed his posture. **Right knee favors a slight bend even when standing.** Messy dark blonde hair (`#a08c4a` highlight, `#6e5e2c` shadow), 2–3 in., uneven, **a wayward strand falls across the forehead on the camera-side in every frame.**
@@ -275,6 +316,22 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **80 character poses in 15 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` OPEN-PALM SHOVE — vertical body, forward arm, fingers visibly splayed (not a fist)
+> - `atk2` CHARGING HEADBUTT — body LUNGES forward head-first, both hands gripping forward at chest height, beard tilted forward (the only attack where the head leads)
+> - `atk3` OVERHEAD CHOPPING SMASH — TWO fists clasped together going DOWN, brown dust burst at his feet (4–5 specks), parental smile
+> - `heavy` UPPERCUT LAUNCHER — ONE rear fist rising vertically from below the knee to overhead, 1-px white GLINT on the silver wedding band
+> - `jump_atk` FLYING BODY SPLASH — body horizontal in air, arms spread wide like a cross (the only aerial attack)
+> - `back_atk` REAR ELBOW — body twisted 70° sideways, elbow back behind body (the only rear-facing attack)
+> - `special` FOUNDATION STONE — speedlines on the charge (3 → 5 growing), tribal-tattoo arms grappling, enemy LIFTED OVERHEAD then SLAMMED FORWARD (8–10 dust specks half-circle)
+> - `throw` LIFTING SUPLEX — body ARCHES BACKWARD (the only back-arch pose in his kit)
+> - `counter` STOMP CRUSH — ONE leg raised knee-to-chest, BOOT drops vertically with the biggest dust burst in the cast (the only leg-attack in his kit; hands stay at hips, NOT overhead)
+> - HURT flinch: F1 body absorbs but barely flinches (he's the biggest player — takes hits like a wall). 1-px white impact spark + the wedding-band chain swings 2 px. F2 head turns 5°. F3 returns to stance.
+> - DEAD: Falls slowly in stages — first to one knee, then to all fours. Wedding-band chain slides off the chest onto the ground on F4.
+>
 >
 > **Character:** Atlas. 47-year-old man, **6'4", massive** — powerlifter physique slightly soft. Reads AT LEAST 30% bigger than Rio or Duke in silhouette. **BALD** with a salt-and-pepper FULL beard wrapping the lower jaw (`#a8a4a0` light, `#6e6c6a` shadow, `#4a4844` dark accent). Mediterranean/mixed olive skin (`#7a5234` light, `#583820` shadow). Heavy brow, deep-set eyes, broad nose (broken once long ago).
 >
@@ -353,6 +410,22 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **65 character poses in 12 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` JAB — body almost vertical, FRONT fist horizontal forward at HEAD level, gold glint at head height, coat STATIC
+> - `atk2` CROSS — body rotated 45°, REAR fist horizontal forward at HEAD level, gold glint at head height + 45° COAT FLARE behind in a fan + square jaw juts forward 1 px
+> - `atk3` LIVER HOOK — body SQUATTED 10° lower with knees bent (shortest punch pose), REAR fist horizontal inward at HIP level, gold glint at HIP height (the only body-shot)
+> - `uppercut` RISING UPPERCUT — LEAD fist ASCENDING vertically from THIGH height to ABOVE the head, gold knuckle leaves a VERTICAL gold streak from hip to overhead (the only ascending Baron attack)
+> - `haymaker` OVERHAND — coat OPENS FULLY across 4 frames revealing the chest scar (the longest tell) + REAR fist arcs OVER from above the shoulder down to chest-of-target with a gold-knuckle comet trail
+> - `clinch` CLINCH + RISING KNEE — both hands GRIP imagined collar, opponent PULLED DOWN as rear knee DRIVES UP into the gut (the only grab-knee combo)
+> - `jump_atk` AERIAL KNEE — body AIRBORNE angled 15° forward, rear KNEE leads at chest height, coat trailing behind (the only aerial attack)
+> - `special` BONE-BREAKER — 5 gold glints at 5 DIFFERENT heights in sequence (head, head, hip, vertical-rising, head) — the piano-scale of brass-knuckle glints across 12 frames
+> - `counter` COAT PARRY-RIPOSTE — coat FANS 90° WIDE in front for 1 frame HIDING the torso entirely (magician's misdirection), then a REAR cross erupts THROUGH the coat with a gold trail
+> - HURT flinch: F1 body folds at the waist, but the hair STAYS NEAT (his signature — he's never disheveled), polite smile remains. F2 hands drop briefly from guard. 1-px white impact spark on the brass knuckles (his own knuckles catch the hit's spark).
+> - DEAD: Falls hard. Brass knuckles roll 8 px ahead of him on F4 — the iconic image. The polite smile finally drops on the very last frame for ONE frame.
+>
 >
 > **Character — FICTIONAL Dick-Tracy-villain noir-comic caricature** ("William 'Baron' Halsey"). NOT a real public figure. Reference points: **Flattop / Pruneface / The Brow from Dick Tracy**, or 60s/70s comic-book Kingpin enforcers. Stylised proportions, NOT realistic. 50s reading age. **Body silhouette is a TRAPEZOID** — shoulders comically wider than hips. Wider than the protagonists by 50%, heavier than Atlas. **Neck WIDER THAN THE HEAD** (one continuous slope from shoulder to skull — no taper). **Jaw SQUARE WITH A 90° CORNER**, lantern-jaw caricature. Pale ivory skin (`#e0c8a0`) flat noir-comic shading, ruddy on cheeks. Heavy brow, eyes small and close-set. **Resting expression: a small polite smile that never reaches the eyes.**
 >
@@ -417,6 +490,18 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **48 character poses in 9 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` PISTOL SHOT — fedora tilts DOWN 1 px on F2 (aiming tell) + small 4-px ORANGE-YELLOW muzzle flash at the barrel tip on F3 + body steady (no recoil rock, coat does not flare)
+> - `atk2` CHARGED SHOT — barrel develops a GROWING BLUE GLOW (2 → 3 → 5 → 7 px) across F1–F4 (the blue tints the white scarf one shade cooler at peak charge) + bigger 8-px WHITE-ORANGE muzzle flash on F5 + body rocks BACK 10° with the coat flaring behind on recoil
+> - `atk3` PISTOL WHIP — gun REVERSED in the hand (Lamplight grips the BARREL; the grip leads forward like a cosh) + body LUNGES forward 6 px + gun-butt arcs horizontally at HEAD HEIGHT + 1-px white impact spark at the gun-butt + NO muzzle flash (the only no-shot attack)
+> - `atk4` HIPFIRE FAN — gun DROPS from chest to HIP HEIGHT in a ONE-HANDED grip (the only attack with the pistol below chest level + the only one-handed grip) + THREE muzzle flashes across the active frames (F3 left, F5 center, F7 right) fanning the shots across the lane + body squared (no aim tilt, no recoil rock)
+> - `atk5` COAT-FLARE KICK — body pivots 30° on the lead foot + REAR LEG extended forward at gut height + COAT FLARES OPEN BEHIND revealing BURGUNDY LINING `#4a1018` (the only frame in the sheet where the lining is visible) + pistol arm crosses the body for balance + the only kick
+> - HURT flinch: F1 body twists from the hit. F2 gun arm drops one frame (the only time the gun is not in firing position). Fedora and scarf STAY UP. 1-px white impact spark on the coat.
+> - DEAD: Falls. Fedora rolls off the head on F3 revealing the buzz cut underneath (still no face — scarf still up). Gun lands on the ground beside the body.
+>
 >
 > **Character — noir gunslinger:** Lamplight. Age 35–50 (read as a veteran), 5'10"–6'1", lean but not athletic — steady-hands, soldier's-stance build. Gender-ambiguous on purpose. Face is **almost entirely hidden** — only a narrow horizontal eye-strip is visible between the fedora brim above and the scarf below. Skin tone in that strip is medium tan (`#d4a888`).
 >
@@ -473,6 +558,27 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 > 12. `dead` × 4 frames
 >
 > Total: **54 character poses in 12 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` SHADOW CHOP — OPEN knife-hand (fingers extended, NO blade, edge of hand leading) drives forward at neck height + cloak hem fans 180° BEHIND in a comet-tail arc (only empty-hand attack)
+> - `atk2` MATERIALISING BACKSTAB — ONE blade in fist EMERGES FIRST from a purple smoke wisp on F1 before the body solidifies (body <40% alpha) + forward thrust at chest height with free arm flung back (only single-blade attack)
+> - `atk3` CLOAK-CYCLONE HOOK KICK — body rotated mid-spin, kicking LEG horizontal at HEAD height with HEEL leading + cloak fanned in a complete 360° purple halo around the body (only leg attack + only full-circle cloak halo)
+> - `atk4` CLOAK-WHIP LOW SWEEP — body CROUCHED LOW with supporting hand braced on floor + CLOAK HEM ITSELF whips horizontally at ANKLE HEIGHT in a 140° arc with purple smoke trail (only attack where the cloak is the weapon + lowest body pose + only ankle-height attack)
+> - `atk5` TWIN-BLADE FAN — TWO blades MATERIALISE simultaneously from purple smoke at BOTH wrists + both arms EXPLODE OUTWARD in opposite directions forming a "T" silhouette + hits both sides (only dual-blade attack + only attack hitting both flanks at once)
+> - `atk6` PHANTOM-CLONE BACKSTAB — body SPLITS into THREE side-by-side silhouettes on F2–F3 (left @40% / center @70% / right @40% alpha) + clones CONVERGE on F4 + real Shade strikes from center on F5 (only multi-clone attack + only attack with multiple Shade silhouettes in one frame)
+> - `vanish` — body fades over 5 frames: solid → 60% alpha → 30% alpha → just hood/eyes → eye-glow alone with purple smoke
+> - `reappear` — reverse of vanish: smoke + eyes → 50% alpha body → full opacity
+> - Open empty hand (knife-hand) — atk1 only
+> - ONE blade materialising at the front hand — atk2 only
+> - Leg horizontal at HEAD height + 360° cloak halo — atk3 only
+> - Body crouched LOW + supporting hand on floor + cloak as ankle-height whip — atk4 only
+> - TWO blades materialising at both wrists + "T" silhouette — atk5 only
+> - THREE Shade silhouettes visible side-by-side in one frame — atk6 only
+> - HURT flinch: F1 body folds. F2 hood briefly drops back 4 px exposing more of the upper mask (BUT NEVER the face below the eyes — that's the rule). 1-px white impact spark.
+> - DEAD: Body crumples. Cloak pools around the body in a wide circle. Eye-glow fades — bright on F1, dim on F2, gone by F3. Purple smoke dissipates upward over the death frames.
 >
 >
 > **Character — stealth operator:** Shade. Age indeterminate (body 25–35, eyes look older). 5'9"–5'11", lean-athletic whip-quick build. Gender-ambiguous on purpose. Body language is composed — doesn't bounce, stands flat with arms loose at the sides, weight perfectly centered.
@@ -535,6 +641,25 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 > 10. `dead` × 4 frames
 >
 > Total: **56 character poses in 10 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` HARDHAT RAM-JAB — body bent forward 20°, head LOWERS with the yellow hardhat tilted forward like a battering ram + lead fist drives forward UNDER the hardhat brim (only attack where the head leads)
+> - `atk2` STEEL-TOE BOOT KICK — kicking leg straight forward at hip height with the boot SOLE flat at the target + body leans BACK 10° + 2-px dust at supporting boot (opposite body angle from atk1)
+> - `atk3` IRON-CLAP THUNDER — BOTH fists meet IN FRONT OF THE CHEST + 4-px white impact spark at the meeting point + TWO horizontal brown shockwave arcs radiating LEFT AND RIGHT at chest height (the only chest-height shockwave; reads like clanging two iron plates)
+> - `atk4` CONCRETE-BREAKER OVERHEAD — both fists CLASPED ABOVE THE HARDHAT then DRIVE DOWN in a vertical comet path ending at head height of the target + body folds 30° forward + hardhat tilts forward 1 px on the fold-through (the only descending overhead chop, sledgehammer-style)
+> - `atk5` WRECKING-BALL CHARGE — body angled 35° forward with RIGHT SHOULDER LEADING (shoulder lower than the chin) + body MOVES forward 12 px through the attack (only attack where Rig moves) + 3-px brown motion-blur streaks behind BOTH boots
+> - `atk6` PNEUMATIC-DRILL POUND — VERTICAL COLUMN silhouette (fists clasped above hardhat, body stretched fully UP from heels to hands) + FLOOR-LEVEL shockwave dust ring radiating 36 px each side at impact + vertical dust plume up to hardhat height (the only AOE + only attack that hits both sides)
+> - Hardhat tilted forward as a ram (head dropped below shoulder line) — atk1 only
+> - Boot SOLE flat at the target — atk2 only
+> - TWO horizontal shockwave arcs at CHEST height radiating left AND right — atk3 only
+> - Clasped fists arcing DOWN to head-height (NOT floor) — atk4 only
+> - Body MOVING forward 12 px with motion-blur streaks behind both boots — atk5 only
+> - FLOOR-LEVEL shockwave ring + vertical dust plume — atk6 only
+> - HURT flinch: F1 stagger, head turns 10°. F2 hardhat STAYS ON (his signature — never falls off). 1-px white impact spark on the vest. F3 returns to stance.
+> - DEAD: Falls FORWARD onto the ground (face down, hardhat lands first). Hardhat stays on the head through all 4 frames.
 >
 >
 > **Character — construction-crew muscle:** Rig. Age 28–45, 6'0"–6'4", thick — pure-mass build from manual labor. Shoulders broader than Tank, gut tighter. Heavy and slow. Weathered face, scruffy stubble or full beard (pick one and lock it). Hair mostly hidden under the hardhat.
@@ -606,6 +731,21 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 > 12. `hurt` × 3 frames
 >
 > Total: **66 character poses in 12 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` CROSS-CUT SLASH — single 28-px diagonal red arc from upper-right to lower-left at chest height; rear blade stays at the hip (the only single-blade slash)
+> - `atk2` TWIN-BLADE FLURRY — THREE alternating slashes (left-right-left) forming a criss-cross of red arcs stacked at chest height (the only multi-arc chain at chest level)
+> - `atk3` FENCING KICK — no blade arc; FRONT leg STRAIGHT FORWARD at hip height with the foot FLEXED and HEEL leading, both blades held in guard (the only kick + only attack where blades are static)
+> - `atk4` MISSILE DASH — body fully HORIZONTAL mid-air, both blades extended forward as a leading X, legs trailing horizontally (the only airborne attack)
+> - `atk5` SPINNING PIROUETTE — GROUNDED 360° rotation, both blades held perpendicular at HIP height tracing a complete circle — red halo ring at hip level (the only AOE multi-hit + only circular sweep)
+> - `throw` KNIFE THROW — one blade RELEASED as a projectile 18 px ahead of the empty throwing hand with a 6-px motion-line trail (the only attack where Razor is missing a knife)
+> - `special` BLADE DANCE — 6 red arcs at six different angles (diagonal, opposite diagonal, horizontal hip, horizontal neck, vertical, X-burst finisher) — the kata-diagram identity
+> - `counter` SCISSOR-PARRY + LOW LEG-CUT — F2 both blades crossed in an X over the chest (the only X-block pose), then F4 body CROUCHED LOW with front blade whipping HORIZONTALLY at THIGH height as a 16-px red arc (the only blade arc below the knee). Both knives stay in hand.
+> - HURT flinch: F1 body twists 15° from the hit, both knives stay in hand (she never drops them). F2 suit stays clean (her signature — even mid-hit the tailoring is perfect). 1-px white spark at the contact point.
+> - DEAD: Falls to one knee, then to her side. Both knives slide 8 px from her open hands on F4 — the only frames where she releases them.
 >
 >
 > **Character — corporate-suit knife fencer:** Razor (real name Eliza Park). 38-year-old Korean woman, 5'7", lean yoga/kickboxing build — athletic but never bulky. Sharp jawline, dark eyes, neutral resting expression with a small deliberate smile only when she lands a hit. Light olive skin (`#dcb088` mid, `#a07858` shadow).
@@ -692,6 +832,21 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **66 character poses in 12 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` CYBER-HAYMAKER — single CYBER fist horizontal forward at chest height; powerlines BRIGHTEN from dim cyan to electric white in F1–F2 + 4-px blue plasma trail behind the cyber fist (the only single-fist forward strike)
+> - `atk2` TWIN-FIST LAUNCHER UPPERCUT — BOTH arms ASCENDING into an overhead V silhouette + WHITE LIGHTNING STAR-BURST (6-px) erupting from the cyber elbow at peak (the only ascending attack + only twin-fist)
+> - `atk3` PLASMA ORB — cyber palm cradles a GROWING orb (2→4→6→8 px during charge) with 3 lightning arcs jumping to the forearm at peak charge, then RELEASES the orb forward as a free projectile (the only projectile)
+> - `atk4` CYBER AXE KICK — CYBER (left) LEG fully VERTICAL above the head, then heel DROPS straight down with a vertical 4-px blue plasma trail behind the descending heel (the only kick)
+> - `atk5` THUNDER CLAP — both fists CLAP at chest centerline + WHITE LIGHTNING STAR-BURST at the impact point + 6-px shockwave rings radiating LEFT and RIGHT simultaneously (the only bilateral / symmetric AOE)
+> - `clinch` LIGHTNING CLINCH GRAB — cyber hand CLAMPED on the opponent's shoulder at arm's length with 4–5 lightning arcs jumping UP the held opponent's body (the only sustained grab + only sustained-current attack)
+> - `special` OVERDRIVE SURGE — cyber arm overhead then pointing DOWN; expanding LIGHTNING RING radiates outward 360° from Volt's chest height (16 px → 24 → 32 px) + entire body wreathed in electric arcs (the only full 360° ring AOE)
+> - `counter` CYBER-REFLECT + ELBOW SMASH — flat SHIELD-PLANE of 3 lightning arcs in front of the chest absorbing the strike, then a close-range CYBER ELBOW driving forward into the opponent's sternum (the only elbow attack; NO projectile return — that's atk3's job)
+> - HURT flinch: F1 body recoils, cyber limbs LESS affected (organic side flinches harder). F2 powerlines FLICKER (brightness drops then surges). 1-px white impact spark on the cyber armour.
+> - DEAD: Falls to knees, collapses forward. F3–F4 cyber limbs SPASM with small white sparks at the elbow and knee joints. Powerlines fully dark by F6.
+>
 >
 > **Character — cybernetic enforcer:** Volt (real name Daniel Vega). 34-year-old Latino man, 6'1" with the prosthetics (originally 5'10"). Athletic-toned upper body (organic), heavy cyber limbs below. Medium-brown skin (`#a87858` mid, `#6e4e30` shadow). Short scruff (`#2a201a`), tired eyes, gauntness from rehab months. Buzz-cut black hair (`#1a1410`), ~2 px short. Resting expression: focused, not angry.
 >
@@ -774,6 +929,21 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **66 character poses in 12 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` STEPPING HOOK + KNUCKLE SPARK — REAR (gold-ring) fist in a horizontal inward arc at chest height + 4-px WHITE STAR-BURST at the gold-ring fist on contact (the only single-fist forward strike + the only knuckle-spark VFX)
+> - `atk2` RISING KNEE STRIKE — REAR knee DRIVES UP at gut height + BOTH hands gripping an imagined collar and PULLING DOWN onto the rising knee, body folded forward 25° (the only attack where Blackwell holds AND strikes simultaneously)
+> - `atk3` CONCRETE-BREAKER CHARGE — body LOWERED, shoulder leading forward across the floor + 3 JAGGED FLOOR CRACKS trailing each footstep (getting bigger) + 1-frame screen-jitter on impact (the only attack that scars the floor while traveling)
+> - `atk4` APOCALYPSE OVERHEAD — body ARCHED backward into a question-mark with BOTH fists clasped overhead, then folded forward to DRIVE both fists INTO THE FLOOR + 8 LIGHT-GREY CONCRETE-CHUNK debris in a star pattern + vertical dust plume past head height (the only attack that breaks the floor open from above)
+> - `throat_lift` ONE-HANDED THROAT-LIFT SLAM — LEAD hand clamped on the throat, opponent dangling VERTICALLY with legs LIMP at arm's length, then arc-slam to the floor (the only one-handed grab + only vertical-lift pose)
+> - `earthquake` DOUBLE-FOOT EARTH STOMP — brief AIRBORNE hop then BOTH FEET slam down together + 5 CONCENTRIC EXPANDING SHOCKWAVE RINGS of dust radiating outward 360° at ground level (the only AOE firing from the FEET)
+> - `special` JUGGERNAUT CHARGE-GRAB-SPIN-THROW — charges in, GRABS opponent's LEG, holds them UPSIDE-DOWN by one ankle, SPINS them around his body like a propeller blade tracing a full 360° motion-blur arc at chest height, then RELEASES them off-screen as a projectile (the only attack where the OPPONENT is the silhouette)
+> - `counter` IRON WALL SHOCKWAVE + COUNTER-CROSS — arms STAY CROSSED to catch the strike + 8-POINTED WHITE STAR-BURST + 3 CONCENTRIC SHOCKWAVE RINGS at the parry impact, then a counter-cross with 3 GHOST-FIST motion-blur trails behind the moving fist (the only attack starting FROM the crossed-arm idle + only attack with ghost-fist trails)
+> - HURT flinch: Almost no flinch (he's a wall). F1 head turns 5°, crossed arms STAY CROSSED even when struck. F2 1-px white impact spark on the forearms. F3 returns to idle.
+> - DEAD: The first significant flinch IS the death animation. He goes down slowly in stages — F1 folds at the waist, F2 to one knee, F3 onto both knees, F4 forward to all fours, F5 elbows give, F6 forehead touches ground, F7 settled face down.
+>
 >
 > **Character — wall of muscle:** Blackwell (real name Marcus Blackwell). 44-year-old Black man, 6'5", massive — heavier than Atlas, heavier than Tank. Pure-mass strongman build that hasn't gone soft. Arms thicker than the protagonist's torso. Reads as the BIGGEST silhouette in the game. Very dark skin (`#3a2418` mid, `#4a2c1a` shadow stages, `#1a0e08` deep, `#6a4a30` light). Square jaw. **Shaved head COMPLETELY SMOOTH (no hair anywhere on the scalp). Thin gray-black goatee (`#2a201a` dark, `#5a5450` grey accent) wrapping the chin only.** Small scar above the LEFT eyebrow. Resting expression: BLANK — he doesn't show anything until he hits.
 >
@@ -853,6 +1023,15 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **32 character poses in 8 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` WILD SWIPE — body over-commits FORWARD with the front leg crossing past the body line + lead arm in an overhand haymaker arc + rear arm flails BEHIND for balance + red bicep bandana 12-px horizontal streak through the swing
+> - `atk2` SLOPPY KICK — body leans BACK 30° (opposite of swipe's forward fall), kicking leg straight forward at hip height with the FOOT FLAT (not flexed — he doesn't know how), both arms flailing wide, supporting knee visibly buckling
+> - HURT flinch: F1 body folds at the waist, face shows FEAR (eyebrows up, mouth open). F2 hands fly up defensively. 1-px white impact spark.
+> - DEAD: Falls flat onto back, arms splayed. Bandana visible against the ground.
+>
 >
 > **Character — neighborhood-liaison kid:** Runner. Age 18–24, 5'8"–6'0", lean to wiry. Not an athlete, just willing. Pick ONE skin tone and lock it for every frame: medium-light (`#c89478` mid, `#8a6248` shadow) OR medium (`#8a6248`) OR dark (`#5a3a28`). Pick ONE: short black buzz cut, dark-brown fade, OR hood-up (no hair shown). Pick ONE: clean-shaven OR light stubble. **Lock every choice across all 32 cells — only the pose changes.**
 >
@@ -912,6 +1091,16 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >  7. `dead` × 3 frames
 >
 > Total: **39 character poses in 7 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` BULLWHIP SWING — chain fully extended in a horizontal TAUT LINE 36 px past the body (single side, straight line), body torqued 45° showing the swing through, free hand on hip — the only attack with the chain as a straight one-sided line
+> - `atk2` BOOT-SWEEP — body LOW with supporting HAND BRACED ON THE FLOOR, free leg horizontal at ankle height in a 120° sweeping arc, chain trailing behind the leg as a SECONDARY LOW ARC (chain at ankle height, not chest height) — the only attack that touches the ground with the hand
+> - `atk3` CENTRIFUGE SPIN — chain traces a complete HALO around the body (motion-blur circle, visible at 12 / 3 / 6 / 9 o'clock across the spin frames), head stays FACING FORWARD while the body rotates underneath (ballet-spot) — the only attack with the chain as a full circle + the only multi-hit AOE
+> - HURT flinch: F1 stagger, chain drops slack 4 px. F2 free hand goes to the wound. 1-px white impact spark.
+> - DEAD: Falls forward to one knee, then onto the side. Chain pools beneath the body in a coiled S-shape.
 >
 >
 > **Character — crowd-control biker:** Chains. Age 30–45, 6'0"–6'3", broad-shouldered and blocky, heavyset but not soft. Pick ONE per sheet and lock it: long hair tied back into a low ponytail OR shaved entirely. Pick ONE: full beard OR clean-shaven with a goatee. Hard face, optional cigar between teeth (decoration, not lit). Pick ONE skin tone and lock it: light (`#c89478` mid, `#8a6248` shadow), medium (`#8a6248`), or dark (`#5a3a28`).
@@ -975,6 +1164,16 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >
 > Total: **40 character poses in 9 rows**. Count both before submitting.
 >
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` FENCER'S LUNGE — body fully HORIZONTAL arrow pointing at target (front leg extended, rear leg straight back, torso flat parallel to ground), knife in FORWARD grip leading, 4-px motion-line streak behind the knife
+> - `atk2` LOW SWEEP KICK — body LOW with supporting HAND BRACED ON THE FLOOR (the only attack that touches the ground with the hand), free leg sweeping horizontally at ankle height in a 120° arc, knife in floor-hand still in reverse grip
+> - `jump_atk` FLYING STAB — body AIRBORNE at 45° downward diagonal (falling dart), knife held OVERHEAD in REVERSE/icepick grip pointing DOWN, free arm trailing behind
+> - HURT flinch: F1 body folds, knife arm drops to hip but doesn't release. F2 cocky half-smile finally drops. 1-px white impact spark.
+> - DEAD: Crumples sideways. Knife slides 6 px from the open hand on F3 — first frame he ever lets it go.
+>
 >
 > **Character — knife-club hit-and-run fighter:** Slice. Age 22–32, 5'6"–5'10", lean and fast, whip-thin. Pick ONE per sheet and lock it: side-shaved with long top slicked back, OR tied-back ponytail, OR mullet. Cocky half-smile in idle. Some have small scars across cheek or eyebrow (optional but lock once). Pick ONE skin tone and lock it: light (`#d4a888` mid, `#9a785a` shadow), medium, or dark.
 >
@@ -1035,6 +1234,17 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >  7. `dead` × 3 frames
 >
 > Total: **36 character poses in 7 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` SLEDGEHAMMER SLAM — PYRAMID silhouette (wide feet, both arms vertical OVERHEAD with fists CLASPED at the top, body arched slightly back) + dust burst at his feet on impact + 1-frame screen-jitter
+> - `atk2` SHOULDER CHARGE — battering-ram silhouette (body angled 30° forward, lead SHOULDER lowered to chest height, arms swept BEHIND for aerodynamics) + dust trail behind rear boot
+> - `atk3` BEAR HUG GRAB — both arms reach FORWARD at chest height in a WIDE WRAPPING C-shape, palms IN, fingers SPREAD wide; body bent forward 20° (the only attack with spread fingers + the only grappling pose)
+> - `atk4` BELLY FLOP — body falls forward 60°, then lands FLAT HORIZONTAL on the ground with arms spread wide; 8-speck dust burst spraying outward along the entire body length (the only prone attack)
+> - HURT flinch: Almost no flinch. F1 head turns 5°, vest doesn't move (he's barely impressed). 1-px white impact spark on the vest.
+> - DEAD: Falls like a tree — F1 folds at the knees, F2 falls to one knee (dust puff), F3 collapses sideways, F4 face down.
 >
 >
 > **Character — massive bouncer:** Tank. Age 35–50, 6'2"–6'5", massive — 280–320 lbs of muscle gone soft in the gut. Broader than Atlas, not as tall. Reads big in silhouette. Weathered olive-brown skin (`#a87858` light, `#6a4830` shadow). **SHAVED head or buzzed close, FULL untrimmed beard (`#2a2520`).** Heavy brow, broken nose (multiple times). Resting expression: bored.
@@ -1104,6 +1314,17 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 >  8. `dead` × 3 frames
 >
 > Total: **40 character poses in 8 rows**. Count both before submitting.
+>
+> **VISUAL FLAIR CHECKLIST — these effects are PART OF THE SPRITE and MUST be drawn into the frames.**
+> A pose without its signature effect is a failed frame. Draw motion lines, dust, glints, and
+> trails as PIXELS in the cell (they move with the character; the engine does not add them):
+>
+> - `atk1` FRONT KICK (mae geri) — body upright, rear leg drives STRAIGHT forward at chest height, foot FLEXED with toes pulled back and HEEL leading; belt tails snap forward 6 px
+> - `atk2` ROUNDHOUSE (mawashi geri) — body torqued 45°, kicking leg horizontal at chest height with shin PARALLEL to the ground, top-of-foot (instep) leading; belt tails snap horizontally with the rotation
+> - `atk3` AXE KICK — kicking leg goes STRAIGHT UP past the head (vertical leg splits the silhouette), then heel drives straight DOWN like a guillotine; belt tails snap upward then down
+> - `jump_atk` FLYING SIDE KICK (tobi yoko geri) — body fully AIRBORNE and HORIZONTAL mid-flight, lead leg straight forward with the SIDE of the foot leading, rear leg tucked under, both arms swept back; belt tails trailing horizontally behind
+> - HURT flinch: F1 body folds. F2 belt tails swing WIDE and snap. Recovers fast — by F3 back in guard stance. 1-px white impact spark.
+> - DEAD: Falls to one knee first (composed, not collapsed), then forward to all fours. Bare feet visible throughout.
 >
 >
 > **Character — formal martial artist:** Dojo. Age 24–35, 5'8"–5'11", athletic-toned, visible deltoids and forearms but not bulky. Posture is *perfect* — trained for years. Often Asian / South-Asian / mixed presentation. Pick ONE per sheet and lock it: short black slicked back, OR short black topknot (shaved sides). Pick ONE skin tone and lock it (`#c89478` mid, `#8a6248` shadow). **Clean-shaven** (no facial hair anywhere — that's part of the discipline). Calm face, no smile, no scowl.
