@@ -135,7 +135,7 @@ def crop_to_content(fg):
     return (y0, y1, x0, x1)
 
 
-def find_row_bands(fg, min_gap=2, min_height=20, gap_ratio=0.05):
+def find_row_bands(fg, min_gap=2, min_height=80, gap_ratio=0.05):
     """Return list of (y0, y1) row bands containing characters.
 
     A row counts as 'gap' if fewer than `gap_ratio` of the row's pixels are
@@ -249,29 +249,28 @@ def find_cells_in_row(fg, y0, y1, expected_cells=None, min_gap=2, min_width=10, 
                 cells = [[int(content_x0 + i * step), int(content_x0 + (i + 1) * step)]
                          for i in range(expected_cells)]
 
-    # Refine per-cell bbox so each frame is tight around the actual character.
-    # Use a noise-aware threshold: a row/column counts as content only if it
-    # has at least a few percent of its dimension as foreground (filters out
-    # the constant compression noise that would otherwise prevent any
-    # tightening at all).
+    # Refine per-cell bbox so each frame is tight HORIZONTALLY but keeps
+    # the row's full vertical extent. Tightening the vertical bbox per-cell
+    # was breaking attack frames where the character pose has empty space
+    # below (e.g. an arm extended sideways with no torso below) — the bbox
+    # collapsed to just the arm and the engine then scaled it 3-4x larger
+    # than expected because target_h / frame.h gave a huge factor.
+    #
+    # The row band already brackets the row tightly; using its bounds as
+    # the per-frame vertical extent keeps all frames in an anim at the same
+    # height, which is also what the engine's scaling logic assumes.
     out = []
     for cx0, cx1 in cells:
         col_slice = fg[y0:y1, cx0:cx1]
         H_band = y1 - y0
-        W_cell = cx1 - cx0
-        row_thresh = max(3, int(W_cell * 0.04))
         col_thresh = max(3, int(H_band * 0.04))
-        row_has = col_slice.sum(axis=1) >= row_thresh
         col_has = col_slice.sum(axis=0) >= col_thresh
-        if not row_has.any() or not col_has.any():
+        if not col_has.any():
             continue
-        ys = np.where(row_has)[0]
         xs = np.where(col_has)[0]
-        ty0 = y0 + int(ys.min())
-        ty1 = y0 + int(ys.max()) + 1
         tx0 = cx0 + int(xs.min())
         tx1 = cx0 + int(xs.max()) + 1
-        out.append((tx0, ty0, tx1, ty1))
+        out.append((tx0, y0, tx1, y1))
     return out
 
 
@@ -287,14 +286,15 @@ def find_row_bands_by_peaks(fg, max_rows):
     if max_rows <= 0:
         return []
     row_density = fg.sum(axis=1).astype(float)
-    sigma = max(6, H // 120)
+    sigma = max(10, H // 80)
     smoothed = gaussian_filter1d(row_density, sigma=sigma)
     if smoothed.max() <= 0:
         return []
-    # Min vertical distance between rows. Assume characters drawn at LEAST
-    # 70 px apart vertically — strict enough to merge body-part bumps,
-    # permissive enough for packed sheets where Gemini omitted gutters.
-    min_dist = max(70, H // (max_rows * 2 + 2))
+    # Min vertical distance between rows. Use a larger minimum (120 px) so
+    # peak detection doesn't fire on body-part bumps within one character
+    # (a raised arm, a kicking leg). We'd rather miss a row than slice the
+    # sheet into 30-tall slivers.
+    min_dist = max(120, H // (max_rows * 2 + 2))
     peaks, _ = find_peaks(
         smoothed,
         distance=min_dist,
@@ -304,9 +304,17 @@ def find_row_bands_by_peaks(fg, max_rows):
         return []
     peaks = sorted(peaks)[:max_rows]
     bands = []
+    # Enforce a minimum band height so that adjacent peaks can't produce
+    # sliver bands. If a band would be smaller than min_band_h, expand it
+    # symmetrically around the peak.
+    min_band_h = max(60, min_dist - 10)
     for i, p in enumerate(peaks):
         top = (peaks[i - 1] + p) // 2 if i > 0 else max(0, p - min_dist)
         bot = (peaks[i + 1] + p) // 2 if i + 1 < len(peaks) else min(H, p + min_dist)
+        if bot - top < min_band_h:
+            grow = (min_band_h - (bot - top)) // 2 + 1
+            top = max(0, top - grow)
+            bot = min(H, bot + grow)
         bands.append((int(top), int(bot)))
     return bands
     bands = []
