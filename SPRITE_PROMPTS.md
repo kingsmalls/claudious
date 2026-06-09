@@ -33,9 +33,11 @@ If the generator drops the identity item, regenerate that frame.
 
 ---
 
-## 🛑 NON-NEGOTIABLE RULES — paste these AT THE TOP of every prompt before the per-character block
+## 🛑 NON-NEGOTIABLE RULES (reference copy)
 
-The slicer found that Gemini regularly violated three rules across the last batch of regenerations: rows were skipped, the background was a dark-purple gradient instead of pure magenta, and some sheets had anim-name banners baked into the image. Including this rules block at the START of each generation request — even before the character description — fixes ~90% of the slicing problems.
+Every per-character prompt below already embeds these rules at the top of its block-quote — **each character section is fully self-contained; copy the entire block-quote and paste it into Gemini as-is.** This copy is kept for reference only.
+
+Background: the slicer found that Gemini regularly violated three rules across the last batch of regenerations — rows were skipped, the background was a dark-purple gradient instead of pure magenta, and some sheets had anim-name banners baked into the image. Leading every prompt with these rules fixes ~90% of the slicing problems.
 
 > **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
@@ -95,14 +97,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text, NO labels, NO frame numbers anywhere — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **16 rows exactly, 86 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 16 rows in this exact order:**
 >
@@ -180,14 +191,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text anywhere.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **16 rows exactly, 86 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 16 rows in this exact order:**
 >
@@ -287,14 +307,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, **80x112 frame size** (Atlas is bigger than the other players), 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text anywhere.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **15 rows exactly, 80 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 15 rows in this exact order:**
 >
@@ -384,14 +413,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 14 rows uniform grid (total image 640 wide × 1344 tall), **magenta `#ff00ff` background**, bottom-center anchor. Boss tier. **NO text anywhere — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **12 rows exactly, 65 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
 >
@@ -467,14 +505,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x88 frame size, 8 columns by 9 rows uniform grid (total image 512 wide × 792 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **9 rows exactly, 48 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 9 rows in this exact order:**
 >
@@ -533,14 +580,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 48x72 frame size, 8 columns by 12 rows uniform grid (total image 384 wide × 864 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text anywhere.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **12 rows exactly, 54 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
 >
@@ -618,14 +674,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 10 rows uniform grid (total image 512 wide × 800 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text anywhere.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **10 rows exactly, 56 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 10 rows in this exact order:**
 >
@@ -706,14 +771,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns by 13 rows uniform grid (total image 512 wide × 1248 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 7 boss. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
 >
@@ -806,14 +880,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns by 12 rows uniform grid (total image 512 wide × 1152 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 9 boss. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
 >
@@ -903,14 +986,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 12 rows uniform grid (total image 640 wide × 1152 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 8 boss / brutal-only encounter. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
 >
@@ -1001,14 +1093,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 48x64 frame size, 8 columns by 8 rows uniform grid (total image 384 wide × 512 tall), **magenta `#ff00ff` background**, bottom-center anchor. Basic mook enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **8 rows exactly, 32 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 8 rows in this exact order:**
 >
@@ -1071,14 +1172,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 7 rows uniform grid (total image 512 wide × 560 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **7 rows exactly, 39 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 7 rows in this exact order:**
 >
@@ -1141,14 +1251,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 9 rows uniform grid (total image 512 wide × 720 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **9 rows exactly, 40 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 9 rows in this exact order:**
 >
@@ -1214,14 +1333,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 8 rows uniform grid (total image 640 wide × 768 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier heavy enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **7 rows exactly, 36 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 7 rows in this exact order:**
 >
@@ -1293,14 +1421,23 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 10 rows uniform grid (total image 512 wide × 800 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier disciplined enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
-
-> **READ THESE FIRST — failure on any of these requires regeneration:**
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
 >
-> 1. **8 rows exactly, 40 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
-> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
-> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
-> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
-> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows (see the ROW-BY-ROW CHECKLIST below). The output PNG must contain EXACTLY that many rows of character poses, top-to-bottom, in the order specified. Not fewer, not more, no merging. Skipping rows breaks the game engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top row, below the bottom row, and in every cell that doesn't contain a pose. Any other shade breaks the chroma-key and the character ships with a coloured rectangle around them. Verify before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers. No row headers. No captions. No watermarks. **Zero letters or numbers** in the output PNG. A single stray letter makes the sheet unusable.
+>
+> 4. **Every row has the exact frame count listed.** If a row says "atk1 × 4 frames" draw exactly 4 distinct poses left-to-right. Unused cells in a row stay pure magenta — do NOT fill them with extra poses or text.
+>
+> 5. **Characters never touch each other.** At least 8 pixels of pure magenta between adjacent characters in a row, at least 12 pixels between rows. The slicer needs these gutters to find character boundaries.
+>
+> 6. **Every pose is a FULL BODY** — head, torso, arms, legs, feet. Crouches, dives, and kicks still show feet. Never crop a character at the waist or shoulders.
+>
+> 7. **Self-check before submitting:** count the rows top-to-bottom, count the poses in each row left-to-right, compare both to the ROW-BY-ROW CHECKLIST. If either count is off, regenerate.
+>
+> **Grid layout:** uniform grid, ONE animation per row, characters bottom-center anchored in their cells (feet at the bottom-center), no cell separator lines (cells are defined by even magenta spacing, never drawn borders).
 >
 > **ROW-BY-ROW CHECKLIST — draw exactly these 8 rows in this exact order:**
 >
