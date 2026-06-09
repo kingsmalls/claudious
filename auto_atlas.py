@@ -91,6 +91,14 @@ def load_mask(path):
     return fg, arr
 
 
+def looks_like_text_row(fg, y0, y1):
+    """Disabled — every heuristic I tried for "this row is text" also kills
+    legitimate character rows. The text problem is rare enough (one row in
+    rio.png had the SPINNING label) that hand-editing the affected atlas
+    after generation is more reliable than a blanket filter."""
+    return False
+
+
 def chroma_key_to_alpha(png_path, out_path):
     """Pre-process a sheet: replace magenta + near-black backgrounds with
     fully transparent pixels and save as a new PNG. The engine then renders
@@ -359,6 +367,11 @@ def slice_sheet(png_path, expected_slots):
         bands = peak_bands
     if not bands:
         bands = uniform_row_bands(fg, len(expected_slots))
+    # Filter out rows that look like text labels rather than character poses.
+    # Gemini sometimes embeds anim-name banners ("SPINNING", "ROUNDHOUSE")
+    # inside the sheet despite the prompt forbidding it; if we keep those
+    # rows the engine renders the text at gameplay scale.
+    bands = [b for b in bands if not looks_like_text_row(fg, b[0], b[1])]
     frames = {}
     anims = {}
     n_slots = len(expected_slots)
