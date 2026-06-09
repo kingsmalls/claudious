@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """Re-slice every character sprite sheet into an atlas JSON.
 
-The Gemini-generated PNGs use a magenta (#ff00ff) background with characters
-arranged in even row bands and per-frame cells inside each row. This script
-finds the row bands by horizontal magenta gutters, then finds cells inside
-each row by vertical magenta gutters, then names the rows in the order
-declared by EXPECTED_SLOTS for that character.
+Strategy: 2D connected-component blob detection. Gemini's sheets don't
+follow uniform grids — characters sit at staggered heights, rows overlap,
+and per-row slicing inevitably bleeds one row into another. Instead we:
+
+1. Chroma-key magenta/black background to alpha-0 (also fixes rendering).
+2. Dilate the foreground mask so a character merges with its own detached
+   pieces (motion lines, props), then label connected components.
+3. Drop noise blobs (tiny area) and text banners (very flat aspect).
+4. Cluster blob centers into rows by vertical overlap, sort rows
+   top-to-bottom, blobs left-to-right within each row.
+5. Map rows to the spec's REQUIRED ANIMATION ROWS order; take the first
+   `expected_frames` blobs per row.
+6. Store per-frame target height (`th`) so poses keep their relative
+   heights within a row when the engine scales them down.
 
 Usage:
     python3 auto_atlas.py            # re-slice every character
@@ -16,6 +25,7 @@ import os
 import sys
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
 
@@ -350,81 +360,272 @@ def uniform_row_bands(fg, n_rows):
     return [(i * step, (i + 1) * step if i < n_rows - 1 else H) for i in range(n_rows)]
 
 
+def detect_blobs(fg, min_area=600, dilate_px=5):
+    """Find raw blobs via 2D connected components with light dilation.
+
+    Light dilation only — heavy dilation merges adjacent characters on
+    densely-packed sheets. Detached pieces (a hat above a head) become
+    separate blobs here and are merged later by x-overlap within a row.
+
+    Returns a list of (x0, y0, x1, y1, area) tuples.
+    """
+    structure = np.ones((dilate_px, dilate_px), dtype=bool)
+    dilated = ndimage.binary_dilation(fg, structure=structure)
+    labels, n = ndimage.label(dilated)
+    blobs = []
+    for sl in ndimage.find_objects(labels):
+        if sl is None:
+            continue
+        region = fg[sl]
+        area = int(region.sum())
+        if area < min_area:
+            continue  # compression noise / stray specks
+        ys, xs = np.where(region)
+        y0 = sl[0].start + int(ys.min())
+        y1 = sl[0].start + int(ys.max()) + 1
+        x0 = sl[1].start + int(xs.min())
+        x1 = sl[1].start + int(xs.max()) + 1
+        blobs.append((x0, y0, x1, y1, area))
+    return blobs
+
+
+def split_tall_blobs(blobs, fg, est_h):
+    """Split blobs that span multiple rows (characters touching vertically).
+
+    `est_h` is the estimated single-character height (content height divided
+    by the spec's expected row count). A blob taller than 1.5x that estimate
+    gets cut at the row-density valleys nearest to the uniform cut points.
+    """
+    out = []
+    for (x0, y0, x1, y1, area) in blobs:
+        h = y1 - y0
+        if h <= est_h * 1.5:
+            out.append((x0, y0, x1, y1, area))
+            continue
+        k = max(2, round(h / est_h))
+        strip = fg[y0:y1, x0:x1]
+        density = strip.sum(axis=1).astype(float)
+        sm = gaussian_filter1d(density, sigma=max(4, h // (k * 8)))
+        cuts = [0]
+        for i in range(1, k):
+            center = int(i * h / k)
+            lo = max(1, center - int(est_h * 0.3))
+            hi = min(h - 1, center + int(est_h * 0.3))
+            if lo >= hi:
+                cuts.append(center)
+                continue
+            cuts.append(lo + int(np.argmin(sm[lo:hi])))
+        cuts.append(h)
+        for i in range(k):
+            cy0, cy1 = cuts[i], cuts[i + 1]
+            seg = strip[cy0:cy1]
+            if not seg.any():
+                continue
+            ys, xs = np.where(seg)
+            out.append((x0 + int(xs.min()), y0 + cy0 + int(ys.min()),
+                        x0 + int(xs.max()) + 1, y0 + cy0 + int(ys.max()) + 1,
+                        int(seg.sum())))
+    return out
+
+
+def split_wide_blob(blob, fg, n_pieces):
+    """Split one wide blob into n_pieces by column-density valleys.
+    Used when a whole row merged into a single blob (no gutters)."""
+    x0, y0, x1, y1, _area = blob
+    w = x1 - x0
+    strip = fg[y0:y1, x0:x1]
+    density = strip.sum(axis=0).astype(float)
+    sm = gaussian_filter1d(density, sigma=max(4, w // (n_pieces * 8)))
+    cuts = [0]
+    for i in range(1, n_pieces):
+        center = int(i * w / n_pieces)
+        span = int(w / n_pieces * 0.35)
+        lo = max(1, center - span)
+        hi = min(w - 1, center + span)
+        if lo >= hi:
+            cuts.append(center)
+            continue
+        cuts.append(lo + int(np.argmin(sm[lo:hi])))
+    cuts.append(w)
+    pieces = []
+    for i in range(n_pieces):
+        cx0, cx1 = cuts[i], cuts[i + 1]
+        seg = strip[:, cx0:cx1]
+        if not seg.any():
+            continue
+        ys, xs = np.where(seg)
+        pieces.append((x0 + cx0 + int(xs.min()), y0 + int(ys.min()),
+                       x0 + cx0 + int(xs.max()) + 1, y0 + int(ys.max()) + 1,
+                       int(seg.sum())))
+    return pieces
+
+
+def split_wide_blobs_auto(blobs, fg):
+    """Split blobs whose aspect says "multiple characters merged
+    side-by-side" (w > 1.8x h). Cut at midpoints between column-density
+    peaks — each peak is one character's body mass."""
+    out = []
+    for b in blobs:
+        x0, y0, x1, y1, area = b
+        w, h = x1 - x0, y1 - y0
+        if w <= h * 1.8:
+            out.append(b)
+            continue
+        strip = fg[y0:y1, x0:x1]
+        density = strip.sum(axis=0).astype(float)
+        sm = gaussian_filter1d(density, sigma=max(6, h // 10))
+        if sm.max() <= 0:
+            out.append(b)
+            continue
+        min_dist = max(30, int(h * 0.35))
+        peaks, _ = find_peaks(sm, distance=min_dist, prominence=sm.max() * 0.08)
+        if len(peaks) < 2:
+            out.append(b)
+            continue
+        cuts = [0] + [int((peaks[i] + peaks[i + 1]) / 2)
+                      for i in range(len(peaks) - 1)] + [w]
+        for i in range(len(cuts) - 1):
+            seg = strip[:, cuts[i]:cuts[i + 1]]
+            if not seg.any():
+                continue
+            ys, xs = np.where(seg)
+            out.append((x0 + cuts[i] + int(xs.min()), y0 + int(ys.min()),
+                        x0 + cuts[i] + int(xs.max()) + 1, y0 + int(ys.max()) + 1,
+                        int(seg.sum())))
+    return out
+
+
+def cluster_blob_rows(blobs, img_h, est_h):
+    """Group blobs into rows, merge intra-character fragments, drop noise.
+
+    1. Cluster blobs into rows by vertical-center overlap.
+    2. Within each row, merge blobs whose x-ranges overlap — a floating
+       hat or detached foot occupies the same column band as its owner.
+    3. Drop fragments much shorter than the row's dominant blob height
+       (leftover slivers from a neighbouring row bleeding into this one).
+    4. Drop text-banner rows: short AND sparse (low fill ratio). Lying-down
+       death poses are also flat but their pixel fill is dense, so they
+       survive the fill-ratio test.
+    """
+    remaining = sorted(blobs, key=lambda b: (b[1] + b[3]) / 2)
+    rows = []
+    for b in remaining:
+        cy = (b[1] + b[3]) / 2
+        placed = False
+        for row in rows:
+            ry0 = min(x[1] for x in row)
+            ry1 = max(x[3] for x in row)
+            if ry0 <= cy <= ry1:
+                row.append(b)
+                placed = True
+                break
+        if not placed:
+            rows.append([b])
+    rows.sort(key=lambda row: min(b[1] for b in row))
+
+    cleaned_rows = []
+    for row in rows:
+        row.sort(key=lambda b: b[0])
+        # Merge x-overlapping blobs (same character's detached pieces).
+        merged = []
+        for b in row:
+            if merged:
+                m = merged[-1]
+                overlap = min(m[2], b[2]) - max(m[0], b[0])
+                min_w = min(m[2] - m[0], b[2] - b[0])
+                if overlap > 0.35 * min_w:
+                    merged[-1] = (min(m[0], b[0]), min(m[1], b[1]),
+                                  max(m[2], b[2]), max(m[3], b[3]),
+                                  m[4] + b[4])
+                    continue
+            merged.append(b)
+        if not merged:
+            continue
+        # Drop fragments much shorter than the row's dominant height.
+        max_h = max(b[3] - b[1] for b in merged)
+        keep = [b for b in merged if (b[3] - b[1]) >= max_h * 0.55]
+        if not keep:
+            continue
+        # Noise rows: dominant height too small to be a character.
+        if max_h < max(50, est_h * 0.35):
+            continue
+        # Text-banner rows: short + flat + sparse fill.
+        fills = [b[4] / max(1, (b[2] - b[0]) * (b[3] - b[1])) for b in keep]
+        all_flat = all((b[2] - b[0]) > (b[3] - b[1]) * 2.2 for b in keep)
+        if all_flat and max_h < est_h * 0.75 and (sum(fills) / len(fills)) < 0.38:
+            continue
+        cleaned_rows.append(keep)
+    return cleaned_rows
+
+
 def slice_sheet(png_path, expected_slots):
     fg, _ = load_mask(png_path)
-    # If Gemini wrapped the sheet in a black border, the gap rows in that
-    # border aren't useful for band detection — crop the content region first.
-    bbox = crop_to_content(fg)
-    if bbox is None:
+    if not fg.any():
         return None, 0, 0
-    y_off, _, x_off, _ = bbox
-    fg = fg[bbox[0]:bbox[1], bbox[2]:bbox[3]]
-    bands = find_row_bands(fg)
-    # Always prefer peak detection over uniform row division. Peak detection
-    # finds actual character centers; uniform division blindly cuts the image
-    # into N equal slices, which slices through characters when the sheet's
-    # row heights are inconsistent or when Gemini drew fewer rows than the
-    # spec asked for. If peak detection finds fewer rows than expected, we
-    # use whatever it found — missing anim slots fall back via ANIM_FALLBACK.
-    peak_bands = find_row_bands_by_peaks(fg, len(expected_slots))
-    if len(peak_bands) > len(bands):
-        bands = peak_bands
-    if not bands:
-        bands = uniform_row_bands(fg, len(expected_slots))
-    # Filter out rows that look like text labels rather than character poses.
-    # Gemini sometimes embeds anim-name banners ("SPINNING", "ROUNDHOUSE")
-    # inside the sheet despite the prompt forbidding it; if we keep those
-    # rows the engine renders the text at gameplay scale.
-    bands = [b for b in bands if not looks_like_text_row(fg, b[0], b[1])]
-    frames = {}
-    anims = {}
-    n_slots = len(expected_slots)
-    n_bands = len(bands)
-    if n_bands == 0:
-        return None, n_bands, 0
-    used_slots = expected_slots[:n_bands]
     char = os.path.splitext(os.path.basename(png_path))[0]
     expected_frames_map = EXPECTED_FRAMES.get(char, {})
-    for i, (y0, y1) in enumerate(bands):
-        slot = used_slots[i] if i < n_slots else f"row{i}"
+    target_h = TARGET_CELL_H.get(char, 96)
+
+    blobs = detect_blobs(fg)
+    if not blobs:
+        return None, 0, 0
+    # Estimate single-character height from the content extent and the
+    # spec's expected row count, then split blobs that merged across rows
+    # (characters drawn touching vertically).
+    ys_content = np.where(fg.any(axis=1))[0]
+    content_h = int(ys_content.max() - ys_content.min() + 1) if ys_content.size else fg.shape[0]
+    est_h = max(60, content_h / max(1, len(expected_slots)))
+    blobs = split_tall_blobs(blobs, fg, est_h)
+    blobs = split_wide_blobs_auto(blobs, fg)
+    rows = cluster_blob_rows(blobs, fg.shape[0], est_h)
+
+    frames = {}
+    anims = {}
+    used_slots = expected_slots[:len(rows)]
+    for i, row in enumerate(rows):
+        if i >= len(used_slots):
+            break
+        slot = used_slots[i]
         expected_cells = expected_frames_map.get(slot)
-        # Tighten the row band vertically to actual content height — uniform
-        # across all cells in the row so the engine scales them consistently.
-        # Per-cell vertical tightening collapsed attack poses to a single
-        # limb (see earlier fix); full-band height left empty padding above
-        # /below characters and rendered them as tiny figures in a tall
-        # bbox. Row-level tightening (use the same y0/y1 for every cell)
-        # avoids both failure modes.
-        row_sub = fg[y0:y1]
-        row_has = row_sub.any(axis=1)
-        if row_has.any():
-            ys = np.where(row_has)[0]
-            row_y0 = y0 + int(ys.min())
-            row_y1 = y0 + int(ys.max()) + 1
-        else:
-            row_y0, row_y1 = y0, y1
-        cells = find_cells_in_row(fg, row_y0, row_y1, expected_cells=expected_cells)
-        if not cells:
-            continue
+        # If the whole row merged into fewer blobs than the spec expects
+        # AND one blob is much wider than the others, split the wide one
+        # horizontally at column-density valleys.
+        if expected_cells and len(row) < expected_cells:
+            widths = [b[2] - b[0] for b in row]
+            med_w = sorted(widths)[len(widths) // 2]
+            expanded = []
+            need = expected_cells - len(row) + 1
+            for b in row:
+                bw = b[2] - b[0]
+                if need > 1 and bw > med_w * 1.7:
+                    k = min(need, max(2, round(bw / max(1, med_w))))
+                    pieces = split_wide_blob(b, fg, k)
+                    expanded.extend(pieces if pieces else [b])
+                    need -= (len(pieces) - 1) if pieces else 0
+                else:
+                    expanded.append(b)
+            row = sorted(expanded, key=lambda b: b[0])
+        # Reading order: first N blobs are frame 0..N-1 of the anim.
+        chosen = row[:expected_cells] if expected_cells else row
+        # Per-row max height — poses keep their RELATIVE heights when the
+        # engine scales (a crouch stays shorter than a stand).
+        row_max_h = max(b[3] - b[1] for b in chosen)
         names = []
-        for j, (x0, ty0, x1, ty1) in enumerate(cells):
+        for j, (x0, y0, x1, y1, _area) in enumerate(chosen):
             key = f"{slot}_{j}"
-            # Restore original-image coordinates by adding the crop offset.
-            # Use the row-tight y0/y1 instead of per-cell ty0/ty1 so every
-            # frame in this anim has the same height.
+            h = y1 - y0
             frames[key] = {
-                "x": int(x0) + x_off,
-                "y": int(row_y0) + y_off,
-                "w": int(x1 - x0),
-                "h": int(row_y1 - row_y0),
+                "x": int(x0), "y": int(y0),
+                "w": int(x1 - x0), "h": int(h),
+                # Per-frame display height: preserves pose proportions
+                # within the row. Engine prefers frame.th over the global
+                # atlas target_h when present.
+                "th": max(8, round(target_h * h / row_max_h)),
             }
             names.append(key)
-        anims[slot] = names
-    # Use the character's name (parent dir's basename of the PNG) to pick a
-    # target on-screen cell height so the engine can scale the high-res
-    # Gemini frames down to gameplay size.
-    char = os.path.splitext(os.path.basename(png_path))[0]
-    target_h = TARGET_CELL_H.get(char, 96)
+        if names:
+            anims[slot] = names
+
     atlas = {
         "fps": 8,
         "frames": frames,
@@ -432,7 +633,7 @@ def slice_sheet(png_path, expected_slots):
         "anchor": {"x": 0.5, "y": 1.0},
         "target_h": target_h,
     }
-    return atlas, n_bands, sum(len(v) for v in anims.values())
+    return atlas, len(rows), sum(len(v) for v in anims.values())
 
 
 def main():
