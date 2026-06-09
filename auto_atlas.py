@@ -16,6 +16,8 @@ import os
 import sys
 import numpy as np
 from PIL import Image
+from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter1d
 
 CHAR_DIR = "characters"
 
@@ -47,6 +49,27 @@ TARGET_CELL_H = {
     "baron": 96, "razor": 96, "volt": 96, "blackwell": 96,
     "runner": 64, "chains": 80, "slice": 80, "tank": 96,
     "lamplight": 88, "dojo": 80, "shade": 72, "rig": 80,
+}
+
+# Expected frame count per anim slot. Used to force uniform cell division
+# when the magenta gutters between cells in a row are too noisy for the
+# gap-based detector to find reliably.
+EXPECTED_FRAMES = {
+    "rio": {"idle":4,"walk":6,"run":6,"jump":3,"atk1":4,"atk2":5,"atk3":6,"atk4":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3,"dodge":5},
+    "duke": {"idle":4,"walk":6,"run":6,"jump":3,"atk1":4,"atk2":5,"atk3":6,"atk4":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3,"dodge":5},
+    "atlas": {"idle":4,"walk":6,"run":6,"jump":3,"atk1":4,"atk2":5,"atk3":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3,"dodge":5},
+    "baron": {"idle":4,"walk":6,"atk1":4,"atk2":5,"atk3":5,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3},
+    "razor": {"idle":4,"walk":6,"atk1":4,"atk2":5,"atk3":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3},
+    "volt": {"idle":4,"walk":6,"atk1":4,"atk2":5,"atk3":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3},
+    "blackwell": {"idle":4,"walk":6,"atk1":4,"atk2":5,"atk3":6,"heavy":7,"jump_atk":4,"back_atk":4,"special":12,"throw":5,"counter":6,"hurt":3},
+    "runner": {"idle":4,"walk":6,"run":4,"atk1":4,"atk2":4,"hurt":3,"dead":3,"flee":4},
+    "chains": {"idle":4,"walk":6,"atk1":6,"atk2":5,"atk3":12,"hurt":3,"dead":3},
+    "slice": {"idle":4,"walk":6,"run":4,"atk1":6,"atk2":5,"jump_atk":5,"dash":4,"hurt":3,"dead":3},
+    "tank": {"idle":4,"walk":6,"atk1":6,"atk2":7,"atk3":7,"hurt":3,"dead":3},
+    "lamplight": {"idle":4,"walk":6,"atk1":5,"atk2":8,"atk3":6,"atk4":7,"atk5":5,"hurt":3,"dead":4},
+    "dojo": {"idle":4,"walk":6,"atk1":6,"atk2":6,"atk3":6,"atk4":6,"hurt":3,"dead":3},
+    "shade": {"idle":4,"walk":6,"atk1":4,"atk2":4,"atk3":5,"atk4":5,"atk5":5,"atk6":6,"vanish":5,"reappear":3,"hurt":3,"dead":4},
+    "rig": {"idle":4,"walk":6,"atk1":5,"atk2":5,"atk3":5,"atk4":6,"atk5":6,"atk6":12,"hurt":3,"dead":4},
 }
 
 
@@ -120,11 +143,16 @@ def find_row_bands(fg, min_gap=2, min_height=20, gap_ratio=0.05):
     return bands
 
 
-def find_cells_in_row(fg, y0, y1, min_gap=2, min_width=10, gap_ratio=0.01):
-    """Return list of (x0, y0, x1, y1) cell bounding boxes inside a row."""
+def find_cells_in_row(fg, y0, y1, expected_cells=None, min_gap=2, min_width=10, gap_ratio=0.05):
+    """Return list of (x0, y0, x1, y1) cell bounding boxes inside a row.
+
+    If `expected_cells` is given and gap-based detection produces fewer
+    cells than that, fall back to uniform column division. Each detected
+    cell's bounding box is tightened around the actual non-magenta pixels.
+    """
     sub = fg[y0:y1]
     H_band = y1 - y0
-    col_gap_threshold = max(3, int(H_band * gap_ratio))
+    col_gap_threshold = max(8, int(H_band * gap_ratio))
     col_has_fg = sub.sum(axis=0) >= col_gap_threshold
     cells = []
     in_cell = False
@@ -147,18 +175,73 @@ def find_cells_in_row(fg, y0, y1, min_gap=2, min_width=10, gap_ratio=0.01):
             x += 1
     if in_cell and W - x0 >= min_width:
         cells.append([x0, W])
-    # Refine vertical extent for each cell so the tight bbox is per-cell.
+
+    # When expected_cells is known, find character centers via peak detection
+    # on the column-density signal. The Gemini sheets don't follow the
+    # prompt's "8 cells per row" rule — they pack in however many poses the
+    # generator decided to draw, so we can't rely on a fixed grid. Each peak
+    # in the smoothed column-density is one character; we slice around the
+    # FIRST `expected_cells` peaks (left-to-right reading order) so that the
+    # spec's frame-name order (idle_0, idle_1, …) maps to the first N poses
+    # the artist drew on that row.
+    if expected_cells:
+        col_density = sub.sum(axis=0).astype(float)
+        sigma = max(8, W // 100)
+        smoothed = gaussian_filter1d(col_density, sigma=sigma)
+        if smoothed.max() > 0:
+            # Min distance between peaks: assume the artist drew at MOST one
+            # character per 60 px (worst case ~50 chars per 2900-wide row).
+            # That's permissive enough to catch packed sheets, strict enough
+            # to filter body-part bumps within one character.
+            min_dist = max(30, W // 60)
+            peaks, props = find_peaks(
+                smoothed,
+                distance=min_dist,
+                prominence=smoothed.max() * 0.08,
+            )
+            if len(peaks) >= expected_cells:
+                # Keep the FIRST expected_cells peaks in left-to-right order
+                # — these correspond to frame 0, 1, 2, … of the anim.
+                peaks = peaks[:expected_cells]
+                cells = []
+                for i, p in enumerate(peaks):
+                    # Cell extends halfway to the neighbouring peak so each
+                    # cell is tight around one character with minimal overlap.
+                    left = (peaks[i - 1] + p) // 2 if i > 0 else max(0, p - min_dist)
+                    right = (peaks[i + 1] + p) // 2 if i + 1 < len(peaks) else min(W, p + min_dist)
+                    cells.append([int(left), int(right)])
+
+        # Fall back to uniform division over content bbox if peak detection
+        # didn't produce enough cells.
+        if len(cells) < expected_cells:
+            cols_with_fg = sub.sum(axis=0) > 0
+            if cols_with_fg.any():
+                xs = np.where(cols_with_fg)[0]
+                content_x0, content_x1 = int(xs.min()), int(xs.max()) + 1
+                step = (content_x1 - content_x0) / expected_cells
+                cells = [[int(content_x0 + i * step), int(content_x0 + (i + 1) * step)]
+                         for i in range(expected_cells)]
+
+    # Refine per-cell bbox so each frame is tight around the actual character.
+    # Use a noise-aware threshold: a row/column counts as content only if it
+    # has at least a few percent of its dimension as foreground (filters out
+    # the constant compression noise that would otherwise prevent any
+    # tightening at all).
     out = []
     for cx0, cx1 in cells:
         col_slice = fg[y0:y1, cx0:cx1]
-        row_has = col_slice.sum(axis=1) > 0
-        if not row_has.any():
+        H_band = y1 - y0
+        W_cell = cx1 - cx0
+        row_thresh = max(3, int(W_cell * 0.04))
+        col_thresh = max(3, int(H_band * 0.04))
+        row_has = col_slice.sum(axis=1) >= row_thresh
+        col_has = col_slice.sum(axis=0) >= col_thresh
+        if not row_has.any() or not col_has.any():
             continue
         ys = np.where(row_has)[0]
+        xs = np.where(col_has)[0]
         ty0 = y0 + int(ys.min())
         ty1 = y0 + int(ys.max()) + 1
-        col_has = col_slice.sum(axis=0) > 0
-        xs = np.where(col_has)[0]
         tx0 = cx0 + int(xs.min())
         tx1 = cx0 + int(xs.max()) + 1
         out.append((tx0, ty0, tx1, ty1))
@@ -202,9 +285,12 @@ def slice_sheet(png_path, expected_slots):
     if n_bands == 0:
         return None, n_bands, 0
     used_slots = expected_slots[:n_bands]
+    char = os.path.splitext(os.path.basename(png_path))[0]
+    expected_frames_map = EXPECTED_FRAMES.get(char, {})
     for i, (y0, y1) in enumerate(bands):
         slot = used_slots[i] if i < n_slots else f"row{i}"
-        cells = find_cells_in_row(fg, y0, y1)
+        expected_cells = expected_frames_map.get(slot)
+        cells = find_cells_in_row(fg, y0, y1, expected_cells=expected_cells)
         if not cells:
             continue
         names = []
