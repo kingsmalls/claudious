@@ -94,13 +94,23 @@ def load_mask(path):
 def chroma_key_to_alpha(png_path, out_path):
     """Pre-process a sheet: replace magenta + near-black backgrounds with
     fully transparent pixels and save as a new PNG. The engine then renders
-    each frame without showing magenta padding around the character."""
+    each frame without showing magenta padding around the character.
+
+    Detects magenta by chroma-dominance (r and b both significantly higher
+    than g) rather than a strict brightness threshold, because Gemini's
+    output sometimes contains dark-magenta gradients (e.g. rgb(145,3,151))
+    around the cell borders that the strict #ff00ff test misses.
+    """
     im = Image.open(png_path).convert("RGBA")
     arr = np.array(im)
-    r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
-    # Same magenta + black detection as load_mask. Slightly looser magenta
-    # band so compression noise at the gutter edges also drops out.
-    is_magenta = (r > 190) & (g < 120) & (b > 190) & (r.astype(int) + b.astype(int) - 2 * g.astype(int) > 180)
+    r = arr[..., 0].astype(int)
+    g = arr[..., 1].astype(int)
+    b = arr[..., 2].astype(int)
+    # Magenta: red and blue dominate over green by a wide margin AND green
+    # is low in absolute terms. Skin tones (high r, mid g, low b) still get
+    # a high chroma score but FAIL the b-dominance check, so they survive.
+    chroma_dom = (r + b) - 2 * g
+    is_magenta = (chroma_dom > 140) & (g < 80) & (r > 80) & (b > 80)
     is_dark = (r < 18) & (g < 18) & (b < 18)
     is_bg = is_magenta | is_dark
     arr_out = arr.copy()
