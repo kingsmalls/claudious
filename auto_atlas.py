@@ -91,6 +91,23 @@ def load_mask(path):
     return fg, arr
 
 
+def chroma_key_to_alpha(png_path, out_path):
+    """Pre-process a sheet: replace magenta + near-black backgrounds with
+    fully transparent pixels and save as a new PNG. The engine then renders
+    each frame without showing magenta padding around the character."""
+    im = Image.open(png_path).convert("RGBA")
+    arr = np.array(im)
+    r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+    # Same magenta + black detection as load_mask. Slightly looser magenta
+    # band so compression noise at the gutter edges also drops out.
+    is_magenta = (r > 190) & (g < 120) & (b > 190) & (r.astype(int) + b.astype(int) - 2 * g.astype(int) > 180)
+    is_dark = (r < 18) & (g < 18) & (b < 18)
+    is_bg = is_magenta | is_dark
+    arr_out = arr.copy()
+    arr_out[is_bg, 3] = 0
+    Image.fromarray(arr_out, "RGBA").save(out_path)
+
+
 def crop_to_content(fg):
     """Return (y0, y1, x0, x1) bounding box of the entire content region.
 
@@ -370,6 +387,10 @@ def main():
             print(f"  SKIP   {name:11}  not in EXPECTED_SLOTS")
             continue
         expected = EXPECTED_SLOTS[name]
+        # Pre-process: replace magenta + black backgrounds with transparent.
+        # The engine then draws each frame without any chroma key — the
+        # background is already alpha-zero, so it composites cleanly.
+        chroma_key_to_alpha(png, png)
         atlas, n_bands, n_frames = slice_sheet(png, expected)
         if atlas is None:
             print(f"  FAIL   {name:11}  no row bands found")
