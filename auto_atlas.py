@@ -569,12 +569,21 @@ def slice_sheet(png_path, expected_slots):
     blobs = detect_blobs(fg)
     if not blobs:
         return None, 0, 0
-    # Estimate single-character height from the content extent and the
-    # spec's expected row count, then split blobs that merged across rows
-    # (characters drawn touching vertically).
+    # Estimate single-character height. The MEDIAN blob height is the most
+    # reliable signal — Gemini often draws fewer/bigger rows than the spec
+    # asks for, so deriving est_h from the expected row count splits real
+    # characters at the waist (the half-body bug). Only fall back to the
+    # spec-derived prior when blob detection found too few blobs to trust
+    # (whole sheet merged into one mass).
     ys_content = np.where(fg.any(axis=1))[0]
     content_h = int(ys_content.max() - ys_content.min() + 1) if ys_content.size else fg.shape[0]
-    est_h = max(60, content_h / max(1, len(expected_slots)))
+    prior_h = max(60, content_h / max(1, len(expected_slots)))
+    heights = sorted(b[3] - b[1] for b in blobs)
+    med_h = heights[len(heights) // 2]
+    if len(blobs) >= 6 and med_h < prior_h * 3.5:
+        est_h = max(60, med_h)
+    else:
+        est_h = prior_h
     blobs = split_tall_blobs(blobs, fg, est_h)
     blobs = split_wide_blobs_auto(blobs, fg)
     rows = cluster_blob_rows(blobs, fg.shape[0], est_h)
