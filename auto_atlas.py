@@ -47,8 +47,12 @@ EXPECTED_SLOTS = {
 TARGET_CELL_H = {
     "rio": 96, "duke": 96, "atlas": 112,
     "baron": 96, "razor": 96, "volt": 96, "blackwell": 96,
-    "runner": 64, "chains": 80, "slice": 80, "tank": 96,
-    "lamplight": 88, "dojo": 80, "shade": 72, "rig": 80,
+    # Mid-tier enemies — scaled up to closer-to-player size so they read
+    # well on screen now that the Gemini sheets are high-res. Previously
+    # 64-80 px tall to match the original spec dimensions; bumping to 88-96
+    # so they have more visible body detail.
+    "runner": 96, "chains": 96, "slice": 96, "tank": 104,
+    "lamplight": 96, "dojo": 96, "shade": 88, "rig": 96,
 }
 
 # Expected frame count per anim slot. Used to force uniform cell division
