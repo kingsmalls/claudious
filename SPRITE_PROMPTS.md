@@ -33,6 +33,28 @@ If the generator drops the identity item, regenerate that frame.
 
 ---
 
+## 🛑 NON-NEGOTIABLE RULES — paste these AT THE TOP of every prompt before the per-character block
+
+The slicer found that Gemini regularly violated three rules across the last batch of regenerations: rows were skipped, the background was a dark-purple gradient instead of pure magenta, and some sheets had anim-name banners baked into the image. Including this rules block at the START of each generation request — even before the character description — fixes ~90% of the slicing problems.
+
+> **HARD RULES — read first, do not violate. Failure on any of these requires a full regeneration:**
+>
+> 1. **Row count is exact, not approximate.** This prompt specifies EXACTLY N animation rows. The output PNG must contain EXACTLY N rows of character poses, top-to-bottom, in the order specified below. If the spec calls for 16 rows you must draw 16 — not 14, not 12, not "however many fit comfortably." Each anim row gets its own horizontal strip. Skipping or merging rows breaks the engine.
+>
+> 2. **Background is PURE MAGENTA `#ff00ff` everywhere.** Not dark purple. Not pink. Not a gradient. Not transparent. The exact RGB value `255, 0, 255` between every character, above the top character, below the bottom character, and in every cell that doesn't contain a pose. If you use any other shade the chroma-key fails and the character ships with a coloured rectangle around them. Verify the background of the output is pure magenta before submitting.
+>
+> 3. **No text characters anywhere in the image.** No animation labels (`IDLE`, `WALK`, `SPINNING`, `KICK`). No frame numbers (`F1`, `1`, `2`). No row headers. No captions. No watermarks. No grid coordinates. **Zero letters or numbers** in the output PNG. If you want to label cells for your own reference during planning, do it on a separate sheet and discard it — the production sheet ships text-free. The slicer renders any baked-in text as part of the sprite, so a sheet with one stray letter is unusable.
+>
+> 4. **Every row has the exact frame count the spec lists.** If a row says "atk1 × 4 frames" the row must have 4 distinct character poses left-to-right. Don't draw 3, don't draw 6. The same goes for unused cells in a row: leave them as pure magenta — DO NOT fill them with extra poses or with text.
+>
+> 5. **Characters do not touch each other vertically OR horizontally.** Leave at least 8 pixels of pure magenta between adjacent characters in a row, and at least 12 pixels of pure magenta between rows. The slicer uses these magenta gutters to find character boundaries — touching characters get merged into a single sliced frame.
+>
+> 6. **Every character pose is a FULL BODY** — head, torso, arms, legs, feet — unless the spec explicitly says "head only" or "knees up." Crouches, dives, and kicks still need feet visible. The bottom of every character body must be the character's lowest body point (foot, knee, hand on ground) — never cropped at the waist or shoulders.
+>
+> 7. **Self-check before submitting.** Count the rows top-to-bottom. Count the poses left-to-right in each row. Compare both to the spec. If either count is wrong, regenerate.
+
+---
+
 ## Recommended grid
 
 - **Background:** solid magenta `#ff00ff` for chroma keying. Pure magenta only — softer purples won't key.
@@ -73,6 +95,37 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text, NO labels, NO frame numbers anywhere — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **16 rows exactly, 86 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 16 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `run` × 6 frames
+>  4. `jump` × 3 frames
+>  5. `atk1` × 4 frames
+>  6. `atk2` × 5 frames
+>  7. `atk3` × 6 frames
+>  8. `atk4` × 6 frames
+>  9. `heavy` × 7 frames
+> 10. `jump_atk` × 4 frames
+> 11. `back_atk` × 4 frames
+> 12. `special` × 12 frames
+> 13. `throw` × 5 frames
+> 14. `counter` × 6 frames
+> 15. `hurt` × 3 frames
+> 16. `dodge` × 5 frames
+>
+> Total: **86 character poses in 16 rows**. Count both before submitting.
+>
+>
 > **Character:** Rio. 24-year-old woman, dark brown skin (`#8a5235`), athletic boxer's frame. Full afro, dark brown to black (`#1a1410`), ~3–4 in. deep, soft round silhouette. Single small gold hoop earring (camera-side). Cropped olive-sage bomber jacket (`#7d8d4f` mid, `#5a6b3a` shadow, `#9bab6a` highlight), ends at lower ribs, two slash pockets, knit collar/cuffs/hem. Black ribbed tank top under (`#0a0a10`). Off-white hand wraps wrapping the knuckles 4 times (`#dcd6c4`). Slim charcoal cargo pants (`#1a1a22`). Ankle-high lace-up boxing boots, black with white soles.
 >
 > **REQUIRED identity item (every frame, including hurt and dodge):** **bright marigold yellow bandana tied around the LEFT wrist** over the hand wraps. 4–5 px wide stripe of yellow (`#e8c04a` mid, `#ffd76a` highlight, `#b89426` shadow), small 2-px knot tail. **The bandana TRAILS through fast motion** — punches, the spin, the uppercut, the dodge roll.
@@ -109,6 +162,37 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## DUKE — generation prompt (current moveset with kicks + cinematic flair)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text anywhere.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **16 rows exactly, 86 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 16 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `run` × 6 frames
+>  4. `jump` × 3 frames
+>  5. `atk1` × 4 frames
+>  6. `atk2` × 5 frames
+>  7. `atk3` × 6 frames
+>  8. `atk4` × 6 frames
+>  9. `heavy` × 7 frames
+> 10. `jump_atk` × 4 frames
+> 11. `back_atk` × 4 frames
+> 12. `special` × 12 frames
+> 13. `throw` × 5 frames
+> 14. `counter` × 6 frames
+> 15. `hurt` × 3 frames
+> 16. `dodge` × 5 frames
+>
+> Total: **86 character poses in 16 rows**. Count both before submitting.
+>
 >
 > **Character:** Duke. 31-year-old man, weathered pale skin (`#d4a888`), 3–4 days of stubble (`#3a2a1c`), squared jaw, slightly broken nose. Ex-boxer's frame — heavier than Rio, leaner than Atlas. **Carries himself slightly hunched** — old knee injury changed his posture. **Right knee favors a slight bend even when standing.** Messy dark blonde hair (`#a08c4a` highlight, `#6e5e2c` shadow), 2–3 in., uneven, **a wayward strand falls across the forehead on the camera-side in every frame.**
 >
@@ -162,6 +246,36 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, **80x112 frame size** (Atlas is bigger than the other players), 8 columns × 10 rows uniform grid, **magenta `#ff00ff` background**, bottom-center anchor. **NO text anywhere.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **15 rows exactly, 80 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 15 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `run` × 6 frames
+>  4. `jump` × 3 frames
+>  5. `atk1` × 4 frames
+>  6. `atk2` × 5 frames
+>  7. `atk3` × 6 frames
+>  8. `heavy` × 7 frames
+>  9. `jump_atk` × 4 frames
+> 10. `back_atk` × 4 frames
+> 11. `special` × 12 frames
+> 12. `throw` × 5 frames
+> 13. `counter` × 6 frames
+> 14. `hurt` × 3 frames
+> 15. `dodge` × 5 frames
+>
+> Total: **80 character poses in 15 rows**. Count both before submitting.
+>
+>
 > **Character:** Atlas. 47-year-old man, **6'4", massive** — powerlifter physique slightly soft. Reads AT LEAST 30% bigger than Rio or Duke in silhouette. **BALD** with a salt-and-pepper FULL beard wrapping the lower jaw (`#a8a4a0` light, `#6e6c6a` shadow, `#4a4844` dark accent). Mediterranean/mixed olive skin (`#7a5234` light, `#583820` shadow). Heavy brow, deep-set eyes, broad nose (broken once long ago).
 >
 > **Costume:** **Sleeveless deep-red plaid flannel** (`#7a3030` mid, `#5a1c1c` shadow, `#9a4040` highlight) with sleeves torn off (jagged frayed edges) and **TOP THREE BUTTONS UNDONE** showing an open V of skin and chain. Hem to mid-hip. Heavy black leather belt with brass buckle. Heavy work pants, dark olive-brown (`#3a3024`) with two patches (one on right knee — lighter brown square, one on left thigh — frayed darker patch). **Steel-toed work boots** dark brown leather (`#1c140c`) with grey steel toes (`#5a5a5a`).
@@ -213,6 +327,33 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 14 rows uniform grid (total image 640 wide × 1344 tall), **magenta `#ff00ff` background**, bottom-center anchor. Boss tier. **NO text anywhere — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **12 rows exactly, 65 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 4 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 5 frames
+>  6. `heavy` × 7 frames
+>  7. `jump_atk` × 4 frames
+>  8. `back_atk` × 4 frames
+>  9. `special` × 12 frames
+> 10. `throw` × 5 frames
+> 11. `counter` × 6 frames
+> 12. `hurt` × 3 frames
+>
+> Total: **65 character poses in 12 rows**. Count both before submitting.
+>
+>
 > **Character — FICTIONAL Dick-Tracy-villain noir-comic caricature** ("William 'Baron' Halsey"). NOT a real public figure. Reference points: **Flattop / Pruneface / The Brow from Dick Tracy**, or 60s/70s comic-book Kingpin enforcers. Stylised proportions, NOT realistic. 50s reading age. **Body silhouette is a TRAPEZOID** — shoulders comically wider than hips. Wider than the protagonists by 50%, heavier than Atlas. **Neck WIDER THAN THE HEAD** (one continuous slope from shoulder to skull — no taper). **Jaw SQUARE WITH A 90° CORNER**, lantern-jaw caricature. Pale ivory skin (`#e0c8a0`) flat noir-comic shading, ruddy on cheeks. Heavy brow, eyes small and close-set. **Resting expression: a small polite smile that never reaches the eyes.**
 >
 > **Identity markers — fictional caricature, REQUIRED in every frame:**
@@ -253,6 +394,30 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x88 frame size, 8 columns by 9 rows uniform grid (total image 512 wide × 792 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **9 rows exactly, 48 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 9 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 5 frames
+>  4. `atk2` × 8 frames
+>  5. `atk3` × 6 frames
+>  6. `atk4` × 7 frames
+>  7. `atk5` × 5 frames
+>  8. `hurt` × 3 frames
+>  9. `dead` × 4 frames
+>
+> Total: **48 character poses in 9 rows**. Count both before submitting.
+>
+>
 > **Character — noir gunslinger:** Lamplight. Age 35–50 (read as a veteran), 5'10"–6'1", lean but not athletic — steady-hands, soldier's-stance build. Gender-ambiguous on purpose. Face is **almost entirely hidden** — only a narrow horizontal eye-strip is visible between the fedora brim above and the scarf below. Skin tone in that strip is medium tan (`#d4a888`).
 >
 > **Costume:** Black fedora pulled low (brim shadows the upper face). Long charcoal-black trench coat (`#1a1a22` body, `#0a0a10` shadow, `#2a2a36` highlight) mid-calf length, collar popped up, belt cinched at the waist with a steel buckle. **Deep burgundy inner lining (`#4a1018`) — visible ONLY on atk5 F3/F4.** Long white scarf (`#dcd6c4` body, `#9a9482` shadow) wrapped twice around the neck, pulled up over the nose and mouth, two loose tails 14–18 px down the coat front. Black leather gloves. Dark tactical pants below the coat hem. Heavy black combat boots. **Single black semi-auto pistol** (body `#3a3a40`, barrel `#4a4a50`), two-handed at chest by default.
@@ -282,6 +447,33 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## SHADE — generation prompt (full detail, 12 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 48x72 frame size, 8 columns by 12 rows uniform grid (total image 384 wide × 864 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text anywhere.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **12 rows exactly, 54 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 4 frames
+>  4. `atk2` × 4 frames
+>  5. `atk3` × 5 frames
+>  6. `atk4` × 5 frames
+>  7. `atk5` × 5 frames
+>  8. `atk6` × 6 frames
+>  9. `vanish` × 5 frames
+> 10. `reappear` × 3 frames
+> 11. `hurt` × 3 frames
+> 12. `dead` × 4 frames
+>
+> Total: **54 character poses in 12 rows**. Count both before submitting.
+>
 >
 > **Character — stealth operator:** Shade. Age indeterminate (body 25–35, eyes look older). 5'9"–5'11", lean-athletic whip-quick build. Gender-ambiguous on purpose. Body language is composed — doesn't bounce, stands flat with arms loose at the sides, weight perfectly centered.
 >
@@ -319,6 +511,31 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## RIG — generation prompt (full detail, 10 rows with new cinematic moves)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 10 rows uniform grid (total image 512 wide × 800 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text anywhere.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **10 rows exactly, 56 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 10 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 5 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 5 frames
+>  6. `atk4` × 6 frames
+>  7. `atk5` × 6 frames
+>  8. `atk6` × 12 frames
+>  9. `hurt` × 3 frames
+> 10. `dead` × 4 frames
+>
+> Total: **56 character poses in 10 rows**. Count both before submitting.
+>
 >
 > **Character — construction-crew muscle:** Rig. Age 28–45, 6'0"–6'4", thick — pure-mass build from manual labor. Shoulders broader than Tank, gut tighter. Heavy and slow. Weathered face, scruffy stubble or full beard (pick one and lock it). Hair mostly hidden under the hardhat.
 >
@@ -363,6 +580,33 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## RAZOR — generation prompt (full detail, 13 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns by 13 rows uniform grid (total image 512 wide × 1248 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 7 boss. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 4 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 6 frames
+>  6. `heavy` × 7 frames
+>  7. `jump_atk` × 4 frames
+>  8. `back_atk` × 4 frames
+>  9. `special` × 12 frames
+> 10. `throw` × 5 frames
+> 11. `counter` × 6 frames
+> 12. `hurt` × 3 frames
+>
+> Total: **66 character poses in 12 rows**. Count both before submitting.
+>
 >
 > **Character — corporate-suit knife fencer:** Razor (real name Eliza Park). 38-year-old Korean woman, 5'7", lean yoga/kickboxing build — athletic but never bulky. Sharp jawline, dark eyes, neutral resting expression with a small deliberate smile only when she lands a hit. Light olive skin (`#dcb088` mid, `#a07858` shadow).
 >
@@ -422,6 +666,33 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x96 frame size, 8 columns by 12 rows uniform grid (total image 512 wide × 1152 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 9 boss. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 4 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 6 frames
+>  6. `heavy` × 7 frames
+>  7. `jump_atk` × 4 frames
+>  8. `back_atk` × 4 frames
+>  9. `special` × 12 frames
+> 10. `throw` × 5 frames
+> 11. `counter` × 6 frames
+> 12. `hurt` × 3 frames
+>
+> Total: **66 character poses in 12 rows**. Count both before submitting.
+>
+>
 > **Character — cybernetic enforcer:** Volt (real name Daniel Vega). 34-year-old Latino man, 6'1" with the prosthetics (originally 5'10"). Athletic-toned upper body (organic), heavy cyber limbs below. Medium-brown skin (`#a87858` mid, `#6e4e30` shadow). Short scruff (`#2a201a`), tired eyes, gauntness from rehab months. Buzz-cut black hair (`#1a1410`), ~2 px short. Resting expression: focused, not angry.
 >
 > **Costume:** Sleeveless dark grey tactical shirt (`#2a2a32` mid, `#16161a` shadow), fitted across the chest. Right (organic) arm bare and visible. Black cargo shorts (`#16161a`) ending at mid-thigh where the cyber legs begin — the organic-to-mechanical TRANSITION IS VISIBLE and not hidden. Black tactical belt with a small power-pack module on the right hip (`#1a1a22` body with a single bright blue LED `#6aa0e8`).
@@ -476,6 +747,33 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## BLACKWELL — generation prompt (full detail, 12 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 12 rows uniform grid (total image 640 wide × 1152 tall), **magenta `#ff00ff` background**, bottom-center anchor. Stage 8 boss / brutal-only encounter. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **12 rows exactly, 66 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 12 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 4 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 6 frames
+>  6. `heavy` × 7 frames
+>  7. `jump_atk` × 4 frames
+>  8. `back_atk` × 4 frames
+>  9. `special` × 12 frames
+> 10. `throw` × 5 frames
+> 11. `counter` × 6 frames
+> 12. `hurt` × 3 frames
+>
+> Total: **66 character poses in 12 rows**. Count both before submitting.
+>
 >
 > **Character — wall of muscle:** Blackwell (real name Marcus Blackwell). 44-year-old Black man, 6'5", massive — heavier than Atlas, heavier than Tank. Pure-mass strongman build that hasn't gone soft. Arms thicker than the protagonist's torso. Reads as the BIGGEST silhouette in the game. Very dark skin (`#3a2418` mid, `#4a2c1a` shadow stages, `#1a0e08` deep, `#6a4a30` light). Square jaw. **Shaved head COMPLETELY SMOOTH (no hair anywhere on the scalp). Thin gray-black goatee (`#2a201a` dark, `#5a5450` grey accent) wrapping the chin only.** Small scar above the LEFT eyebrow. Resting expression: BLANK — he doesn't show anything until he hits.
 >
@@ -533,6 +831,29 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 48x64 frame size, 8 columns by 8 rows uniform grid (total image 384 wide × 512 tall), **magenta `#ff00ff` background**, bottom-center anchor. Basic mook enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **8 rows exactly, 32 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 8 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `run` × 4 frames
+>  4. `atk1` × 4 frames
+>  5. `atk2` × 4 frames
+>  6. `hurt` × 3 frames
+>  7. `dead` × 3 frames
+>  8. `flee` × 4 frames
+>
+> Total: **32 character poses in 8 rows**. Count both before submitting.
+>
+>
 > **Character — neighborhood-liaison kid:** Runner. Age 18–24, 5'8"–6'0", lean to wiry. Not an athlete, just willing. Pick ONE skin tone and lock it for every frame: medium-light (`#c89478` mid, `#8a6248` shadow) OR medium (`#8a6248`) OR dark (`#5a3a28`). Pick ONE: short black buzz cut, dark-brown fade, OR hood-up (no hair shown). Pick ONE: clean-shaven OR light stubble. **Lock every choice across all 32 cells — only the pose changes.**
 >
 > **Costume head-to-feet:** Dark grey hoodie / windbreaker (`#36363f` mid, `#23232a` shadow), zipped halfway (same zip state in every frame). Off-white or dark-grey t-shirt under (`#cfc8b8`), visible at the hem. Navy loose cargo pants (`#2f3a4a` mid, `#1f2838` shadow). Black or grey worn sneakers (`#18181c`). Optional 1-px gold streak at the hip (chain wallet).
@@ -570,6 +891,28 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## CHAINS — generation prompt (full detail, 7 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 7 rows uniform grid (total image 512 wide × 560 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **7 rows exactly, 39 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 7 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 6 frames
+>  4. `atk2` × 5 frames
+>  5. `atk3` × 12 frames
+>  6. `hurt` × 3 frames
+>  7. `dead` × 3 frames
+>
+> Total: **39 character poses in 7 rows**. Count both before submitting.
+>
 >
 > **Character — crowd-control biker:** Chains. Age 30–45, 6'0"–6'3", broad-shouldered and blocky, heavyset but not soft. Pick ONE per sheet and lock it: long hair tied back into a low ponytail OR shaved entirely. Pick ONE: full beard OR clean-shaven with a goatee. Hard face, optional cigar between teeth (decoration, not lit). Pick ONE skin tone and lock it: light (`#c89478` mid, `#8a6248` shadow), medium (`#8a6248`), or dark (`#5a3a28`).
 >
@@ -609,6 +952,30 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 9 rows uniform grid (total image 512 wide × 720 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
 >
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **9 rows exactly, 40 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 9 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `run` × 4 frames
+>  4. `atk1` × 6 frames
+>  5. `atk2` × 5 frames
+>  6. `jump_atk` × 5 frames
+>  7. `dash` × 4 frames
+>  8. `hurt` × 3 frames
+>  9. `dead` × 3 frames
+>
+> Total: **40 character poses in 9 rows**. Count both before submitting.
+>
+>
 > **Character — knife-club hit-and-run fighter:** Slice. Age 22–32, 5'6"–5'10", lean and fast, whip-thin. Pick ONE per sheet and lock it: side-shaved with long top slicked back, OR tied-back ponytail, OR mullet. Cocky half-smile in idle. Some have small scars across cheek or eyebrow (optional but lock once). Pick ONE skin tone and lock it: light (`#d4a888` mid, `#9a785a` shadow), medium, or dark.
 >
 > **Costume head-to-feet:** Sleeveless mesh shirt — black (`#0a0a10`), tight, exposing the arms. Some have a fishnet undershirt visible at the collar. Optional studded vest over the mesh — dark grey leather (`#36363f`) with metallic stud rivets (`#a8a8b0`). Skinny black pants (`#1a1a22`), tight, ankle-length. Black laced-loose combat boots (`#0a0a10`), scuffed. Fingerless black leather gloves (`#16100a`).
@@ -647,6 +1014,28 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## TANK — generation prompt (full detail, 8 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 80x96 frame size, 8 columns by 8 rows uniform grid (total image 640 wide × 768 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier heavy enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **7 rows exactly, 36 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 7 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 6 frames
+>  4. `atk2` × 7 frames
+>  5. `atk3` × 7 frames
+>  6. `hurt` × 3 frames
+>  7. `dead` × 3 frames
+>
+> Total: **36 character poses in 7 rows**. Count both before submitting.
+>
 >
 > **Character — massive bouncer:** Tank. Age 35–50, 6'2"–6'5", massive — 280–320 lbs of muscle gone soft in the gut. Broader than Atlas, not as tall. Reads big in silhouette. Weathered olive-brown skin (`#a87858` light, `#6a4830` shadow). **SHAVED head or buzzed close, FULL untrimmed beard (`#2a2520`).** Heavy brow, broken nose (multiple times). Resting expression: bored.
 >
@@ -693,6 +1082,29 @@ Each character's full row list lives in `characters/<NAME>.md`. Summary:
 ## DOJO — generation prompt (full detail, 10 rows)
 
 > Pixel art sprite sheet, side-view 2D beat-em-up style, 64x80 frame size, 8 columns by 10 rows uniform grid (total image 512 wide × 800 tall), **magenta `#ff00ff` background**, bottom-center anchor. Mid-tier disciplined enemy. **NO text, NO labels, NO row headers, NO frame numbers anywhere in the image — pixels only.**
+>
+
+> **READ THESE FIRST — failure on any of these requires regeneration:**
+>
+> 1. **8 rows exactly, 40 total frames.** Top-to-bottom, in the order listed below. Do not skip rows. Do not merge rows. Do not draw a 17th row because you have space.
+> 2. **Pure magenta `#ff00ff` (RGB 255, 0, 255) background.** Not dark purple. Not pink. Not a gradient. Pure magenta in every cell, every gutter, every empty pixel.
+> 3. **Zero text characters in the image.** No row labels, no animation names, no frame numbers, no captions.
+> 4. **Full-body characters, every frame.** Head to feet visible — never cropped at the waist.
+> 5. **At least 12 px of pure magenta between rows, 8 px between characters in a row.** The slicer needs these gutters.
+>
+> **ROW-BY-ROW CHECKLIST — draw exactly these 8 rows in this exact order:**
+>
+>  1. `idle` × 4 frames
+>  2. `walk` × 6 frames
+>  3. `atk1` × 6 frames
+>  4. `atk2` × 6 frames
+>  5. `atk3` × 6 frames
+>  6. `atk4` × 6 frames
+>  7. `hurt` × 3 frames
+>  8. `dead` × 3 frames
+>
+> Total: **40 character poses in 8 rows**. Count both before submitting.
+>
 >
 > **Character — formal martial artist:** Dojo. Age 24–35, 5'8"–5'11", athletic-toned, visible deltoids and forearms but not bulky. Posture is *perfect* — trained for years. Often Asian / South-Asian / mixed presentation. Pick ONE per sheet and lock it: short black slicked back, OR short black topknot (shaved sides). Pick ONE skin tone and lock it (`#c89478` mid, `#8a6248` shadow). **Clean-shaven** (no facial hair anywhere — that's part of the discipline). Calm face, no smile, no scowl.
 >
