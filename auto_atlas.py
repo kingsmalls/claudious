@@ -384,18 +384,35 @@ def slice_sheet(png_path, expected_slots):
     for i, (y0, y1) in enumerate(bands):
         slot = used_slots[i] if i < n_slots else f"row{i}"
         expected_cells = expected_frames_map.get(slot)
-        cells = find_cells_in_row(fg, y0, y1, expected_cells=expected_cells)
+        # Tighten the row band vertically to actual content height — uniform
+        # across all cells in the row so the engine scales them consistently.
+        # Per-cell vertical tightening collapsed attack poses to a single
+        # limb (see earlier fix); full-band height left empty padding above
+        # /below characters and rendered them as tiny figures in a tall
+        # bbox. Row-level tightening (use the same y0/y1 for every cell)
+        # avoids both failure modes.
+        row_sub = fg[y0:y1]
+        row_has = row_sub.any(axis=1)
+        if row_has.any():
+            ys = np.where(row_has)[0]
+            row_y0 = y0 + int(ys.min())
+            row_y1 = y0 + int(ys.max()) + 1
+        else:
+            row_y0, row_y1 = y0, y1
+        cells = find_cells_in_row(fg, row_y0, row_y1, expected_cells=expected_cells)
         if not cells:
             continue
         names = []
         for j, (x0, ty0, x1, ty1) in enumerate(cells):
             key = f"{slot}_{j}"
             # Restore original-image coordinates by adding the crop offset.
+            # Use the row-tight y0/y1 instead of per-cell ty0/ty1 so every
+            # frame in this anim has the same height.
             frames[key] = {
                 "x": int(x0) + x_off,
-                "y": int(ty0) + y_off,
+                "y": int(row_y0) + y_off,
                 "w": int(x1 - x0),
-                "h": int(ty1 - ty0),
+                "h": int(row_y1 - row_y0),
             }
             names.append(key)
         anims[slot] = names
