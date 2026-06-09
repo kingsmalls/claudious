@@ -248,6 +248,39 @@ def find_cells_in_row(fg, y0, y1, expected_cells=None, min_gap=2, min_width=10, 
     return out
 
 
+def find_row_bands_by_peaks(fg, n_rows):
+    """Locate `n_rows` row bands via peak detection on the row-density signal.
+
+    Used when gap-based detection can't separate adjacent rows because the
+    artist didn't leave magenta gutters between them. Each character row's
+    center of mass shows up as a peak in the smoothed row-density signal;
+    we slice halfway between adjacent peaks to get the band boundaries.
+    """
+    H = fg.shape[0]
+    if n_rows <= 0:
+        return []
+    row_density = fg.sum(axis=1).astype(float)
+    sigma = max(6, H // 120)
+    smoothed = gaussian_filter1d(row_density, sigma=sigma)
+    if smoothed.max() <= 0:
+        return []
+    min_dist = max(20, H // (n_rows * 2 + 1))
+    peaks, _ = find_peaks(
+        smoothed,
+        distance=min_dist,
+        prominence=smoothed.max() * 0.05,
+    )
+    if len(peaks) < n_rows:
+        return []
+    peaks = sorted(peaks)[:n_rows]
+    bands = []
+    for i, p in enumerate(peaks):
+        top = (peaks[i - 1] + p) // 2 if i > 0 else max(0, p - min_dist)
+        bot = (peaks[i + 1] + p) // 2 if i + 1 < len(peaks) else min(H, p + min_dist)
+        bands.append((int(top), int(bot)))
+    return bands
+
+
 def uniform_row_bands(fg, n_rows):
     """Divide the cropped foreground area into n_rows equal horizontal bands.
 
@@ -271,13 +304,16 @@ def slice_sheet(png_path, expected_slots):
     y_off, _, x_off, _ = bbox
     fg = fg[bbox[0]:bbox[1], bbox[2]:bbox[3]]
     bands = find_row_bands(fg)
-    # Fallback: if gap detection didn't find every expected row, the sheet
-    # probably has too little magenta gutter between rows. Divide the
-    # cropped region into uniform horizontal bands instead. This assumes
-    # the artist drew the rows in the order specified by the spec — which
-    # the Gemini prompts force via the explicit "Row 1 / Row 2 / …" layout.
+    # Fallback: if gap detection didn't find every expected row, try peak
+    # detection first (works when adjacent rows share their top/bottom edges
+    # but the body centers are still distinct). Only fall back to a blind
+    # uniform division if peak detection also can't separate them.
     if len(bands) < len(expected_slots):
-        bands = uniform_row_bands(fg, len(expected_slots))
+        peak_bands = find_row_bands_by_peaks(fg, len(expected_slots))
+        if len(peak_bands) == len(expected_slots):
+            bands = peak_bands
+        else:
+            bands = uniform_row_bands(fg, len(expected_slots))
     frames = {}
     anims = {}
     n_slots = len(expected_slots)
