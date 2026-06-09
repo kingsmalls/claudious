@@ -601,6 +601,7 @@ function drawSpriteCharacter(p) {
     if (p._trail.length > 4) p._trail.shift();
   }
   if (p._trail && p._trail.length) {
+    const trailTargetH = sprite.atlas.target_h || 0;
     for (let i = 0; i < p._trail.length; i++) {
       const t = p._trail[i];
       t.life += 0.020;
@@ -610,9 +611,11 @@ function drawSpriteCharacter(p) {
       X.save();
       X.translate(t.sx, t.sy);
       if (t.facing === -1) X.scale(-1, 1);
+      const ts = trailTargetH > 0 ? trailTargetH / t.frame.h : 1;
+      const tdw = t.frame.w * ts, tdh = t.frame.h * ts;
       X.drawImage(sprite.img,
         t.frame.x, t.frame.y, t.frame.w, t.frame.h,
-        -t.frame.w * ax, -t.frame.h * ay, t.frame.w, t.frame.h);
+        -tdw * ax, -tdh * ay, tdw, tdh);
       X.restore();
     }
     X.globalAlpha = 1;
@@ -645,9 +648,17 @@ function drawSpriteCharacter(p) {
     p.landSquash--;
   }
 
+  // ---- Scale to gameplay size. The Gemini-regenerated sheets are 3-4x
+  // larger than the originals; the atlas stores a target_h so the renderer
+  // can scale every frame to a consistent on-screen size per character.
+  const targetH = sprite.atlas.target_h || frame.h;
+  const scale = targetH / frame.h;
+  const dw = frame.w * scale;
+  const dh = frame.h * scale;
+
   X.drawImage(sprite.img,
     frame.x, frame.y, frame.w, frame.h,
-    -frame.w * ax, -frame.h * ay, frame.w, frame.h);
+    -dw * ax, -dh * ay, dw, dh);
 
   // ---- Hit flash: re-draw the same frame in pure white at low alpha for
   // 2-4 frames after taking damage. Reads as a clean impact pulse.
@@ -655,7 +666,7 @@ function drawSpriteCharacter(p) {
     X.globalCompositeOperation = "source-atop";
     X.globalAlpha = 0.55 * (vAlpha < 1 ? vAlpha : 1);
     X.fillStyle = "#ffffff";
-    X.fillRect(-frame.w * ax, -frame.h * ay, frame.w, frame.h);
+    X.fillRect(-dw * ax, -dh * ay, dw, dh);
     X.globalCompositeOperation = "source-over";
     p.hitFlash--;
   }

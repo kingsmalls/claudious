@@ -38,6 +38,17 @@ EXPECTED_SLOTS = {
     "rig":       ["idle","walk","atk1","atk2","atk3","atk4","atk5","atk6","hurt","dead"],
 }
 
+# Target on-screen cell HEIGHT in CSS / engine pixels. The Gemini-regenerated
+# sheets are 3-4x larger than the originals, which makes the sprites render
+# enormous when drawn at native frame size. The engine scales each frame's
+# render size to match this target.
+TARGET_CELL_H = {
+    "rio": 96, "duke": 96, "atlas": 112,
+    "baron": 96, "razor": 96, "volt": 96, "blackwell": 96,
+    "runner": 64, "chains": 80, "slice": 80, "tank": 96,
+    "lamplight": 88, "dojo": 80, "shade": 72, "rig": 80,
+}
+
 
 def load_mask(path):
     """Load image as a boolean foreground mask (True where the character is).
@@ -208,11 +219,17 @@ def slice_sheet(png_path, expected_slots):
             }
             names.append(key)
         anims[slot] = names
+    # Use the character's name (parent dir's basename of the PNG) to pick a
+    # target on-screen cell height so the engine can scale the high-res
+    # Gemini frames down to gameplay size.
+    char = os.path.splitext(os.path.basename(png_path))[0]
+    target_h = TARGET_CELL_H.get(char, 96)
     atlas = {
         "fps": 8,
         "frames": frames,
         "anims": anims,
         "anchor": {"x": 0.5, "y": 1.0},
+        "target_h": target_h,
     }
     return atlas, n_bands, sum(len(v) for v in anims.values())
 
