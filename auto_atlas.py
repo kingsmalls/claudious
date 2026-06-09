@@ -275,31 +275,40 @@ def find_cells_in_row(fg, y0, y1, expected_cells=None, min_gap=2, min_width=10, 
     return out
 
 
-def find_row_bands_by_peaks(fg, n_rows):
-    """Locate `n_rows` row bands via peak detection on the row-density signal.
+def find_row_bands_by_peaks(fg, max_rows):
+    """Locate up to `max_rows` row bands via peak detection on row-density.
 
-    Used when gap-based detection can't separate adjacent rows because the
-    artist didn't leave magenta gutters between them. Each character row's
-    center of mass shows up as a peak in the smoothed row-density signal;
-    we slice halfway between adjacent peaks to get the band boundaries.
+    Returns whatever peaks were found (capped at max_rows). Caller decides
+    whether fewer-than-expected is acceptable or to fall back to uniform.
+    Each character row's center of mass shows up as a distinct peak in the
+    smoothed row-density signal; bands are sliced halfway between peaks.
     """
     H = fg.shape[0]
-    if n_rows <= 0:
+    if max_rows <= 0:
         return []
     row_density = fg.sum(axis=1).astype(float)
     sigma = max(6, H // 120)
     smoothed = gaussian_filter1d(row_density, sigma=sigma)
     if smoothed.max() <= 0:
         return []
-    min_dist = max(20, H // (n_rows * 2 + 1))
+    # Min vertical distance between rows. Assume characters drawn at LEAST
+    # 70 px apart vertically — strict enough to merge body-part bumps,
+    # permissive enough for packed sheets where Gemini omitted gutters.
+    min_dist = max(70, H // (max_rows * 2 + 2))
     peaks, _ = find_peaks(
         smoothed,
         distance=min_dist,
         prominence=smoothed.max() * 0.05,
     )
-    if len(peaks) < n_rows:
+    if len(peaks) == 0:
         return []
-    peaks = sorted(peaks)[:n_rows]
+    peaks = sorted(peaks)[:max_rows]
+    bands = []
+    for i, p in enumerate(peaks):
+        top = (peaks[i - 1] + p) // 2 if i > 0 else max(0, p - min_dist)
+        bot = (peaks[i + 1] + p) // 2 if i + 1 < len(peaks) else min(H, p + min_dist)
+        bands.append((int(top), int(bot)))
+    return bands
     bands = []
     for i, p in enumerate(peaks):
         top = (peaks[i - 1] + p) // 2 if i > 0 else max(0, p - min_dist)
@@ -331,16 +340,17 @@ def slice_sheet(png_path, expected_slots):
     y_off, _, x_off, _ = bbox
     fg = fg[bbox[0]:bbox[1], bbox[2]:bbox[3]]
     bands = find_row_bands(fg)
-    # Fallback: if gap detection didn't find every expected row, try peak
-    # detection first (works when adjacent rows share their top/bottom edges
-    # but the body centers are still distinct). Only fall back to a blind
-    # uniform division if peak detection also can't separate them.
-    if len(bands) < len(expected_slots):
-        peak_bands = find_row_bands_by_peaks(fg, len(expected_slots))
-        if len(peak_bands) == len(expected_slots):
-            bands = peak_bands
-        else:
-            bands = uniform_row_bands(fg, len(expected_slots))
+    # Always prefer peak detection over uniform row division. Peak detection
+    # finds actual character centers; uniform division blindly cuts the image
+    # into N equal slices, which slices through characters when the sheet's
+    # row heights are inconsistent or when Gemini drew fewer rows than the
+    # spec asked for. If peak detection finds fewer rows than expected, we
+    # use whatever it found — missing anim slots fall back via ANIM_FALLBACK.
+    peak_bands = find_row_bands_by_peaks(fg, len(expected_slots))
+    if len(peak_bands) > len(bands):
+        bands = peak_bands
+    if not bands:
+        bands = uniform_row_bands(fg, len(expected_slots))
     frames = {}
     anims = {}
     n_slots = len(expected_slots)
