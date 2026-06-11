@@ -566,6 +566,16 @@ def slice_sheet(png_path, expected_slots):
     expected_frames_map = EXPECTED_FRAMES.get(char, {})
     target_h = TARGET_CELL_H.get(char, 96)
 
+    # Sanity check: if the sheet has effectively no magenta background
+    # (less than 25% transparent after chroma-key), we can't separate the
+    # characters reliably — every blob detection produces giant merged
+    # masses. Refuse to ship a broken atlas; the engine will fall back to
+    # procedural rendering.
+    total_px = fg.size
+    fg_ratio = fg.sum() / max(1, total_px)
+    if fg_ratio > 0.75:
+        return None, 0, 0
+
     blobs = detect_blobs(fg)
     if not blobs:
         return None, 0, 0
@@ -580,8 +590,11 @@ def slice_sheet(png_path, expected_slots):
     prior_h = max(60, content_h / max(1, len(expected_slots)))
     heights = sorted(b[3] - b[1] for b in blobs)
     med_h = heights[len(heights) // 2]
-    if len(blobs) >= 6 and med_h < prior_h * 3.5:
-        est_h = max(60, med_h)
+    # Use the LARGER of the median and the prior. Some sheets (Baron) have
+    # head-shot blobs mixed in that drag the median way below the real
+    # character height; the prior is conservative and keeps full bodies.
+    if len(blobs) >= 6 and prior_h * 0.6 <= med_h <= prior_h * 3.5:
+        est_h = max(60, max(med_h, prior_h * 0.9))
     else:
         est_h = prior_h
     blobs = split_tall_blobs(blobs, fg, est_h)
@@ -665,13 +678,26 @@ def main():
         chroma_key_to_alpha(png, png)
         atlas, n_bands, n_frames = slice_sheet(png, expected)
         if atlas is None:
-            print(f"  FAIL   {name:11}  no row bands found")
+            # Refuse to ship a broken atlas. Delete any existing one so the
+            # engine falls back to the procedural renderer for this char.
+            if os.path.exists(out):
+                os.remove(out)
+            print(f"  SKIP   {name:11}  unsalvageable (no magenta or no rows) — falling back to procedural")
             continue
-        # Backup existing.
-        if os.path.exists(out):
-            with open(out + ".bak", "w") as f:
-                with open(out) as orig:
-                    f.write(orig.read())
+        # Quality check: drop any frame whose width is so much larger than
+        # its height that it must be a merged row instead of a character.
+        bad = [k for k, fr in atlas["frames"].items() if fr["w"] > fr["h"] * 1.9]
+        for k in bad:
+            atlas["frames"].pop(k, None)
+        for slot, framelist in list(atlas["anims"].items()):
+            atlas["anims"][slot] = [k for k in framelist if k in atlas["frames"]]
+            if not atlas["anims"][slot]:
+                del atlas["anims"][slot]
+        if not atlas["anims"]:
+            if os.path.exists(out):
+                os.remove(out)
+            print(f"  SKIP   {name:11}  every frame failed quality check — falling back to procedural")
+            continue
         with open(out, "w") as f:
             json.dump(atlas, f, indent=2)
         ok = "OK   " if n_bands == len(expected) else "WARN "
