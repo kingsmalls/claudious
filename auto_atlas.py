@@ -128,11 +128,26 @@ def chroma_key_to_alpha(png_path, out_path):
     r = arr[..., 0].astype(int)
     g = arr[..., 1].astype(int)
     b = arr[..., 2].astype(int)
-    # Magenta: red and blue dominate over green by a wide margin AND green
-    # is low in absolute terms. Skin tones (high r, mid g, low b) still get
-    # a high chroma score but FAIL the b-dominance check, so they survive.
+    # Magenta detection — generous on the green channel because Gemini's
+    # newer sheets render "magenta" with a strong gradient up to g≈140 at
+    # the edges of each character. We catch anything where:
+    #   - red and blue are both bright,
+    #   - chroma dominance (r + b - 2g) clearly favors magenta over green,
+    #   - red and blue are roughly balanced (not a pink skin tone, which
+    #     would be skewed toward red).
+    # The "near-magenta" pass below is more aggressive (catches dim magenta
+    # gradient pixels like rgb(160, 38, 159)) than the core pure-magenta
+    # test, but only fires when both r and b are well above g.
     chroma_dom = (r + b) - 2 * g
-    is_magenta = (chroma_dom > 140) & (g < 80) & (r > 80) & (b > 80)
+    rb_balance = np.abs(r - b)
+    # Pure magenta: bright with strong purple bias and red≈blue. Permissive
+    # on green to catch Gemini's noisy magenta gradient (g up to ~140).
+    pure_magenta = (chroma_dom > 140) & (g < 150) & (r > 140) & (b > 140) & (rb_balance < 80)
+    # Dim magenta: dim-purple anti-aliasing at the edges of pure-magenta
+    # against a character. Tight constraints (r,b both > 90, g well below
+    # both) so this doesn't catch skin tones or cream fabrics.
+    dim_magenta = (chroma_dom > 90) & (r > 90) & (b > 90) & (g < r - 55) & (g < b - 55) & (rb_balance < 50)
+    is_magenta = pure_magenta | dim_magenta
     is_dark = (r < 18) & (g < 18) & (b < 18)
     is_bg = is_magenta | is_dark
     arr_out = arr.copy()
@@ -367,6 +382,9 @@ def detect_blobs(fg, min_area=600, dilate_px=5):
     densely-packed sheets. Detached pieces (a hat above a head) become
     separate blobs here and are merged later by x-overlap within a row.
 
+    Drops obvious text-label blobs at the source: wide-and-short shapes
+    with sparse fill (text strokes leave most of the bbox empty).
+
     Returns a list of (x0, y0, x1, y1, area) tuples.
     """
     structure = np.ones((dilate_px, dilate_px), dtype=bool)
@@ -385,8 +403,69 @@ def detect_blobs(fg, min_area=600, dilate_px=5):
         y1 = sl[0].start + int(ys.max()) + 1
         x0 = sl[1].start + int(xs.min())
         x1 = sl[1].start + int(xs.max()) + 1
+        bw, bh = x1 - x0, y1 - y0
+        # Text-label signature: wide-and-short (aspect > 2.2) and sparse
+        # fill (text strokes leave most of the bbox empty). A character
+        # turned sideways stays denser than this.
+        fill_ratio = area / max(1, bw * bh)
+        if bw > bh * 2.2 and fill_ratio < 0.45:
+            continue
+        # Extremely thin slivers can't be characters at all.
+        if bh < 30 or bw < 16:
+            continue
         blobs.append((x0, y0, x1, y1, area))
     return blobs
+
+
+def strip_text_label_from_blob(b, fg, est_h):
+    """If a blob's bbox contains a text label stuck above the character,
+    return a new bbox tight around just the character portion."""
+    x0, y0, x1, y1, area = b
+    h = y1 - y0
+    if h <= est_h * 1.1:
+        return b
+    strip = fg[y0:y1, x0:x1]
+    row_density = strip.sum(axis=1).astype(float)
+    # Smooth so individual letter glyphs don't look like separate peaks.
+    sm = gaussian_filter1d(row_density, sigma=max(3, h // 60))
+    # Find horizontal gaps (rows with density well below the body max).
+    body_max = sm.max()
+    gap_thresh = body_max * 0.18
+    in_gap = sm < gap_thresh
+    # Look for the largest near-top gap. If found, drop everything above it.
+    segments = []
+    i = 0
+    while i < h:
+        if not in_gap[i]:
+            j = i
+            while j < h and not in_gap[j]:
+                j += 1
+            segments.append((i, j))
+            i = j
+        else:
+            i += 1
+    if len(segments) <= 1:
+        return b
+    # Pick the segment with the largest area that's at least est_h * 0.6 tall.
+    best = None
+    best_area = -1
+    for sy0, sy1 in segments:
+        if sy1 - sy0 < est_h * 0.55:
+            continue
+        seg = strip[sy0:sy1]
+        a = int(seg.sum())
+        if a > best_area:
+            best_area = a
+            best = (sy0, sy1, a)
+    if not best:
+        return b
+    sy0, sy1, a = best
+    seg = strip[sy0:sy1]
+    ys, xs = np.where(seg)
+    if not ys.size:
+        return b
+    return (x0 + int(xs.min()), y0 + sy0 + int(ys.min()),
+            x0 + int(xs.max()) + 1, y0 + sy0 + int(ys.max()) + 1, a)
 
 
 def split_tall_blobs(blobs, fg, est_h):
@@ -597,6 +676,11 @@ def slice_sheet(png_path, expected_slots):
         est_h = max(60, max(med_h, prior_h * 0.9))
     else:
         est_h = prior_h
+    # Drop the "everything is connected" giant blob: spans multiple rows
+    # vertically AND is wider than a packed row of characters.
+    blobs = [b for b in blobs
+             if not ((b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > est_h * 8)]
+    blobs = [strip_text_label_from_blob(b, fg, est_h) for b in blobs]
     blobs = split_tall_blobs(blobs, fg, est_h)
     blobs = split_wide_blobs_auto(blobs, fg)
     rows = cluster_blob_rows(blobs, fg.shape[0], est_h)
