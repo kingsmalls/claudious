@@ -731,11 +731,44 @@ def slice_sheet(png_path, expected_slots):
         est_h = max(60, max(med_h, prior_h * 0.9))
     else:
         est_h = prior_h
-    # Drop the "everything is connected" giant blob — it spans multiple
-    # rows vertically AND covers most of the image width.
+    # Find the "everything is connected" giant blob, if any: spans multiple
+    # rows vertically AND covers most of the image width. Drop it, then
+    # try to RECOVER the characters trapped inside it by re-detecting with
+    # no dilation (giant blob mostly forms from thin gradient bridges).
     img_w = fg.shape[1]
-    blobs = [b for b in blobs
-             if not ((b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > img_w * 0.7)]
+    is_giant = lambda b: (b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > img_w * 0.7
+    giants = [b for b in blobs if is_giant(b)]
+    blobs = [b for b in blobs if not is_giant(b)]
+    if giants:
+        # Run connected-component labelling on the original (un-dilated)
+        # mask restricted to the giant's bbox. Each character body is its
+        # own component there.
+        for gb in giants:
+            gx0, gy0, gx1, gy1, _ = gb
+            sub = fg[gy0:gy1, gx0:gx1]
+            labels, n = ndimage.label(sub)
+            for sl in ndimage.find_objects(labels):
+                if sl is None:
+                    continue
+                region = sub[sl]
+                a = int(region.sum())
+                if a < 1500:
+                    continue  # too small to be a character body
+                ys, xs = np.where(region)
+                bh = sl[0].stop - sl[0].start
+                bw = sl[1].stop - sl[1].start
+                # Drop sub-blobs that are clearly not characters.
+                if bh < est_h * 0.4 or bw < 20:
+                    continue
+                if bw > bh * 2.2:
+                    continue
+                blobs.append((
+                    gx0 + sl[1].start + int(xs.min()),
+                    gy0 + sl[0].start + int(ys.min()),
+                    gx0 + sl[1].start + int(xs.max()) + 1,
+                    gy0 + sl[0].start + int(ys.max()) + 1,
+                    a,
+                ))
     blobs = [strip_white_text_top(b, arr_rgba, est_h) for b in blobs]
     blobs = [strip_text_label_from_blob(b, fg, est_h) for b in blobs]
     blobs = split_tall_blobs(blobs, fg, est_h)
