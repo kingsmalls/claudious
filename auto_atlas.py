@@ -770,20 +770,24 @@ def slice_sheet(png_path, expected_slots):
             row = sorted(expanded, key=lambda b: b[0])
         # Reading order: first N blobs are frame 0..N-1 of the anim.
         chosen = row[:expected_cells] if expected_cells else row
-        # Per-row max height — poses keep their RELATIVE heights when the
-        # engine scales (a crouch stays shorter than a stand).
-        row_max_h = max(b[3] - b[1] for b in chosen)
+        # Pad every frame in the anim to the SAME y-extent (the union of all
+        # per-blob y-extents in the row). Each frame still has its own x0/x1
+        # tight to that character, but all frames share y0 and h — so when
+        # the engine applies th/h scale, every frame renders at exactly the
+        # same on-screen height. Previously per-blob heights varied 20-80%
+        # which made the character bounce up and down between frames.
+        row_y0 = min(b[1] for b in chosen)
+        row_y1 = max(b[3] for b in chosen)
+        row_h = row_y1 - row_y0
         names = []
-        for j, (x0, y0, x1, y1, _area) in enumerate(chosen):
+        for j, (x0, _y0, x1, _y1, _area) in enumerate(chosen):
             key = f"{slot}_{j}"
-            h = y1 - y0
             frames[key] = {
-                "x": int(x0), "y": int(y0),
-                "w": int(x1 - x0), "h": int(h),
-                # Per-frame display height: preserves pose proportions
-                # within the row. Engine prefers frame.th over the global
-                # atlas target_h when present.
-                "th": max(8, round(target_h * h / row_max_h)),
+                "x": int(x0), "y": int(row_y0),
+                "w": int(x1 - x0), "h": int(row_h),
+                # All frames in the anim share th = target_h so the scale
+                # (target_h / row_h) is identical across the cycle.
+                "th": int(target_h),
             }
             names.append(key)
         if names:
