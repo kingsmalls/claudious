@@ -375,12 +375,13 @@ def uniform_row_bands(fg, n_rows):
     return [(i * step, (i + 1) * step if i < n_rows - 1 else H) for i in range(n_rows)]
 
 
-def detect_blobs(fg, min_area=600, dilate_px=5):
+def detect_blobs(fg, min_area=600, dilate_px=3):
     """Find raw blobs via 2D connected components with light dilation.
 
-    Light dilation only — heavy dilation merges adjacent characters on
-    densely-packed sheets. Detached pieces (a hat above a head) become
-    separate blobs here and are merged later by x-overlap within a row.
+    Small dilation only — heavier merges adjacent characters on dense
+    sheets. Detached pieces (a hat above a head, a wrist between body
+    and hand) become separate blobs and re-merge later via x-overlap
+    in cluster_blob_rows.
 
     Drops obvious text-label blobs at the source: wide-and-short shapes
     with sparse fill (text strokes leave most of the bbox empty).
@@ -676,10 +677,11 @@ def slice_sheet(png_path, expected_slots):
         est_h = max(60, max(med_h, prior_h * 0.9))
     else:
         est_h = prior_h
-    # Drop the "everything is connected" giant blob: spans multiple rows
-    # vertically AND is wider than a packed row of characters.
+    # Drop the "everything is connected" giant blob — it spans multiple
+    # rows vertically AND covers most of the image width.
+    img_w = fg.shape[1]
     blobs = [b for b in blobs
-             if not ((b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > est_h * 8)]
+             if not ((b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > img_w * 0.7)]
     blobs = [strip_text_label_from_blob(b, fg, est_h) for b in blobs]
     blobs = split_tall_blobs(blobs, fg, est_h)
     blobs = split_wide_blobs_auto(blobs, fg)
