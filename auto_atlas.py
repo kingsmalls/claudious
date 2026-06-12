@@ -418,6 +418,60 @@ def detect_blobs(fg, min_area=600, dilate_px=3):
     return blobs
 
 
+def strip_white_text_top(b, arr, est_h):
+    """If a blob has a band of bright-white pixels at the top, crop the
+    band off — Gemini bakes label text like "k1 JAB" in white over the
+    sheet, and that text gets caught inside the character's blob bbox.
+
+    Strategy: find the last row with > N text-like pixels in the top
+    portion, then crop everything ABOVE that row (plus a small margin
+    for letter descenders / outlines). Works whether or not there's a
+    visible gap between the label and the character — the character
+    body just needs to extend well below the labelled region, which is
+    always the case for sprite-sheet label-and-pose layouts.
+
+    Skin/clothing tones don't survive the strict white test (need all
+    three RGB channels > 200), so character pixels are not mistaken
+    for text. Hair-streak highlights are usually fewer than the
+    8-pixel minimum.
+    """
+    x0, y0, x1, y1, area = b
+    h = y1 - y0
+    w = x1 - x0
+    if h < 40 or w < 20:
+        return b
+    region = arr[y0:y1, x0:x1]
+    r, g, b_ch, a = region[..., 0], region[..., 1], region[..., 2], region[..., 3]
+    text_mask = (r > 200) & (g > 200) & (b_ch > 200) & (a > 16)
+    row_text = text_mask.sum(axis=1)
+    # Look at the TOP 35% of the blob — labels live up there. A row
+    # with >= max(8, w*5%) text-like pixels is genuinely text-y; one or
+    # two stray bright pixels (a hair-streak highlight, an eye glint)
+    # don't trigger.
+    top_limit = max(8, h * 35 // 100)
+    text_thresh = max(8, w * 5 // 100)
+    top_window = row_text[:top_limit]
+    text_rows = np.where(top_window >= text_thresh)[0]
+    if len(text_rows) == 0:
+        return b
+    # Drop everything from the start of the blob through the last text-y
+    # row plus a small margin (letter descenders, anti-aliased outline).
+    crop_y = int(text_rows.max()) + max(3, h // 60)
+    if crop_y >= h - 30:
+        # Cropping would leave nothing usable.
+        return b
+    new_region = region[crop_y:]
+    new_fg = (new_region[..., 3] > 16)
+    if not new_fg.any():
+        return b
+    ys, xs = np.where(new_fg)
+    return (x0 + int(xs.min()),
+            y0 + crop_y + int(ys.min()),
+            x0 + int(xs.max()) + 1,
+            y0 + crop_y + int(ys.max()) + 1,
+            int(new_fg.sum()))
+
+
 def strip_text_label_from_blob(b, fg, est_h):
     """If a blob's bbox contains a text label stuck above the character,
     return a new bbox tight around just the character portion."""
@@ -639,7 +693,7 @@ def cluster_blob_rows(blobs, img_h, est_h):
 
 
 def slice_sheet(png_path, expected_slots):
-    fg, _ = load_mask(png_path)
+    fg, arr_rgba = load_mask(png_path)
     if not fg.any():
         return None, 0, 0
     char = os.path.splitext(os.path.basename(png_path))[0]
@@ -682,6 +736,7 @@ def slice_sheet(png_path, expected_slots):
     img_w = fg.shape[1]
     blobs = [b for b in blobs
              if not ((b[3] - b[1]) > est_h * 2.5 and (b[2] - b[0]) > img_w * 0.7)]
+    blobs = [strip_white_text_top(b, arr_rgba, est_h) for b in blobs]
     blobs = [strip_text_label_from_blob(b, fg, est_h) for b in blobs]
     blobs = split_tall_blobs(blobs, fg, est_h)
     blobs = split_wide_blobs_auto(blobs, fg)
